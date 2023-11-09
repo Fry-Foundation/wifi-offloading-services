@@ -17,7 +17,7 @@ define Package/wayru-os-services
   SECTION:=examples
   CATEGORY:=Examples
   TITLE:=wayru-os-services
-  DEPENDS:=+sudo
+  DEPENDS:=+sudo +php8-cgi
 endef
 
 # Package description; a more verbose description on what our package does
@@ -46,7 +46,13 @@ define Package/wayru-os-services/install
 		$(INSTALL_DIR) $(1)/etc/scripts
 		$(CP) ./files/binauth-accounting.sh $(1)/etc/scripts/binauth-accounting.sh
 		$(INSTALL_DIR) $(1)/etc/scripts/crons
-		$(INSTALL_BIN) ./files/update-accounting.sh $(1)/etc/scripts/crons/update-accounting.sh	
+		$(INSTALL_BIN) ./files/update-accounting.sh $(1)/etc/scripts/crons/update-accounting.sh
+		$(INSTALL_DIR) $(1)/etc/scripts/utils
+		$(INSTALL_BIN) ./files/get-mac-address.sh $(1)/etc/scripts/utils/get-mac-address.sh
+	        $(INSTALL_DIR) $(1)/etc/scripts
+	        $(INSTALL_BIN) ./files/update-config.sh $(1)/etc/scripts/update-config.sh
+		$(INSTALL_DIR) $(1)/etc/scripts/utils
+		$(INSTALL_BIN) ./files/get-id.sh $(1)/etc/scripts/utils/get-id.sh
 endef
 # This command is always the last, it uses the definitions and variables we give above in order to get the job done
 $(eval $(call BuildPackage,wayru-os-services))

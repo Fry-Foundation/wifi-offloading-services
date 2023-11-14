@@ -16,7 +16,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/wayru-os-services
   SECTION:=admin
   CATEGORY:=Administration
-  TITLE:=wayru-os-services
+  TITLE:=Wayru config daemon and scripts
   DEPENDS:=+sudo +php8-cgi
 endef
 

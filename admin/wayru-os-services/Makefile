@@ -35,14 +35,14 @@ endef
 
 # Package build instructions; invoke the target-specific compiler to first compile the source file, and then to link the file into the final executable
 define Build/Compile
-		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/helloworld.o -c $(PKG_BUILD_DIR)/helloworld.c
-		$(TARGET_CC) $(TARGET_LDFLAGS) $(PKG_BUILD_DIR)/helloworld.o -o $(PKG_BUILD_DIR)/helloworld
+		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/main.o -c $(PKG_BUILD_DIR)/main.c
+		$(TARGET_CC) $(TARGET_LDFLAGS) $(PKG_BUILD_DIR)/main.o -o $(PKG_BUILD_DIR)/wayru-os-services
 endef
 
 # Package install instructions; create a directory inside the package to hold our executable, and then copy the executable we built previously into the folder
 define Package/wayru-os-services/install
 		$(INSTALL_DIR) $(1)/usr/bin
-		$(INSTALL_BIN) $(PKG_BUILD_DIR)/helloworld $(1)/usr/bin
+		$(INSTALL_BIN) $(PKG_BUILD_DIR)/wayru-os-services $(1)/usr/bin
 		$(INSTALL_DIR) $(1)/etc/scripts
 		$(CP) ./files/binauth-accounting.sh $(1)/etc/scripts/binauth-accounting.sh
 		$(INSTALL_DIR) $(1)/etc/scripts/crons

@@ -14,8 +14,8 @@ include $(INCLUDE_DIR)/package.mk
 
 # Package definition; instructs on how and where our package will appear in the overall configuration menu ('make menuconfig')
 define Package/wayru-os-services
-  SECTION:=examples
-  CATEGORY:=Examples
+  SECTION:=admin
+  CATEGORY:=Administration
   TITLE:=wayru-os-services
   DEPENDS:=+sudo +php8-cgi
 endef

@@ -8,7 +8,7 @@ PKG_RELEASE:=1
 
 # Source settings (i.e. where to find the source codes)
 # This is a custom variable, used below
-SOURCE_DIR:=./source
+SOURCE_DIR:=source
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -39,20 +39,31 @@ define Build/Compile
 		$(TARGET_CC) $(TARGET_LDFLAGS) $(PKG_BUILD_DIR)/main.o -o $(PKG_BUILD_DIR)/wayru-os-services
 endef
 
-# Package install instructions; create a directory inside the package to hold our executable, and then copy the executable we built previously into the folder
+# Package install instructions
+# - Create the required directories
+# - Install main scripts in the /usr/bin directory
+# - Install init scripts in the /etc/init.d directory
+# - Install library files in the /usr/lib/wayru-os-services directory
+# 
+# @TODO: Install uci-defaults
+# @TODO: Install configuration files in the /etc/config directory
 define Package/wayru-os-services/install
 		$(INSTALL_DIR) $(1)/usr/bin
-		$(INSTALL_BIN) $(PKG_BUILD_DIR)/wayru-os-services $(1)/usr/bin
-		$(INSTALL_DIR) $(1)/etc/scripts
-		$(CP) ./files/binauth-accounting.sh $(1)/etc/scripts/binauth-accounting.sh
-		$(INSTALL_DIR) $(1)/etc/scripts/crons
-		$(INSTALL_BIN) ./files/update-accounting.sh $(1)/etc/scripts/crons/update-accounting.sh
-		$(INSTALL_DIR) $(1)/etc/scripts/utils
-		$(INSTALL_BIN) ./files/get-mac-address.sh $(1)/etc/scripts/utils/get-mac-address.sh
-	        $(INSTALL_DIR) $(1)/etc/scripts
-	        $(INSTALL_BIN) ./files/update-config.sh $(1)/etc/scripts/update-config.sh
-		$(INSTALL_DIR) $(1)/etc/scripts/utils
-		$(INSTALL_BIN) ./files/get-id.sh $(1)/etc/scripts/utils/get-id.sh
+		$(INSTALL_DIR) $(1)/etc/init.d
+		$(INSTALL_DIR) $(1)/etc/uci-defaults
+		$(INSTALL_DIR) $(1)/etc/config
+		$(INSTALL_DIR) $(1)/usr/lib/wayru-os-services
+
+		$(INSTALL_BIN) $(PKG_BUILD_DIR)/wayru-os-services $(1)/usr/bin/
+
+		$(INSTALL_BIN) files/wayru-os-services $(1)/etc/init.d/wayru-os-services
+		
+		$(INSTALL_BIN) files/binauth-accounting.sh $(1)/usr/lib/wayru-os-services/
+		$(INSTALL_BIN) files/update-accounting.sh $(1)/usr/lib/wayru-os-services/
+		$(INSTALL_BIN) files/update-config.sh $(1)/usr/lib/wayru-os-services/
+		$(INSTALL_BIN) files/get-mac-address.sh $(1)/usr/lib/wayru-os-services/
+		$(INSTALL_BIN) files/get-id.sh $(1)/usr/lib/wayru-os-services/
 endef
+
 # This command is always the last, it uses the definitions and variables we give above in order to get the job done
 $(eval $(call BuildPackage,wayru-os-services))

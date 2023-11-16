@@ -3,6 +3,7 @@
 #include <time.h>
 #include <unistd.h>
 
+// Estructura para representar una tarea programada
 struct ScheduledTask {
     time_t nextExecutionTime;
     void (*task)();
@@ -11,6 +12,7 @@ struct ScheduledTask {
 
 typedef struct ScheduledTask ScheduledTask;
 
+// Estructura para el planificador de tareas
 struct Scheduler {
     ScheduledTask* tasks;
     size_t size;
@@ -18,6 +20,7 @@ struct Scheduler {
 
 typedef struct Scheduler Scheduler;
 
+// Programa una tarea para ejecutarse en un momento específico
 void scheduleAt(Scheduler* sch, time_t time, void (*task)()) {
     sch->size++;
     sch->tasks = realloc(sch->tasks, sch->size * sizeof(ScheduledTask));
@@ -26,6 +29,7 @@ void scheduleAt(Scheduler* sch, time_t time, void (*task)()) {
     sch->tasks[sch->size - 1].interval = 0;  // No es periódico
 }
 
+// Programa una tarea para ejecutarse periódicamente con un intervalo dado
 void scheduleEvery(Scheduler* sch, int interval, void (*task)()) {
     sch->size++;
     sch->tasks = realloc(sch->tasks, sch->size * sizeof(ScheduledTask));
@@ -34,6 +38,7 @@ void scheduleEvery(Scheduler* sch, int interval, void (*task)()) {
     sch->tasks[sch->size - 1].interval = interval;
 }
 
+// Programa una tarea para ejecutarse periódicamente con un intervalo dado
 void run(Scheduler* sch) {
     while (1) {
         time_t now = time(NULL);
@@ -56,46 +61,32 @@ void run(Scheduler* sch) {
     }
 }
 
-void task2() {
-    // Reemplaza con la ruta completa de tu script Bash
-    char* scriptPath = "/home/laura/helloworld/test.sh";
-    printf("OK2 ! Running script: %s\n", scriptPath);
+// Función para ejecutar un script Bash
+void task1() {
+    // Ruta completa al script Bash a ejecutar
+    char* scriptPath = "/etc/scripts/utils/get-id.sh";
+    printf("Ejecutando script 1: %s\n", scriptPath);
 
     // Ejecutar el script Bash como un comando del sistema
     char command[100];
-    sprintf(command, "bash %s", scriptPath);
-    int result = system(command);
-
-    // Verificar el resultado de la ejecución del script
-    if (result == 0) {
-        printf("Script executed successfully.\n");
-    } else {
-        fprintf(stderr, "Error executing script. Exit code: %d\n", result);
-    }
+    sprintf(command, "bash %s > /etc/scripts/utils/identifier/id", scriptPath); // Ruta donde se guardará el resultado
+    system(command);
 }
 
-void task3() {
-    printf("--3\n");
-}
-
-void task1(Scheduler* sch) {
-    printf("OK1 ! now is   %ld\n", time(NULL));
-
-    scheduleAt(sch, time(NULL) + 1, task2);
-    scheduleAt(sch, time(NULL) + 2, task2);
-    scheduleAt(sch, time(NULL) + 3, task2);
+void task2() {
+        printf("--3\n");
 }
 
 int main() {
     Scheduler sch = {NULL, 0};
 
-    scheduleAt(&sch, time(NULL) + 15, task1);
-    scheduleAt(&sch, time(NULL) + 20, task1);
-    scheduleAt(&sch, time(NULL) + 25, task1);
-    scheduleAt(&sch, time(NULL) + 2, task2);
+    // Programa la tarea 1 para ejecutarse en un tiempo determinado (modificar el tiempo aquí)
+    scheduleAt(&sch, time(NULL) + 4, task1); // Ejemplo: 3600 segundos = 1 hora
 
-    scheduleEvery(&sch, 1, task3);
+    // Programa la tarea 2 para ejecutarse cada 10 minutos
+    scheduleEvery(&sch, 3, task2); // 600 segundos = 10 minutos
 
+    // Ejecuta el planificador
     run(&sch);
 
     return 0;

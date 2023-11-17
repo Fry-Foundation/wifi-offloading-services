@@ -52,6 +52,7 @@ define Package/wayru-os-services/install
 		$(INSTALL_DIR) $(1)/etc/init.d
 		$(INSTALL_DIR) $(1)/etc/uci-defaults
 		$(INSTALL_DIR) $(1)/etc/config
+		$(INSTALL_DIR) $(1)/etc/wayru		
 		$(INSTALL_DIR) $(1)/usr/lib/wayru-os-services
 
 		$(INSTALL_BIN) $(PKG_BUILD_DIR)/wayru-os-services $(1)/usr/bin/

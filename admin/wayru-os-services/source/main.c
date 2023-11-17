@@ -82,15 +82,16 @@ void run(Scheduler* sch) {
 
 // Función para ejecutar un script Bash
 void task1() {
-    // // Ruta completa al script Bash a ejecutar
-    // char* scriptPath = "/etc/scripts/utils/get-id.sh";
-    // printf("Ejecutando script 1: %s\n", scriptPath);
+    // Ruta completa al script Bash a ejecutar
+    // char* scriptPath = "../files/get-id.sh";
+    char* scriptPath = "/usr/lib/wayru-os-services/get-id.sh";
+    printf("Ejecutando script 1: %s\n", scriptPath);
 
-    // // Ejecutar el script Bash como un comando del sistema
-    // char command[100];
-    // sprintf(command, "bash %s > /etc/scripts/utils/identifier/id", scriptPath); // Ruta donde se guardará el resultado
-    // system(command);
-    printf("ejecutando tarea que solo se deberia ejecutar 1 vez\n");
+    // Ejecutar el script Bash como un comando del sistema
+    char command[100];
+    // sprintf(command, "bash %s > ../files/id", scriptPath); // Ruta donde se guardará el resultado
+    sprintf(command, "bash %s > /etc/wayru/id", scriptPath); // Ruta donde se guardará el resultado
+    system(command);
 }
 
 void task2() {

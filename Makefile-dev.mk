@@ -13,18 +13,19 @@ all: clean compile copy-scripts run
 # Compile the program
 compile:
 	mkdir -p $(DIST_PATH)
-	gcc -o $(DIST_PATH)/$(EXECUTABLE) $(SOURCE_PATH)/main.c
+	gcc -o $(DIST_PATH)/$(EXECUTABLE) $(SOURCE_PATH)/main.c $(SOURCE_PATH)/script_runner.c
 
 # Copy scripts and data files
 copy-scripts:
 	mkdir -p $(DIST_SCRIPTS_PATH)
 	cp $(SOURCE_PATH)/scripts/dev/* $(DIST_SCRIPTS_PATH)
+	chmod +x $(DIST_SCRIPTS_PATH)/*
 
 	mkdir -p $(DIST_DATA_PATH)
 
 # Run the program
 run:
-	./$(DIST_PATH)/$(EXECUTABLE) --dev
+	cd $(DIST_PATH) && ./$(EXECUTABLE) --dev
 
 # Clean the build
 clean:

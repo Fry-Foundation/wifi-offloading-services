@@ -4,6 +4,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "script_runner.h"
+
 const char DEV_PATH[] = ".";
 const char OPENWRT_PATH[] = "/etc/wayru";
 const char* basePath = "";
@@ -97,6 +99,7 @@ void task1() {
     
     if (devMode) {
         printf("Running script: %s\n", scriptFile);
+        runScriptAndSaveOutput(scriptFile, dataFile);
     } else {
         // Execute a bash script as a system command
         // @TODO: Review whether this can run on OpenWrt since bash is not installed by default, they use ash

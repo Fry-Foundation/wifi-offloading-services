@@ -1,7 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <unistd.h>
+
+const char DEV_PATH[] = ".";
+const char OPENWRT_PATH[] = "/etc/wayru";
+const char* basePath = "";
+char scriptsPath[256];
+char dataPath[256];
+int devMode = 0;
 
 // Estructura para representar una tarea programada
 struct ScheduledTask {
@@ -80,18 +88,22 @@ void run(Scheduler* sch) {
     }
 }
 
-// Función para ejecutar un script Bash
 void task1() {
-    // Ruta completa al script Bash a ejecutar
-    // char* scriptPath = "../files/get-id.sh";
-    char* scriptPath = "/usr/lib/wayru-os-services/get-id.sh";
-    printf("Ejecutando script 1: %s\n", scriptPath);
-
-    // Ejecutar el script Bash como un comando del sistema
-    char command[100];
-    // sprintf(command, "bash %s > ../files/id", scriptPath); // Ruta donde se guardará el resultado
-    sprintf(command, "bash %s > /etc/wayru/id", scriptPath); // Ruta donde se guardará el resultado
-    system(command);
+    // Set up the script and data (result) file paths
+    char scriptFile[256];
+    char dataFile[256];
+    snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/get-id.sh");
+    snprintf(dataFile, sizeof(dataFile), "%s%s", dataPath, "/id");
+    
+    if (devMode) {
+        printf("Running script: %s\n", scriptFile);
+    } else {
+        // Execute a bash script as a system command
+        // @TODO: Review whether this can run on OpenWrt since bash is not installed by default, they use ash
+        char command[100];
+        sprintf(command, "bash %s > %s", scriptFile, dataFile);
+        system(command);
+    }
 }
 
 void task2() {
@@ -102,7 +114,28 @@ void task3() {
         printf("--5\n");
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+    // Init
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--dev") == 0) {
+            devMode = 1;
+            break;
+        }
+    }
+
+    if (devMode == 1) {
+        basePath = DEV_PATH;
+    } else {
+        basePath = OPENWRT_PATH;
+    }
+
+    snprintf(scriptsPath, sizeof(scriptsPath), "%s%s", basePath, "/scripts");
+    snprintf(dataPath, sizeof(dataPath), "%s%s", basePath, "/data");
+
+    printf("basePath: %s\n", basePath);
+    printf("scriptsPath: %s\n", scriptsPath);
+    printf("dataPath: %s\n", dataPath);
+
     Scheduler sch = {NULL, 0};
 
     // Test #1 (mixed)

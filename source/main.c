@@ -21,6 +21,33 @@ const char DEV_PATH[] = ".";
 const char OPENWRT_PATH[] = "/etc/wayru";
 const char *basePath = "";
 
+void init(int argc, char *argv[]) {
+    for (int i = 1; i < argc; i++)
+    {
+        if (strcmp(argv[i], "--dev") == 0)
+        {
+            sharedStore.devMode = 1;
+            break;
+        }
+    }
+
+    if (sharedStore.devMode == 1)
+    {
+        basePath = DEV_PATH;
+    }
+    else
+    {
+        basePath = OPENWRT_PATH;
+    }
+
+    snprintf(sharedStore.scriptsPath, sizeof(sharedStore.scriptsPath), "%s%s", basePath, "/scripts");
+    snprintf(sharedStore.dataPath, sizeof(sharedStore.dataPath), "%s%s", basePath, "/data");
+
+    printf("basePath: %s\n", basePath);
+    printf("scriptsPath: %s\n", sharedStore.scriptsPath);
+    printf("dataPath: %s\n", sharedStore.dataPath);
+}
+
 void* schedulerRoutine(void *arg) {
     Scheduler *sch = (Scheduler *)arg;
 
@@ -55,31 +82,7 @@ void* httpServerRoutine(void *arg) {
 
 int main(int argc, char *argv[])
 {
-    // Init
-    for (int i = 1; i < argc; i++)
-    {
-        if (strcmp(argv[i], "--dev") == 0)
-        {
-            sharedStore.devMode = 1;
-            break;
-        }
-    }
-
-    if (sharedStore.devMode == 1)
-    {
-        basePath = DEV_PATH;
-    }
-    else
-    {
-        basePath = OPENWRT_PATH;
-    }
-
-    snprintf(sharedStore.scriptsPath, sizeof(sharedStore.scriptsPath), "%s%s", basePath, "/scripts");
-    snprintf(sharedStore.dataPath, sizeof(sharedStore.dataPath), "%s%s", basePath, "/data");
-
-    printf("basePath: %s\n", basePath);
-    printf("scriptsPath: %s\n", sharedStore.scriptsPath);
-    printf("dataPath: %s\n", sharedStore.dataPath);
+    init(argc, argv);
     
     Scheduler sch = {NULL, 0};
 

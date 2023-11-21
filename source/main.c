@@ -3,7 +3,6 @@
 #include <string.h>
 #include "pthread.h"
 
-#include "script_runner.h"
 #include "scheduler.h"
 #include "server.h"
 #include "shared_store.h"

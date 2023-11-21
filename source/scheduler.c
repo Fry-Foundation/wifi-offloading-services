@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "scheduler.h"
+#include "script_runner.h"
 
 #include "shared_store.h"
 

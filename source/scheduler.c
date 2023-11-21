@@ -2,10 +2,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "scheduler.h"
+#include "script_runner.h"
 
-char scriptsPath[256];
-char dataPath[256];
-int devMode = 0;
+#include "shared_store.h"
 
 // Programa una tarea para ejecutarse en un momento específico
 void scheduleAt(Scheduler *sch, time_t time, void (*task)())
@@ -85,10 +84,13 @@ void task1()
     // Set up the script and data (result) file paths
     char scriptFile[256];
     char dataFile[256];
-    snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/get-id.sh");
-    snprintf(dataFile, sizeof(dataFile), "%s%s", dataPath, "/id");
 
-    if (devMode)
+    pthread_mutex_lock(&sharedStore.mutex);
+    snprintf(scriptFile, sizeof(scriptFile), "%s%s", &sharedStore.scriptsPath, "/get-id.sh");
+    snprintf(dataFile, sizeof(dataFile), "%s%s", &sharedStore.dataPath, "/id");
+    pthread_mutex_unlock(&sharedStore.mutex);
+
+    if (&sharedStore.devMode)
     {
         printf("Running script: %s\n", scriptFile);
         runScriptAndSaveOutput(scriptFile, dataFile);

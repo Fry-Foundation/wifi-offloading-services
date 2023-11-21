@@ -1,35 +1,43 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "script_runner.h"
+#include "pthread.h"
 
 #include "scheduler.h"
+#include "server.h"
+#include "shared_store.h"
+
+SharedStore sharedStore = {
+    .devMode = 0,
+    .scriptsPath = "",
+    .dataPath = "",
+    .id = "",
+    .mac = "",
+    .model = "",
+    .runServer = 1,
+    .serverCond = PTHREAD_COND_INITIALIZER,
+    .mutex = PTHREAD_MUTEX_INITIALIZER,
+};
 
 #include "requests.h"
 
 const char DEV_PATH[] = ".";
 const char OPENWRT_PATH[] = "/etc/wayru";
 const char *basePath = "";
-char scriptsPath[256];
-char dataPath[256];
-int devModeMain = 0;
 const char *url = "https://catfact.ninja/fact";
 const char *filePath = "./data/test";
 
-int main(int argc, char *argv[])
-{
-    // Init
+void init(int argc, char *argv[]) {
     for (int i = 1; i < argc; i++)
     {
         if (strcmp(argv[i], "--dev") == 0)
         {
-            devModeMain = 1;
+            sharedStore.devMode = 1;
             break;
         }
     }
 
-    if (devModeMain == 1)
+    if (sharedStore.devMode == 1)
     {
         basePath = DEV_PATH;
     }
@@ -38,25 +46,21 @@ int main(int argc, char *argv[])
         basePath = OPENWRT_PATH;
     }
 
-    snprintf(scriptsPath, sizeof(scriptsPath), "%s%s", basePath, "/scripts");
-    snprintf(dataPath, sizeof(dataPath), "%s%s", basePath, "/data");
+    snprintf(sharedStore.scriptsPath, sizeof(sharedStore.scriptsPath), "%s%s", basePath, "/scripts");
+    snprintf(sharedStore.dataPath, sizeof(sharedStore.dataPath), "%s%s", basePath, "/data");
 
     printf("basePath: %s\n", basePath);
-    printf("scriptsPath: %s\n", scriptsPath);
-    printf("dataPath: %s\n", dataPath);
+    printf("scriptsPath: %s\n", sharedStore.scriptsPath);
+    printf("dataPath: %s\n", sharedStore.dataPath);
+}
 
-    printf("Realizando solicitud GET...\n");
-    int resultGet = performHttpGet(url, filePath);
-    if (resultGet == 0)
-    {
-        printf("Solicitud GET exitosa.\n");
-    }
-    else
-    {
-        printf("Fallo en la solicitud GET.\n");
-    }
+void* httpServerRoutine(void *arg) {
+    startHttpServer();
+    return NULL;
+}
 
-    Scheduler sch = {NULL, 0};
+void* schedulerRoutine(void *arg) {
+    Scheduler *sch = (Scheduler *)arg;
 
     // Test #1 (mixed)
     // scheduleAt(&sch, time(NULL) + 4, task1);
@@ -73,13 +77,42 @@ int main(int argc, char *argv[])
     // scheduleAt(&sch, time(NULL) + 8, task1);
 
     // Programa la tarea 1 para ejecutarse en un tiempo determinado (modificar el tiempo aquí)
-    scheduleAt(&sch, time(NULL) + 10, task1); // Ejemplo: 3600 segundos = 1 hora
+    scheduleAt(sch, time(NULL) + 10, task1); // Ejemplo: 3600 segundos = 1 hora
 
     // Programa la tarea 2 para ejecutarse cada 10 minutos
-    scheduleEvery(&sch, 4, task2); // 600 segundos = 10 minutos
+    scheduleEvery(sch, 4, task2); // 600 segundos = 10 minutos
 
-    // Ejecuta el planificador
-    run(&sch);
+    run(sch);
+    return NULL;
+}
+
+int main(int argc, char *argv[])
+{
+    init(argc, argv);
+    
+    printf("Realizando solicitud GET...\n");
+    int resultGet = performHttpGet(url, filePath);
+    if (resultGet == 0)
+    {
+        printf("Solicitud GET exitosa.\n");
+    }
+    else
+    {
+        printf("Fallo en la solicitud GET.\n");
+    }
+  
+    Scheduler sch = {NULL, 0};
+
+    pthread_t httpServerThread, schedulerThread;
+
+    pthread_create(&httpServerThread, NULL, httpServerRoutine, NULL);
+    pthread_create(&schedulerThread, NULL, schedulerRoutine, &sch);
+
+    pthread_join(httpServerThread, NULL);
+    pthread_join(schedulerThread, NULL);
+
+    pthread_cond_destroy(&sharedStore.serverCond);
+    pthread_mutex_destroy(&sharedStore.mutex);    
 
     // HTTP REQUESTS
 

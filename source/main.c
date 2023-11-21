@@ -5,13 +5,21 @@
 #include "script_runner.h"
 
 #include "scheduler.h"
+#include "shared_store.h"
+
+SharedStore sharedStore = {
+    .devMode = 0,
+    .scriptsPath = "",
+    .dataPath = "",
+    .id = "",
+    .mac = "",
+    .model = "",
+    .mutex = PTHREAD_MUTEX_INITIALIZER,
+};
 
 const char DEV_PATH[] = ".";
 const char OPENWRT_PATH[] = "/etc/wayru";
 const char *basePath = "";
-char scriptsPath[256];
-char dataPath[256];
-int devModeMain = 0;
 
 // // Estructura para representar una tarea programada
 // struct ScheduledTask {
@@ -130,12 +138,12 @@ int main(int argc, char *argv[])
     {
         if (strcmp(argv[i], "--dev") == 0)
         {
-            devModeMain = 1;
+            sharedStore.devMode = 1;
             break;
         }
     }
 
-    if (devModeMain == 1)
+    if (sharedStore.devMode == 1)
     {
         basePath = DEV_PATH;
     }
@@ -144,12 +152,12 @@ int main(int argc, char *argv[])
         basePath = OPENWRT_PATH;
     }
 
-    snprintf(scriptsPath, sizeof(scriptsPath), "%s%s", basePath, "/scripts");
-    snprintf(dataPath, sizeof(dataPath), "%s%s", basePath, "/data");
+    snprintf(sharedStore.scriptsPath, sizeof(sharedStore.scriptsPath), "%s%s", basePath, "/scripts");
+    snprintf(sharedStore.dataPath, sizeof(sharedStore.dataPath), "%s%s", basePath, "/data");
 
     printf("basePath: %s\n", basePath);
-    printf("scriptsPath: %s\n", scriptsPath);
-    printf("dataPath: %s\n", dataPath);
+    printf("scriptsPath: %s\n", sharedStore.scriptsPath);
+    printf("dataPath: %s\n", sharedStore.dataPath);
 
     Scheduler sch = {NULL, 0};
 

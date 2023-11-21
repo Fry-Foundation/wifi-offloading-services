@@ -10,6 +10,8 @@ typedef struct {
     char id[256];
     char mac[256];
     char model[256];
+    int runServer;
+    pthread_cond_t serverCond;
     pthread_mutex_t mutex;
 } SharedStore;
 

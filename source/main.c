@@ -5,6 +5,7 @@
 
 #include "script_runner.h"
 #include "scheduler.h"
+#include "server.h"
 #include "shared_store.h"
 
 SharedStore sharedStore = {
@@ -14,6 +15,8 @@ SharedStore sharedStore = {
     .id = "",
     .mac = "",
     .model = "",
+    .runServer = 1,
+    .serverCond = PTHREAD_COND_INITIALIZER,
     .mutex = PTHREAD_MUTEX_INITIALIZER,
 };
 
@@ -48,6 +51,11 @@ void init(int argc, char *argv[]) {
     printf("dataPath: %s\n", sharedStore.dataPath);
 }
 
+void* httpServerRoutine(void *arg) {
+    startHttpServer();
+    return NULL;
+}
+
 void* schedulerRoutine(void *arg) {
     Scheduler *sch = (Scheduler *)arg;
 
@@ -75,25 +83,21 @@ void* schedulerRoutine(void *arg) {
     return NULL;
 }
 
-void* httpServerRoutine(void *arg) {
-    // @TODO Start HTTP server
-    return NULL;
-}
-
 int main(int argc, char *argv[])
 {
     init(argc, argv);
     
     Scheduler sch = {NULL, 0};
 
-    pthread_t schedulerThread, httpServerThread;
+    pthread_t httpServerThread, schedulerThread;
 
-    pthread_create(&schedulerThread, NULL, schedulerRoutine, &sch);
     pthread_create(&httpServerThread, NULL, httpServerRoutine, NULL);
+    pthread_create(&schedulerThread, NULL, schedulerRoutine, &sch);
 
-    pthread_join(schedulerThread, NULL);
     pthread_join(httpServerThread, NULL);
+    pthread_join(schedulerThread, NULL);
 
+    pthread_cond_destroy(&sharedStore.serverCond);
     pthread_mutex_destroy(&sharedStore.mutex);    
 
     return 0;

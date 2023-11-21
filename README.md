@@ -4,18 +4,45 @@ Wayru services on OpenWrt:
 - Onboarding
 - API
 
-## Installation
-Clone the repository.
+## Dependencies
+> Work in progress. Dependencies should be version controlled for testing and production builds.
+
+### Install the `libmicrohttpd` dependency
+
+**Debian-based linux**
+
+Install this package with `apt-get`:
+
+```bash
+sudo apt-get update
+sudo apt-get install libmicrohttpd-dev
+```
+
+**macOS**
+
+Install this package with `brew`:
+
+```bash
+berw update
+brew install libmicrohttpd
+```
+
+**Windows**
+
+Not tested yet, but there are Windows binaries available: https://www.gnu.org/software/libmicrohttpd/
+
+## Clone the repository
 
 ```bash
 git clone https://github.com/Wayru-Network/wayru-os-services.git
+
 ```
 
 ## Running
-To run the project locally use the following command:
+To run the project locally you can run the `dev` script found at the root of this project:
 
 ```bash
-make dev
+bash dev
 ```
 
 ## Compiling for OpenWrt

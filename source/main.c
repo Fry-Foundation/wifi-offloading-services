@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "pthread.h"
 
 #include "script_runner.h"
-
 #include "scheduler.h"
 #include "shared_store.h"
 
@@ -20,6 +20,38 @@ SharedStore sharedStore = {
 const char DEV_PATH[] = ".";
 const char OPENWRT_PATH[] = "/etc/wayru";
 const char *basePath = "";
+
+void* schedulerRoutine(void *arg) {
+    Scheduler *sch = (Scheduler *)arg;
+
+    // Test #1 (mixed)
+    // scheduleAt(&sch, time(NULL) + 4, task1);
+    // scheduleEvery(&sch, 3, task2);
+    // scheduleAt(&sch, time(NULL) + 8, task1);
+    // scheduleEvery(&sch, 5, task2);
+
+    // Test #2 (only periodic)
+    // scheduleEvery(&sch, 3, task2);
+    // scheduleEvery(&sch, 5, task3);
+
+    // Test #3 (only non-periodic)
+    // scheduleAt(&sch, time(NULL) + 4, task1);
+    // scheduleAt(&sch, time(NULL) + 8, task1);
+
+    // Programa la tarea 1 para ejecutarse en un tiempo determinado (modificar el tiempo aquí)
+    scheduleAt(sch, time(NULL) + 10, task1); // Ejemplo: 3600 segundos = 1 hora
+
+    // Programa la tarea 2 para ejecutarse cada 10 minutos
+    scheduleEvery(sch, 4, task2); // 600 segundos = 10 minutos
+
+    run(sch);
+    return NULL;
+}
+
+void* httpServerRoutine(void *arg) {
+    // @TODO Start HTTP server
+    return NULL;
+}
 
 int main(int argc, char *argv[])
 {
@@ -48,31 +80,18 @@ int main(int argc, char *argv[])
     printf("basePath: %s\n", basePath);
     printf("scriptsPath: %s\n", sharedStore.scriptsPath);
     printf("dataPath: %s\n", sharedStore.dataPath);
-
+    
     Scheduler sch = {NULL, 0};
 
-    // Test #1 (mixed)
-    // scheduleAt(&sch, time(NULL) + 4, task1);
-    // scheduleEvery(&sch, 3, task2);
-    // scheduleAt(&sch, time(NULL) + 8, task1);
-    // scheduleEvery(&sch, 5, task2);
+    pthread_t schedulerThread, httpServerThread;
 
-    // Test #2 (only periodic)
-    // scheduleEvery(&sch, 3, task2);
-    // scheduleEvery(&sch, 5, task3);
+    pthread_create(&schedulerThread, NULL, schedulerRoutine, &sch);
+    pthread_create(&httpServerThread, NULL, httpServerRoutine, NULL);
 
-    // Test #3 (only non-periodic)
-    // scheduleAt(&sch, time(NULL) + 4, task1);
-    // scheduleAt(&sch, time(NULL) + 8, task1);
+    pthread_join(schedulerThread, NULL);
+    pthread_join(httpServerThread, NULL);
 
-    // Programa la tarea 1 para ejecutarse en un tiempo determinado (modificar el tiempo aquí)
-    scheduleAt(&sch, time(NULL) + 10, task1); // Ejemplo: 3600 segundos = 1 hora
-
-    // Programa la tarea 2 para ejecutarse cada 10 minutos
-    scheduleEvery(&sch, 4, task2); // 600 segundos = 10 minutos
-
-    // Ejecuta el planificador
-    run(&sch);
+    pthread_mutex_destroy(&sharedStore.mutex);    
 
     return 0;
 }

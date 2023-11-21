@@ -19,9 +19,13 @@ SharedStore sharedStore = {
     .mutex = PTHREAD_MUTEX_INITIALIZER,
 };
 
+#include "requests.h"
+
 const char DEV_PATH[] = ".";
 const char OPENWRT_PATH[] = "/etc/wayru";
 const char *basePath = "";
+const char *url = "https://catfact.ninja/fact";
+const char *filePath = "./data/test";
 
 void init(int argc, char *argv[]) {
     for (int i = 1; i < argc; i++)
@@ -86,6 +90,17 @@ int main(int argc, char *argv[])
 {
     init(argc, argv);
     
+    printf("Realizando solicitud GET...\n");
+    int resultGet = performHttpGet(url, filePath);
+    if (resultGet == 0)
+    {
+        printf("Solicitud GET exitosa.\n");
+    }
+    else
+    {
+        printf("Fallo en la solicitud GET.\n");
+    }
+  
     Scheduler sch = {NULL, 0};
 
     pthread_t httpServerThread, schedulerThread;
@@ -98,6 +113,10 @@ int main(int argc, char *argv[])
 
     pthread_cond_destroy(&sharedStore.serverCond);
     pthread_mutex_destroy(&sharedStore.mutex);    
+
+    // HTTP REQUESTS
+
+    // GET
 
     return 0;
 }

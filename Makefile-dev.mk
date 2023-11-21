@@ -13,7 +13,7 @@ all: clean compile copy-scripts run
 # Compile the program
 compile:
 	mkdir -p $(DIST_PATH)
-	gcc -o $(DIST_PATH)/$(EXECUTABLE) $(SOURCE_PATH)/main.c $(SOURCE_PATH)/script_runner.c $(SOURCE_PATH)/server.c $(SOURCE_PATH)/scheduler.c -lpthread -lmicrohttpd
+	gcc -o $(DIST_PATH)/$(EXECUTABLE) $(SOURCE_PATH)/main.c $(SOURCE_PATH)/script_runner.c $(SOURCE_PATH)/server.c $(SOURCE_PATH)/scheduler.c $(SOURCE_PATH)/requests.c -lpthread -lmicrohttpd -lcurl
 
 # Copy scripts and data files
 copy-scripts:

@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#define PORT 48500
+#define PORT 40500
 #define WAYRU_OS_VERSION "2.0.0"
 #define WAYRU_OS_SERVICES_VERSION "1.0.0"
 

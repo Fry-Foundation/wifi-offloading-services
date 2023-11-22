@@ -6,8 +6,6 @@
 #include <stdio.h>
 
 #define PORT 40500
-#define WAYRU_OS_VERSION "2.0.0"
-#define WAYRU_OS_SERVICES_VERSION "1.0.0"
 
 static int answerToConnection(
     void *cls,
@@ -37,13 +35,8 @@ static int answerToConnection(
     snprintf(
         json_response,
         sizeof(json_response),
-        "{ \"id\": \"%s\", \"mac\": \"%s\", \"model\": \"%s\", "
-        "\"wayru_os_version\": \"%s\", \"wayru_os_services_version\": \"%s\" }",
-        sharedStore.id,
-        sharedStore.mac,
-        sharedStore.model,
-        sharedStore.osVersion,
-        sharedStore.servicesVersion);
+        "{ \"id\": \"%s\" }",
+        sharedStore.id);
 
     pthread_mutex_unlock(&sharedStore.mutex);
 
@@ -86,7 +79,7 @@ void startHttpServer()
 }
 
 void stopHttpServer()
-{    
+{
     pthread_mutex_lock(&sharedStore.mutex);
     sharedStore.runServer = 0;
     pthread_cond_signal(&sharedStore.serverCond);

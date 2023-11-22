@@ -32,19 +32,20 @@ char *model = NULL;
 char *osVersion = NULL;
 char *servicesVersion = NULL;
 
-void init(int argc, char *argv[]) {
+void init(int argc, char *argv[])
+{
     // Determine if we are running in dev mode
     for (int i = 1; i < argc; i++)
     {
         if (strcmp(argv[i], "--dev") == 0)
         {
-            sharedStore.devMode = 1;
+            devMode = 1;
             break;
         }
     }
 
     // Set up paths
-    if (sharedStore.devMode == 1)
+    if (devMode == 1)
     {
         basePath = DEV_PATH;
     }
@@ -53,13 +54,13 @@ void init(int argc, char *argv[]) {
         basePath = OPENWRT_PATH;
     }
 
-    snprintf(sharedStore.scriptsPath, sizeof(sharedStore.scriptsPath), "%s%s", basePath, "/scripts");
-    snprintf(sharedStore.dataPath, sizeof(sharedStore.dataPath), "%s%s", basePath, "/data");
+    snprintf(scriptsPath, sizeof(scriptsPath), "%s%s", basePath, "/scripts");
+    snprintf(dataPath, sizeof(dataPath), "%s%s", basePath, "/data");
 
     printf("basePath: %s\n", basePath);
-    printf("scriptsPath: %s\n", sharedStore.scriptsPath);
-    printf("dataPath: %s\n", sharedStore.dataPath);
-    
+    printf("scriptsPath: %s\n", scriptsPath);
+    printf("dataPath: %s\n", dataPath);
+
     char scriptFile[256];
     char dataFile[256];
 
@@ -72,8 +73,8 @@ void init(int argc, char *argv[]) {
     char *servicesVersion = readServicesVersion();
     printf("Services version: %s\n", servicesVersion);
 
-    sharedStore.osVersion = strdup(osVersion);
-    sharedStore.servicesVersion = strdup(servicesVersion);
+    osVersion = strdup(osVersion);
+    servicesVersion = strdup(servicesVersion);
 
     free(osVersion);
     free(servicesVersion);
@@ -82,8 +83,8 @@ void init(int argc, char *argv[]) {
     // - get mac
     // - get model
     // - base64 encode
-    snprintf(scriptFile, sizeof(scriptFile), "%s%s", sharedStore.scriptsPath, "/get-mac.sh");
-    snprintf(dataFile, sizeof(dataFile), "%s%s", sharedStore.dataPath, "/mac");
+    snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/get-mac.sh");
+    snprintf(dataFile, sizeof(dataFile), "%s%s", dataPath, "/mac");
     printf("Running mac script: %s\n", scriptFile);
     char *mac = runScript(scriptFile);
     if (strchr(mac, '\n') != NULL)
@@ -91,8 +92,8 @@ void init(int argc, char *argv[]) {
         mac[strcspn(mac, "\n")] = 0;
     }
 
-    snprintf(scriptFile, sizeof(scriptFile), "%s%s", sharedStore.scriptsPath, "/get-model.sh");
-    snprintf(dataFile, sizeof(dataFile), "%s%s", sharedStore.dataPath, "/model");
+    snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/get-model.sh");
+    snprintf(dataFile, sizeof(dataFile), "%s%s", dataPath, "/model");
     printf("Running id script: %s\n", scriptFile);
     char *model = runScript(scriptFile);
     if (strchr(model, '\n') != NULL)
@@ -104,28 +105,31 @@ void init(int argc, char *argv[]) {
     printf("model: %s\n", model);
 
     char *encodedId = generateId(mac, model);
-    if (encodedId == NULL) {
+    if (encodedId == NULL)
+    {
         printf("Failed to generate ID\n");
         exit(1);
     }
 
     printf("Encoded ID: %s\n", encodedId);
 
-    sharedStore.mac = strdup(mac);
-    sharedStore.model = strdup(model);
-    sharedStore.id = strdup(encodedId);
+    mac = strdup(mac);
+    model = strdup(model);
+    id = strdup(encodedId);
 
     free(mac);
     free(model);
     free(encodedId);
 }
 
-void* httpServerRoutine(void *arg) {
+void *httpServerRoutine(void *arg)
+{
     startHttpServer();
     return NULL;
 }
 
-void* schedulerRoutine(void *arg) {
+void *schedulerRoutine(void *arg)
+{
     Scheduler *sch = (Scheduler *)arg;
 
     // Test #1 (mixed)
@@ -152,10 +156,10 @@ void* schedulerRoutine(void *arg) {
 int main(int argc, char *argv[])
 {
     init(argc, argv);
-    
+
     printf("Realizando solicitud GET...\n");
     char httpTestFile[256];
-    snprintf(httpTestFile, sizeof(httpTestFile), "%s%s", sharedStore.dataPath, "/test");
+    snprintf(httpTestFile, sizeof(httpTestFile), "%s%s", dataPath, "/test");
     int resultGet = performHttpGet(url, httpTestFile);
     if (resultGet == 0)
     {
@@ -165,7 +169,7 @@ int main(int argc, char *argv[])
     {
         printf("Fallo en la solicitud GET.\n");
     }
-  
+
     Scheduler sch = {NULL, 0};
 
     pthread_t httpServerThread, schedulerThread;
@@ -180,7 +184,7 @@ int main(int argc, char *argv[])
     pthread_join(schedulerThread, NULL);
 
     pthread_cond_destroy(&sharedStore.serverCond);
-    pthread_mutex_destroy(&sharedStore.mutex);    
+    pthread_mutex_destroy(&sharedStore.mutex);
 
     // HTTP REQUESTS
 

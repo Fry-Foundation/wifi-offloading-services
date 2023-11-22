@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include "scheduler.h"
 #include "shared_store.h"
+#include "script_runner.h"
 
 // Programa una tarea para ejecutarse en un momento específico
 void scheduleAt(Scheduler *sch, time_t time, void (*task)())

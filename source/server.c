@@ -7,6 +7,8 @@
 
 #define PORT 40500
 
+char *id = NULL;
+
 static int answerToConnection(
     void *cls,
     struct MHD_Connection *connection,
@@ -30,13 +32,13 @@ static int answerToConnection(
     char json_response[1024];
     pthread_mutex_lock(&sharedStore.mutex);
 
-    printf("ID: %s\n", sharedStore.id);
+    printf("ID: %s\n", id);
 
     snprintf(
         json_response,
         sizeof(json_response),
         "{ \"id\": \"%s\" }",
-        sharedStore.id);
+        id);
 
     pthread_mutex_unlock(&sharedStore.mutex);
 

@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "scheduler.h"
-#include "script_runner.h"
-
 #include "shared_store.h"
 
 // Programa una tarea para ejecutarse en un momento específico
@@ -76,32 +74,6 @@ void run(Scheduler *sch)
         }
 
         usleep(100000); // Esperar 100 ms
-    }
-}
-
-void task1()
-{
-    // Set up the script and data (result) file paths
-    char scriptFile[256];
-    char dataFile[256];
-
-    pthread_mutex_lock(&sharedStore.mutex);
-    snprintf(scriptFile, sizeof(scriptFile), "%s%s", &sharedStore.scriptsPath, "/get-id.sh");
-    snprintf(dataFile, sizeof(dataFile), "%s%s", &sharedStore.dataPath, "/id");
-    pthread_mutex_unlock(&sharedStore.mutex);
-
-    if (&sharedStore.devMode)
-    {
-        printf("Running script: %s\n", scriptFile);
-        runScriptAndSaveOutput(scriptFile, dataFile);
-    }
-    else
-    {
-        // Execute a bash script as a system command
-        // @TODO: Review whether this can run on OpenWrt since bash is not installed by default, they use ash
-        char command[100];
-        sprintf(command, "bash %s > %s", scriptFile, dataFile);
-        system(command);
     }
 }
 

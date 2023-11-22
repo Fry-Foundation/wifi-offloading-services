@@ -32,6 +32,8 @@ static int answerToConnection(
     char json_response[1024];
     pthread_mutex_lock(&sharedStore.mutex);
 
+    printf("ID: %s\n", sharedStore.id);
+
     snprintf(
         json_response,
         sizeof(json_response),

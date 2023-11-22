@@ -2,18 +2,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include "pthread.h"
-
 #include "scheduler.h"
 #include "server.h"
 #include "shared_store.h"
+#include "utils/script_runner.h"
+#include "utils/generate_id.h"
 
 SharedStore sharedStore = {
     .devMode = 0,
     .scriptsPath = "",
     .dataPath = "",
-    .id = "",
-    .mac = "",
-    .model = "",
+    .id = NULL,
+    .mac = NULL,
+    .model = NULL,
     .runServer = 1,
     .serverCond = PTHREAD_COND_INITIALIZER,
     .mutex = PTHREAD_MUTEX_INITIALIZER,
@@ -28,6 +29,7 @@ const char *url = "https://catfact.ninja/fact";
 const char *filePath = "./data/test";
 
 void init(int argc, char *argv[]) {
+    // Determine if we are running in dev mode
     for (int i = 1; i < argc; i++)
     {
         if (strcmp(argv[i], "--dev") == 0)
@@ -37,6 +39,7 @@ void init(int argc, char *argv[]) {
         }
     }
 
+    // Set up paths
     if (sharedStore.devMode == 1)
     {
         basePath = DEV_PATH;
@@ -52,6 +55,45 @@ void init(int argc, char *argv[]) {
     printf("basePath: %s\n", basePath);
     printf("scriptsPath: %s\n", sharedStore.scriptsPath);
     printf("dataPath: %s\n", sharedStore.dataPath);
+    
+    char scriptFile[256];
+    char dataFile[256];
+
+    // Set up id
+    // - get mac
+    // - get model
+    // - base64 encode
+    snprintf(scriptFile, sizeof(scriptFile), "%s%s", sharedStore.scriptsPath, "/get-mac.sh");
+    snprintf(dataFile, sizeof(dataFile), "%s%s", sharedStore.dataPath, "/mac");
+    printf("Running mac script: %s\n", scriptFile);
+    char *mac = runScript(scriptFile);
+    mac[strcspn(mac, "\n")] = 0;
+
+    snprintf(scriptFile, sizeof(scriptFile), "%s%s", sharedStore.scriptsPath, "/get-model.sh");
+    snprintf(dataFile, sizeof(dataFile), "%s%s", sharedStore.dataPath, "/model");
+    printf("Running id script: %s\n", scriptFile);
+    char *model = runScript(scriptFile);
+    model[strcspn(model, "\n")] = 0;
+
+    printf("mac: %s\n", mac);
+    printf("model: %s\n", model);
+
+    char *encodedId = generateId(mac, model);
+    if (encodedId == NULL) {
+        printf("Failed to generate ID\n");
+        exit(1);
+    }
+
+    printf("Encoded ID: %s\n", encodedId);
+
+    sharedStore.mac = strdup(mac);
+    sharedStore.model = strdup(model);
+    sharedStore.id = strdup(encodedId);
+
+    // Free the allocated memory
+    free(mac);
+    free(model);
+    free(encodedId);
 }
 
 void* httpServerRoutine(void *arg) {
@@ -75,9 +117,6 @@ void* schedulerRoutine(void *arg) {
     // Test #3 (only non-periodic)
     // scheduleAt(&sch, time(NULL) + 4, task1);
     // scheduleAt(&sch, time(NULL) + 8, task1);
-
-    // Programa la tarea 1 para ejecutarse en un tiempo determinado (modificar el tiempo aquí)
-    scheduleAt(sch, time(NULL) + 10, task1); // Ejemplo: 3600 segundos = 1 hora
 
     // Programa la tarea 2 para ejecutarse cada 10 minutos
     scheduleEvery(sch, 4, task2); // 600 segundos = 10 minutos

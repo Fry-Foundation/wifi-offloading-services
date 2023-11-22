@@ -2,12 +2,13 @@
 Wayru services on OpenWrt:
 - Identity
 - Onboarding
+- Accounting
 - API
 
 ## Dependencies
 > Work in progress. Dependencies should be version controlled for testing and production builds.
 
-### Install the `libmicrohttpd` dependency
+### Install the `libmicrohttpd` and `libcurl` dependencies
 
 **Debian-based linux**
 
@@ -16,6 +17,7 @@ Install this package with `apt-get`:
 ```bash
 sudo apt-get update
 sudo apt-get install libmicrohttpd-dev
+sudo apt-get install libcurl4-gnutls-dev
 ```
 
 **macOS**
@@ -25,21 +27,12 @@ Install this package with `brew`:
 ```bash
 berw update
 brew install libmicrohttpd
+brew install curl
 ```
 
 **Windows**
 
-Not tested yet, but there are Windows binaries available: https://www.gnu.org/software/libmicrohttpd/
-
-### Install the `libcurl` dependency
-
-**Debian-based linux**
-
-Install this package with `apt-get`:
-
-```bash
-sudo apt-get install libcurl4-gnutls-dev
-```
+Not tested yet.
 
 ## Clone the repository
 

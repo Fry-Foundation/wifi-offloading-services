@@ -17,7 +17,7 @@ define Package/wayru-os-services
   SECTION:=admin
   CATEGORY:=Administration
   TITLE:=Wayru config daemon and scripts
-  DEPENDS:=+libmicrohttpd-no-ssl
+  DEPENDS:=+libmicrohttpd-no-ssl +libcurl
 endef
 
 # Package description; a more verbose description on what our package does

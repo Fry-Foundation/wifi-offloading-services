@@ -3,4 +3,6 @@
 
 void runScriptAndSaveOutput(const char *scriptPath, const char *outputPath);
 
+char* runScript(const char* scriptPath);
+
 #endif

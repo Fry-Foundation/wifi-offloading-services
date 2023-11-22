@@ -24,7 +24,6 @@ typedef struct Scheduler Scheduler;
 void scheduleAt(Scheduler *sch, time_t time, void (*task)());
 void scheduleEvery(Scheduler *sch, int interval, void (*task)());
 void run(Scheduler *sch);
-void task1();
 void task2();
 void task3();
 

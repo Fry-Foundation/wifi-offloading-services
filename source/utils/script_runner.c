@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define MAX_OUTPUT_SIZE 1024
+
 void runScriptAndSaveOutput(const char *scriptPath, const char *outputPath) {
     char buffer[1024];  // Buffer for reading script output
     FILE *scriptPipe, *outputFile;
@@ -32,4 +34,31 @@ void runScriptAndSaveOutput(const char *scriptPath, const char *outputPath) {
     fclose(outputFile);
 
     printf("Script executed successfully, output saved to: %s\n", outputPath);
+}
+
+char* runScript(const char* scriptPath) {
+    char buffer[128];
+    char *result = (char *)malloc(MAX_OUTPUT_SIZE);
+    if (result == NULL) {
+        perror("Memory allocation failed");
+        return NULL;
+    }
+    result[0] = '\0'; // Initialize the string with a null character
+
+    FILE *pipe = popen(scriptPath, "r");
+    if (!pipe) {
+        perror("popen failed");
+        free(result);
+        return NULL;
+    }
+
+    while (fgets(buffer, sizeof(buffer), pipe) != NULL) {
+        strcat(result, buffer);
+    }
+
+    if (pclose(pipe) == -1) {
+        perror("Error reported by pclose");
+    }
+
+    return result;
 }

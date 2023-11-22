@@ -1,0 +1,1 @@
+echo "genesis-comfast"

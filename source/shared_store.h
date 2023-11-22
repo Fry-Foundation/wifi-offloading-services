@@ -7,9 +7,9 @@ typedef struct {
     int devMode;
     char scriptsPath[256];
     char dataPath[256];
-    char id[256];
-    char mac[256];
-    char model[256];
+    char* id;
+    char* mac;
+    char* model;
     int runServer;
     pthread_cond_t serverCond;
     pthread_mutex_t mutex;

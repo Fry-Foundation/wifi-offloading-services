@@ -7,6 +7,7 @@
 #include "shared_store.h"
 #include "utils/script_runner.h"
 #include "utils/generate_id.h"
+#include "utils/read_os_version.h"
 
 SharedStore sharedStore = {
     .devMode = 0,
@@ -15,6 +16,8 @@ SharedStore sharedStore = {
     .id = NULL,
     .mac = NULL,
     .model = NULL,
+    .osVersion = NULL,
+    .servicesVersion = NULL,
     .runServer = 1,
     .serverCond = PTHREAD_COND_INITIALIZER,
     .mutex = PTHREAD_MUTEX_INITIALIZER,
@@ -59,6 +62,18 @@ void init(int argc, char *argv[]) {
     char scriptFile[256];
     char dataFile[256];
 
+    // Find system data
+    // - get os version
+    // - get services version
+    char *osVersion = readOSVersion();
+    if (strchr(osVersion, '\n') != NULL)
+    {
+        osVersion[strcspn(osVersion, "\n")] = 0;
+    }
+
+    printf("OS version: %s\n", osVersion);
+    sharedStore.osVersion = strdup(osVersion);
+
     // Set up id
     // - get mac
     // - get model
@@ -67,13 +82,19 @@ void init(int argc, char *argv[]) {
     snprintf(dataFile, sizeof(dataFile), "%s%s", sharedStore.dataPath, "/mac");
     printf("Running mac script: %s\n", scriptFile);
     char *mac = runScript(scriptFile);
-    mac[strcspn(mac, "\n")] = 0;
+    if (strchr(mac, '\n') != NULL)
+    {
+        mac[strcspn(mac, "\n")] = 0;
+    }
 
     snprintf(scriptFile, sizeof(scriptFile), "%s%s", sharedStore.scriptsPath, "/get-model.sh");
     snprintf(dataFile, sizeof(dataFile), "%s%s", sharedStore.dataPath, "/model");
     printf("Running id script: %s\n", scriptFile);
     char *model = runScript(scriptFile);
-    model[strcspn(model, "\n")] = 0;
+    if (strchr(model, '\n') != NULL)
+    {
+        model[strcspn(model, "\n")] = 0;
+    }
 
     printf("mac: %s\n", mac);
     printf("model: %s\n", model);
@@ -91,6 +112,7 @@ void init(int argc, char *argv[]) {
     sharedStore.id = strdup(encodedId);
 
     // Free the allocated memory
+    free(osVersion);
     free(mac);
     free(model);
     free(encodedId);

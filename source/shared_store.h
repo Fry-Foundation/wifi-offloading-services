@@ -10,6 +10,8 @@ typedef struct {
     char* id;
     char* mac;
     char* model;
+    char* osVersion;
+    char* servicesVersion;
     int runServer;
     pthread_cond_t serverCond;
     pthread_mutex_t mutex;

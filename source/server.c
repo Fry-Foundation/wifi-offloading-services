@@ -43,7 +43,7 @@ static int answerToConnection(
         sharedStore.mac,
         sharedStore.model,
         sharedStore.osVersion,
-        WAYRU_OS_SERVICES_VERSION);
+        sharedStore.servicesVersion);
 
     pthread_mutex_unlock(&sharedStore.mutex);
 

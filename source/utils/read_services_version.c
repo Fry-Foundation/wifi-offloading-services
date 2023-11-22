@@ -8,23 +8,40 @@
 char* readServicesVersion() {
     if (sharedStore.devMode == 1) {
         printf("Running in dev mode, returning services version 1.0.0\n");
-        return "1.0.0";
+        return strdup("1.0.0");
     }
 
-    FILE *file = fopen("VERSION", "r");
+    FILE *file = fopen("/etc/wayru/VERSION", "r");
     if (file == NULL) {
         perror("Error opening file");
-        return 1;
+        return NULL;
     }
 
+    char *servicesVersion = NULL;
     char version[MAX_VERSION_LENGTH];
 
-    fgets(version, MAX_VERSION_LENGTH, file);
+    if (fgets(version, MAX_VERSION_LENGTH, file) == NULL) {
+        fprintf(stderr, "Failed to read version\n");
+        fclose(file);
+        return NULL; // Handle failed read attempt
+    }
+
+    printf("Services Version is: %s\n", version);
 
     if (strchr(version, '\n') != NULL) {
         version[strcspn(version, "\n")] = 0;
     }
 
     fclose(file);
-    return version;   
+
+    // Allocate memory for the version string and return
+    servicesVersion = strdup(version);
+    if (servicesVersion == NULL) {
+        perror("Memory allocation failed for dynamicVersion");
+        return NULL;
+    }
+
+    printf("Dynamic version is: %s\n", servicesVersion);
+
+    return servicesVersion;
 }

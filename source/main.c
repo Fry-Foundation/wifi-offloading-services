@@ -67,18 +67,16 @@ void init(int argc, char *argv[]) {
     // - get os version
     // - get services version
     char *osVersion = readOSVersion();
-    if (strchr(osVersion, '\n') != NULL)
-    {
-        osVersion[strcspn(osVersion, "\n")] = 0;
-    }
+    printf("OS version: %s\n", osVersion);
 
     char *servicesVersion = readServicesVersion();
-
-    printf("OS version: %s\n", osVersion);
     printf("Services version: %s\n", servicesVersion);
 
     sharedStore.osVersion = strdup(osVersion);
     sharedStore.servicesVersion = strdup(servicesVersion);
+
+    free(osVersion);
+    free(servicesVersion);
 
     // Set up id
     // - get mac
@@ -117,7 +115,6 @@ void init(int argc, char *argv[]) {
     sharedStore.model = strdup(model);
     sharedStore.id = strdup(encodedId);
 
-    // Free the allocated memory
     free(mac);
     free(model);
     free(encodedId);

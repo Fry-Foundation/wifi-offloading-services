@@ -80,6 +80,8 @@ define Package/wayru-os-services/install
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/update-config.sh $(1)/etc/wayru/scripts/
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/get-mac.sh $(1)/etc/wayru/scripts/
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/get-model.sh $(1)/etc/wayru/scripts/
+
+		$(INSTALL_DATA) VERSION $(1)/etc/wayru/VERSION
 endef
 
 # This command is always the last, it uses the definitions and variables we give above in order to get the job done

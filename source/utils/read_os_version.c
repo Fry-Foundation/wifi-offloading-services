@@ -7,15 +7,17 @@
 
 char* readOSVersion() {
     if (sharedStore.devMode == 1) {
-        printf("Running in dev mode, returning 1.0.0\n");
-        return "1.0.0";
+        printf("Running in dev mode, returning os version 1.0.0\n");
+        return strdup("1.0.0");
     }
 
     FILE *file = fopen("/etc/openwrt_release", "r");
     if (file == NULL) {
         perror("Error opening file");
-        return 1;
+        return NULL;
     }
+
+    char *osVersion = NULL;
 
     char line[MAX_LINE_LENGTH];
     char distrib_id[MAX_LINE_LENGTH];
@@ -29,9 +31,23 @@ char* readOSVersion() {
         }
     }
 
-    printf("DISTRIB_ID: %s\n", distrib_id);
-    printf("DISTRIB_RELEASE: %s\n", distrib_release);
+    if (strchr(distrib_release, '\n') != NULL) {
+        distrib_release[strcspn(distrib_release, "\n")] = 0;
+    }
 
-    fclose(file);
-    return distrib_release;   
+    fclose(file);    
+
+    // Allocate memory and copy the version string
+    if (*distrib_release != '\0') { // Check if distrib_release is not empty
+        osVersion = strdup(distrib_release);
+        if (osVersion == NULL) {
+            perror("Memory allocation failed for osVersion");
+            fclose(file);
+            return NULL;
+        }
+    } else {
+        fprintf(stderr, "OS version string is empty\n");
+    }
+
+    return osVersion;
 }

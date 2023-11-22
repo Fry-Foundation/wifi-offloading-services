@@ -1,1 +1,1 @@
-echo "genesis-comfast"
+echo "comfast-cf-e375ac"

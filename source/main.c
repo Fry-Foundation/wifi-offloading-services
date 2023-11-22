@@ -8,6 +8,7 @@
 #include "utils/script_runner.h"
 #include "utils/generate_id.h"
 #include "utils/read_os_version.h"
+#include "utils/read_services_version.h"
 
 SharedStore sharedStore = {
     .devMode = 0,
@@ -71,8 +72,13 @@ void init(int argc, char *argv[]) {
         osVersion[strcspn(osVersion, "\n")] = 0;
     }
 
+    char *servicesVersion = readServicesVersion();
+
     printf("OS version: %s\n", osVersion);
+    printf("Services version: %s\n", servicesVersion);
+
     sharedStore.osVersion = strdup(osVersion);
+    sharedStore.servicesVersion = strdup(servicesVersion);
 
     // Set up id
     // - get mac
@@ -112,7 +118,6 @@ void init(int argc, char *argv[]) {
     sharedStore.id = strdup(encodedId);
 
     // Free the allocated memory
-    free(osVersion);
     free(mac);
     free(model);
     free(encodedId);

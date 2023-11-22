@@ -3,6 +3,11 @@
 
 #include <time.h>
 
+// Tareas periodicas
+// - Revisar si hay un pedido de onboarding aprobado para este router (cada 1 minuto) [if mode == 0]
+// - Renovar llave publica (1 vez al dia) [sin importar el mode]
+// - Enviar updates de accounting (cada 1 minuto) [if mode == 1]
+
 struct ScheduledTask
 {
     time_t nextExecutionTime;

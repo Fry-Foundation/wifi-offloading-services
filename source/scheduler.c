@@ -77,12 +77,23 @@ void run(Scheduler *sch)
     }
 }
 
-void task2()
+void checkPendingRequestTask()
 {
+    // onboarding task
+    if (sharedStore.mode != 0)
+    {
+        return;
+    }
+
     printf("--3\n");
 }
 
-void task3()
+void renewPublicKeyTask()
+{
+    printf("--4\n");
+}
+
+void updateAccountingTask()
 {
     printf("--5\n");
 }

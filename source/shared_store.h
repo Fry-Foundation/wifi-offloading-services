@@ -3,16 +3,13 @@
 
 #include <pthread.h>
 
+
+// mode puede ser 0, 1
+// 0: modo onboarding
+// 1: modo operador
+
 typedef struct {
-    int devMode;
-    char scriptsPath[256];
-    char dataPath[256];
-    char* id;
-    char* mac;
-    char* model;
-    char* osVersion;
-    char* servicesVersion;
-    int runServer;
+    int mode;
     pthread_cond_t serverCond;
     pthread_mutex_t mutex;
 } SharedStore;

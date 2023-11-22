@@ -11,15 +11,7 @@
 #include "utils/read_services_version.h"
 
 SharedStore sharedStore = {
-    .devMode = 0,
-    .scriptsPath = "",
-    .dataPath = "",
-    .id = NULL,
-    .mac = NULL,
-    .model = NULL,
-    .osVersion = NULL,
-    .servicesVersion = NULL,
-    .runServer = 1,
+    .mode = 0,
     .serverCond = PTHREAD_COND_INITIALIZER,
     .mutex = PTHREAD_MUTEX_INITIALIZER,
 };
@@ -30,6 +22,15 @@ const char DEV_PATH[] = ".";
 const char OPENWRT_PATH[] = "/etc/wayru";
 const char *basePath = "";
 const char *url = "https://catfact.ninja/fact";
+
+int devMode = 0;
+char *scriptsPath = NULL;
+char *dataPath = NULL;
+char *id = NULL;
+char *mac = NULL;
+char *model = NULL;
+char *osVersion = NULL;
+char *servicesVersion = NULL;
 
 void init(int argc, char *argv[]) {
     // Determine if we are running in dev mode
@@ -171,6 +172,9 @@ int main(int argc, char *argv[])
 
     pthread_create(&httpServerThread, NULL, httpServerRoutine, NULL);
     pthread_create(&schedulerThread, NULL, schedulerRoutine, &sch);
+    // --------------------------
+    //       --------------------
+    //       --------------------
 
     pthread_join(httpServerThread, NULL);
     pthread_join(schedulerThread, NULL);

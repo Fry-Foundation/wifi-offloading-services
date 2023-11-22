@@ -86,7 +86,7 @@ void startHttpServer()
 }
 
 void stopHttpServer()
-{
+{    
     pthread_mutex_lock(&sharedStore.mutex);
     sharedStore.runServer = 0;
     pthread_cond_signal(&sharedStore.serverCond);

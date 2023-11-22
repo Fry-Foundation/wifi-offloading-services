@@ -30,7 +30,6 @@ const char DEV_PATH[] = ".";
 const char OPENWRT_PATH[] = "/etc/wayru";
 const char *basePath = "";
 const char *url = "https://catfact.ninja/fact";
-const char *filePath = "./data/test";
 
 void init(int argc, char *argv[]) {
     // Determine if we are running in dev mode
@@ -154,7 +153,9 @@ int main(int argc, char *argv[])
     init(argc, argv);
     
     printf("Realizando solicitud GET...\n");
-    int resultGet = performHttpGet(url, filePath);
+    char httpTestFile[256];
+    snprintf(httpTestFile, sizeof(httpTestFile), "%s%s", sharedStore.dataPath, "/test");
+    int resultGet = performHttpGet(url, httpTestFile);
     if (resultGet == 0)
     {
         printf("Solicitud GET exitosa.\n");

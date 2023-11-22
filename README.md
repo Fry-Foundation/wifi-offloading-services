@@ -31,6 +31,16 @@ brew install libmicrohttpd
 
 Not tested yet, but there are Windows binaries available: https://www.gnu.org/software/libmicrohttpd/
 
+### Install the `libcurl` dependency
+
+**Debian-based linux**
+
+Install this package with `apt-get`:
+
+```bash
+sudo apt-get install libcurl4-gnutls-dev
+```
+
 ## Clone the repository
 
 ```bash

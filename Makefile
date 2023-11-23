@@ -36,25 +36,25 @@ endef
 # Package build instructions; invoke the target-specific compiler to first compile the source file, and then to link the file into the final executable
 define Build/Compile
 		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/main.o -c $(PKG_BUILD_DIR)/main.c
-		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/server.o -c $(PKG_BUILD_DIR)/server.c
-		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/scheduler.o -c $(PKG_BUILD_DIR)/scheduler.c
-		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/requests.o -c $(PKG_BUILD_DIR)/requests.c
-		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/utils/base64.o -c $(PKG_BUILD_DIR)/utils/base64.c
+		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/services/init.o -c $(PKG_BUILD_DIR)/services/init.c
+		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/services/server.o -c $(PKG_BUILD_DIR)/services/server.c
+		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/services/scheduler.o -c $(PKG_BUILD_DIR)/services/scheduler.c
+		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/lib/base64.o -c $(PKG_BUILD_DIR)/lib/base64.c	
+		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/store/config.o -c $(PKG_BUILD_DIR)/store/config.c
+		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/store/state.o -c $(PKG_BUILD_DIR)/store/state.c
+		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/utils/requests.o -c $(PKG_BUILD_DIR)/utils/requests.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/utils/script_runner.o -c $(PKG_BUILD_DIR)/utils/script_runner.c
-		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/utils/generate_id.o -c $(PKG_BUILD_DIR)/utils/generate_id.c
-		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/utils/read_os_version.o -c $(PKG_BUILD_DIR)/utils/read_os_version.c
-		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/utils/read_services_version.o -c $(PKG_BUILD_DIR)/utils/read_services_version.c
 
 		$(TARGET_CC) $(TARGET_LDFLAGS) \
 			$(PKG_BUILD_DIR)/main.o \
-        	$(PKG_BUILD_DIR)/server.o \
-        	$(PKG_BUILD_DIR)/scheduler.o \
-			$(PKG_BUILD_DIR)/requests.o \
-			$(PKG_BUILD_DIR)/utils/base64.o \
+			$(PKG_BUILD_DIR)/services/init.o \
+        	$(PKG_BUILD_DIR)/services/server.o \
+        	$(PKG_BUILD_DIR)/services/scheduler.o \
+			$(PKG_BUILD_DIR)/lib/base64.o \
+			$(PKG_BUILD_DIR)/store/config.o \
+			$(PKG_BUILD_DIR)/store/state.o \
+			$(PKG_BUILD_DIR)/utils/requests.o \
 			$(PKG_BUILD_DIR)/utils/script_runner.o \
-			$(PKG_BUILD_DIR)/utils/generate_id.o \
-			$(PKG_BUILD_DIR)/utils/read_os_version.o \
-			$(PKG_BUILD_DIR)/utils/read_services_version.o \
 			-o $(PKG_BUILD_DIR)/wayru-os-services \
 			-lpthread -lmicrohttpd -lcurl
 endef

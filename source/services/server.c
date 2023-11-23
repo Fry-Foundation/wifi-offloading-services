@@ -1,15 +1,14 @@
-#include "server.h"
-#include "shared_store.h"
 #include <microhttpd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include "server.h"
+#include "../store/config.h"
+#include "../store/state.h"
 
 #define PORT 40500
 
-char *id = NULL;
-
-static int answerToConnection(
+static enum MHD_Result answerToConnection(
     void *cls,
     struct MHD_Connection *connection,
     const char *url,
@@ -20,7 +19,7 @@ static int answerToConnection(
     void **con_cls)
 {
     struct MHD_Response *response;
-    int ret;
+    enum MHD_Result ret;
 
     // We respond to GET requests at "/api/device-data"
     if (strcmp(method, "GET") != 0 || strcmp(url, "/api/device-data") != 0)
@@ -30,17 +29,14 @@ static int answerToConnection(
 
     // Build response with device data from shared store
     char json_response[1024];
-    pthread_mutex_lock(&sharedStore.mutex);
 
-    printf("ID: %s\n", id);
+    printf("ID: %s\n", getConfig().deviceId);
 
     snprintf(
         json_response,
         sizeof(json_response),
         "{ \"id\": \"%s\" }",
-        id);
-
-    pthread_mutex_unlock(&sharedStore.mutex);
+        getConfig().deviceId);
 
     response = MHD_create_response_from_buffer(
         strlen(json_response),
@@ -56,34 +52,40 @@ static int answerToConnection(
 
 void startHttpServer()
 {
-    struct MHD_Daemon *daemon = MHD_start_daemon(MHD_USE_INTERNAL_POLLING_THREAD, PORT,
-                                                 NULL, NULL, &answerToConnection,
-                                                 NULL, MHD_OPTION_END);
+    struct MHD_Daemon *daemon = MHD_start_daemon(
+        MHD_USE_INTERNAL_POLLING_THREAD,
+        PORT,
+        NULL,
+        NULL,
+        &answerToConnection,
+        NULL,
+        MHD_OPTION_END);
+
     if (NULL == daemon)
     {
-        fprintf(stderr, "Failed to start the HTTP server.\n");
+        fprintf(stderr, "[server] failed to start\n");
         return;
     }
 
-    // Inform that the server has started
-    printf("HTTP server started on port %d\n", PORT);
-
-    pthread_mutex_lock(&sharedStore.mutex);
-    while (&sharedStore.runServer)
+    printf("[server] running on port %d\n", PORT);
+    
+    pthread_mutex_lock(&state.mutex);
+    while (state.server == 1)
     {
-        pthread_cond_wait(&sharedStore.serverCond, &sharedStore.mutex);
+        pthread_cond_wait(&state.serverCond, &state.mutex);
     }
-    pthread_mutex_unlock(&sharedStore.mutex);
+    pthread_mutex_unlock(&state.mutex);
 
-    // Keep the server running until a signal or condition dictates otherwise
-    // For instance, you could wait for a condition or signal here
+    printf("[server] stopping\n");
+
     MHD_stop_daemon(daemon);
 }
 
 void stopHttpServer()
 {
-    pthread_mutex_lock(&sharedStore.mutex);
-    sharedStore.runServer = 0;
-    pthread_cond_signal(&sharedStore.serverCond);
-    pthread_mutex_unlock(&sharedStore.mutex);
+    printf("[server] stop request\n");
+    pthread_mutex_lock(&state.mutex);
+    state.server = 0;
+    pthread_cond_signal(&state.serverCond);
+    pthread_mutex_unlock(&state.mutex);    
 }

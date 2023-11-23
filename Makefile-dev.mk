@@ -15,14 +15,14 @@ compile:
 	mkdir -p $(DIST_PATH)
 	gcc -o $(DIST_PATH)/$(EXECUTABLE) \
 	$(SOURCE_PATH)/main.c \
-	$(SOURCE_PATH)/server.c \
-	$(SOURCE_PATH)/scheduler.c \
-	$(SOURCE_PATH)/requests.c \
-	$(SOURCE_PATH)/utils/base64.c \
+	$(SOURCE_PATH)/services/init.c \
+	$(SOURCE_PATH)/services/server.c \
+	$(SOURCE_PATH)/services/scheduler.c \
+	$(SOURCE_PATH)/lib/base64.c \
+	$(SOURCE_PATH)/store/config.c \
+	$(SOURCE_PATH)/store/state.c \
+	$(SOURCE_PATH)/utils/requests.c \
 	$(SOURCE_PATH)/utils/script_runner.c \
-	$(SOURCE_PATH)/utils/generate_id.c \
-	$(SOURCE_PATH)/utils/read_os_version.c \
-	$(SOURCE_PATH)/utils/read_services_version.c \
 	-lpthread -lmicrohttpd -lcurl
 
 # Copy scripts and data files

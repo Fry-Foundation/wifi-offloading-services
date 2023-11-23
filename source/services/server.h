@@ -5,4 +5,8 @@ void startHttpServer();
 
 void stopHttpServer();
 
+void runServer();
+
+void stopServer();
+
 #endif // SERVER_H

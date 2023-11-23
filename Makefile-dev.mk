@@ -18,6 +18,7 @@ compile:
 	$(SOURCE_PATH)/services/init.c \
 	$(SOURCE_PATH)/services/server.c \
 	$(SOURCE_PATH)/services/scheduler.c \
+	$(SOURCE_PATH)/services/access.c \
 	$(SOURCE_PATH)/lib/base64.c \
 	$(SOURCE_PATH)/store/config.c \
 	$(SOURCE_PATH)/store/state.c \

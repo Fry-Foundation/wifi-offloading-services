@@ -45,7 +45,7 @@ int performHttpGet(const char *url, const char *filePath)
 }
 
 // HTTP POST request
-int performHttpPost(const char *url, const char *filePath, const char *postData)
+int performHttpPost(const PostRequestOptions *options)
 {
     CURL *curl;
     CURLcode res = CURLE_OK;
@@ -53,33 +53,50 @@ int performHttpPost(const char *url, const char *filePath, const char *postData)
     curl = curl_easy_init();
     if (curl)
     {
-        FILE *file = fopen(filePath, "wb"); // Abrir el archivo en modo de escritura binaria
-        if (!file)
-        {
-            fprintf(stderr, "Error al abrir el archivo para escritura.\n");
-            return -1;
+        FILE *file;
+        struct curl_slist *headers = NULL;
+
+        // Options
+        curl_easy_setopt(curl, CURLOPT_URL, options->url);
+
+        if (options->key != NULL) {
+            char keyHeader[255];
+            snprintf(keyHeader, 255, "public_key: %s", options->key);
+            headers = curl_slist_append(headers, keyHeader);
+        } else {
+            printf("Skipping key\n");
+        }  
+
+        if (options->body != NULL) {
+            headers = curl_slist_append(headers, "Content-Type: application/json");
+            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, options->body);
         }
 
-        curl_easy_setopt(curl, CURLOPT_URL, url);
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postData);
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);        
 
-        printf("Post data: %s\n", postData);      
+        if(options->filePath != NULL) {
+            file = fopen(options->filePath, "wb");
+            if (!file)
+            {
+                fprintf(stderr, "Error al abrir el archivo para escritura.\n");
+                return -1;
+            }
 
-        printf("Posting\n");
+            curl_easy_setopt(curl, CURLOPT_WRITEDATA, file);
+        }
 
-        struct curl_slist *headers = NULL;
-        headers = curl_slist_append(headers, "Content-Type: application/json");
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-
-        // Guardar la respuesta en el archivo
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, file);          
-
+        // Request
         res = curl_easy_perform(curl);
+
+        // Response
         if(res != CURLE_OK)
             fprintf(stderr, "curl_easy_perform() failed: %s\n",
                     curl_easy_strerror(res));
 
-        fclose(file); // Close the file
+        // Cleanup
+        if(options->filePath != NULL) {
+            fclose(file);
+        }
         curl_slist_free_all(headers); // Free the header list
         curl_easy_cleanup(curl);
 

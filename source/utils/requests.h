@@ -5,6 +5,13 @@
 int performHttpGet(const char *url, const char *filePath);
 
 // Realiza una solicitud HTTP POST
-int performHttpPost(const char *url, const char *filePath, const char *postData);
+typedef struct {
+    const char *url;
+    const char *key;
+    const char *body;
+    const char *filePath;
+} PostRequestOptions;
+
+int performHttpPost(const PostRequestOptions *options);
 
 #endif /* HTTP_REQUESTS_H */

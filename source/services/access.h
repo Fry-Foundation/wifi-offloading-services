@@ -1,19 +1,21 @@
 #ifndef ACCESS_H
 #define ACCESS_H
 
+#include <time.h>
+
 typedef struct
 {
     char *key;
-    int createdAt;
-    int expiresAt;
+    time_t createdAt;
+    time_t expiresAt;
 } AccessKey;
 
-AccessKey readAccessKey();
+int readAccessKey(AccessKey *accessKey);
 
-void writeAccessKey();
+void writeAccessKey(AccessKey *accessKey);
 
-void checkAccessKey();
+int checkAccessKey();
 
-void requestAccessKey();
+int requestAccessKey(AccessKey *accessKey);
 
 #endif /* ACCESS_H */

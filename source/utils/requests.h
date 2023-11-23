@@ -10,6 +10,8 @@ typedef struct {
     const char *key;
     const char *body;
     const char *filePath;
+    size_t (*writeFunction)(char *ptr, size_t size, size_t nmemb, void *userdata);
+    void *writeData;
 } PostRequestOptions;
 
 int performHttpPost(const PostRequestOptions *options);

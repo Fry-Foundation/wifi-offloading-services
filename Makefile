@@ -17,7 +17,7 @@ define Package/wayru-os-services
   SECTION:=admin
   CATEGORY:=Administration
   TITLE:=Wayru config daemon and scripts
-  DEPENDS:=+libmicrohttpd-no-ssl +libcurl
+  DEPENDS:=+libmicrohttpd-no-ssl +libcurl +libjson-c
 endef
 
 # Package description; a more verbose description on what our package does
@@ -58,7 +58,7 @@ define Build/Compile
 			$(PKG_BUILD_DIR)/utils/requests.o \
 			$(PKG_BUILD_DIR)/utils/script_runner.o \
 			-o $(PKG_BUILD_DIR)/wayru-os-services \
-			-lpthread -lmicrohttpd -lcurl
+			-lpthread -lmicrohttpd -lcurl -ljson-c
 endef
 
 # Package install instructions

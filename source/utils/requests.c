@@ -63,9 +63,7 @@ int performHttpPost(const PostRequestOptions *options)
             char keyHeader[255];
             snprintf(keyHeader, 255, "public_key: %s", options->key);
             headers = curl_slist_append(headers, keyHeader);
-        } else {
-            printf("Skipping key\n");
-        }  
+        }
 
         if (options->body != NULL) {
             headers = curl_slist_append(headers, "Content-Type: application/json");
@@ -85,8 +83,17 @@ int performHttpPost(const PostRequestOptions *options)
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, file);
         }
 
+        if(options->writeFunction != NULL) {
+            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, options->writeFunction);
+        }
+
+        if(options->writeData != NULL) {
+            curl_easy_setopt(curl, CURLOPT_WRITEDATA, options->writeData);
+        }
+
         // Request
         res = curl_easy_perform(curl);
+        printf("Response code: %d\n", res);
 
         // Response
         if(res != CURLE_OK)
@@ -99,19 +106,6 @@ int performHttpPost(const PostRequestOptions *options)
         }
         curl_slist_free_all(headers); // Free the header list
         curl_easy_cleanup(curl);
-
-        // res = curl_easy_perform(curl);
-        // printf("res %d\n", res);
-
-        // if (res != CURLE_OK)
-        // {
-        //     fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
-        //     return -1;
-        // }
-
-        // printf("Done\n");
-
-        // curl_easy_cleanup(curl);
     }
     else
     {

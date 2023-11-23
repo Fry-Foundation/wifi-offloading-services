@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
     init(argc, argv);
 
     testGetRequest();
-    getAccessKey();
+    requestAccessKey();
 
     Scheduler sch = {NULL, 0};
 

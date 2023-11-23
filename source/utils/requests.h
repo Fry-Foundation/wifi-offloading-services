@@ -5,6 +5,6 @@
 int performHttpGet(const char *url, const char *filePath);
 
 // Realiza una solicitud HTTP POST
-int performHttpPost(const char *url, const char *postData);
+int performHttpPost(const char *url, const char *filePath, const char *postData);
 
 #endif /* HTTP_REQUESTS_H */

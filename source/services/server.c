@@ -69,12 +69,12 @@ void startHttpServer()
 
     printf("[server] running on port %d\n", PORT);
     
-    pthread_mutex_lock(&state.mutex);
+    pthread_mutex_lock(&state.serverMutex);
     while (state.server == 1)
     {
-        pthread_cond_wait(&state.serverCond, &state.mutex);
+        pthread_cond_wait(&state.serverCond, &state.serverMutex);
     }
-    pthread_mutex_unlock(&state.mutex);
+    pthread_mutex_unlock(&state.serverMutex);
 
     printf("[server] stopping\n");
 
@@ -84,8 +84,8 @@ void startHttpServer()
 void stopHttpServer()
 {
     printf("[server] stop request\n");
-    pthread_mutex_lock(&state.mutex);
+    pthread_mutex_lock(&state.serverMutex);
     state.server = 0;
     pthread_cond_signal(&state.serverCond);
-    pthread_mutex_unlock(&state.mutex);    
+    pthread_mutex_unlock(&state.serverMutex);    
 }

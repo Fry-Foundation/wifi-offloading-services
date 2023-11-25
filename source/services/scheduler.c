@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "scheduler.h"
-#include "../store/state.h"
-#include "../utils/script_runner.h"
 
 // Programa una tarea para ejecutarse en un momento específico
 void scheduleAt(Scheduler *sch, time_t time, void (*task)())
@@ -76,25 +74,4 @@ void run(Scheduler *sch)
 
         usleep(100000); // Esperar 100 ms
     }
-}
-
-void checkPendingRequestTask()
-{
-    // onboarding task
-    // if (sharedStore.mode != 0)
-    // {
-    //     return;
-    // }
-
-    printf("--3\n");
-}
-
-void renewPublicKeyTask()
-{
-    printf("--4\n");
-}
-
-void updateAccountingTask()
-{
-    printf("--5\n");
 }

@@ -5,6 +5,7 @@
 #include <json-c/json.h>
 #include "access.h"
 #include "../store/config.h"
+#include "../store/state.h"
 #include "../utils/requests.h"
 
 #define KEY_FILE "/data/access-key"
@@ -19,6 +20,17 @@ time_t convertToTime_t(const char *timestampStr) {
     return (time_t)epoch;
 }
 
+AccessKey* initAccessKey() {
+    AccessKey* accessKey = malloc(sizeof(AccessKey));
+    accessKey->key = NULL;
+    accessKey->createdAt = 0;
+    accessKey->expiresAt = 0;
+
+    readAccessKey(accessKey);
+
+    return accessKey;
+}
+
 int readAccessKey(AccessKey *accessKey)
 {
     printf("[access] reading stored access key\n");
@@ -30,7 +42,7 @@ int readAccessKey(AccessKey *accessKey)
     if (file == NULL) {
         // Handle error (e.g., file not found)
         fprintf(stderr, "Failed to open key file.\n");
-        return 1;
+        return 0;
     }
 
     char line[256];
@@ -42,7 +54,16 @@ int readAccessKey(AccessKey *accessKey)
     {
         if (strncmp(line, "public_key", 10) == 0)
         {
-            sscanf(line, "public_key %s", public_key);
+            // Subtract the length of "public_key " from the total length
+            size_t keyLength = strlen(line) - 11;
+            accessKey->key = malloc(keyLength + 1);
+            if (accessKey->key == NULL) {
+                perror("Failed to allocate memory for key");
+                fclose(file);
+                return 0;
+            }
+            strcpy(accessKey->key, line + 11);
+            accessKey->key[keyLength] = '\0';
         }
         else if (strncmp(line, "created_at", 10) == 0)
         {
@@ -59,11 +80,10 @@ int readAccessKey(AccessKey *accessKey)
     time_t createdAt = convertToTime_t(created_at);
     time_t expiresAt = convertToTime_t(expires_at);  
 
-    strcpy(accessKey->key, public_key);
     accessKey->createdAt = createdAt;
     accessKey->expiresAt = expiresAt;
 
-    return 0;
+    return 1;
 }
 
 void writeAccessKey(AccessKey *accessKey)
@@ -72,7 +92,6 @@ void writeAccessKey(AccessKey *accessKey)
 
     char keyFile[KEY_FILE_BUFFER_SIZE];
     snprintf(keyFile, sizeof(keyFile), "%s%s", getConfig().basePath, KEY_FILE);
-
 
     FILE *file = fopen(keyFile, "w");
     if (file == NULL)
@@ -127,19 +146,17 @@ size_t processAccessKeyResponse(char *ptr, size_t size, size_t nmemb, void *user
     return realsize;
 }
 
-int checkAccessKey()
-{
-    // Check if the key file exists
-    // If it doesn't exist, return 0 to indicate that the key is not valid
-    // If it exists, read relevant data
-    // Data is stored in the key file in the following format:
-    // public_key <key>
-    // created_at <timestamp>
-    // expires_at <timestamp>
-    // If the key is expired, return 0 to indicate that the key is not valid
-    // If the key is valid, return 1 to indicate that the key is valid    
-    printf("[access] checkAccessKey not yet implemented\n");
-    return 0;
+int checkAccessKeyExpiration(AccessKey *accessKey)
+{   
+    printf("[access] Checking expiration\n");
+    time_t now;
+    time(&now);
+
+    if (difftime(now, accessKey->expiresAt) > 0) {
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 int requestAccessKey(AccessKey *accessKey)
@@ -195,3 +212,15 @@ int requestAccessKey(AccessKey *accessKey)
         return 1;
     }
 };
+
+void accessTask() {
+    printf("[access] access task\n");
+
+    int isExpired = checkAccessKeyExpiration(state.accessKey);
+    if (isExpired == 1 || state.accessKey->key == NULL) {
+        requestAccessKey(state.accessKey);
+        writeAccessKey(state.accessKey);
+    } else {
+        printf("[access] key is still valid\n");
+    }
+}

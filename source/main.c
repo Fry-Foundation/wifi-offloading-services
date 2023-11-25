@@ -37,8 +37,11 @@ void *httpServerRoutine(void *arg)
 void *schedulerRoutine(void *arg)
 {
     Scheduler *sch = (Scheduler *)arg;
-    scheduleEvery(sch, 4, checkPendingRequestTask);
-    scheduleAt(sch, time(NULL) + 8, stopHttpServer);
+
+    // Schedule the access task for now, and then with an interval of 12 hours
+    scheduleAt(sch, time(NULL), accessTask);
+    scheduleEvery(sch, 43200, accessTask);
+
     run(sch);
     return NULL;
 }
@@ -48,10 +51,31 @@ int main(int argc, char *argv[])
     init(argc, argv);
 
     testGetRequest();
+    // int result = readAccessKey(&accessKey);
+    // if (result == 1)
+    // {
+    //     printf("Access key found.\n");
+    //     printf("Public key: %s\n", accessKey->key);
+    //     printf("Created at: %ld\n", accessKey->createdAt);
+    //     printf("Expires at: %ld\n", accessKey->expiresAt);
 
-    AccessKey accessKey;
-    requestAccessKey(&accessKey);
-    writeAccessKey(&accessKey);
+    //     if (checkAccessKeyExpiration(&accessKey) == 1)
+    //     {
+    //         printf("Access key expired.\n");
+    //         requestAccessKey(&accessKey);
+    //         writeAccessKey(&accessKey);
+    //     } else {
+    //         printf("Access key is still valid.\n");
+    //     }
+    // }
+    // else if (result == 0)
+    // {
+    //     printf("Access key not found.\n");
+    //     requestAccessKey(&accessKey);
+    //     writeAccessKey(&accessKey);
+    // }
+
+    printf("key: %s\n", state.accessKey->key);
 
     Scheduler sch = {NULL, 0};
 

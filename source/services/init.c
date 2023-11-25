@@ -5,6 +5,7 @@
 #include "../store/config.h"
 #include "../store/state.h"
 #include "../utils/script_runner.h"
+#include "../services/access.h"
 
 #define DEV_PATH "."
 #define OPENWRT_PATH "/etc/wayru"
@@ -207,8 +208,9 @@ void init(int argc, char *argv[])
     char *id = initId(mac, model);
 
     initConfig(devEnv, basePath, id, mac, model, osVersion, servicesVersion);
-    initState(0);
-    printf("[init] here\n");
+
+    AccessKey *accessKey = initAccessKey();
+    initState(0, accessKey);
 
     // free(basePath);
     // free(id);

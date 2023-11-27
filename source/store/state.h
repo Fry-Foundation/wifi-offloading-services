@@ -20,7 +20,12 @@ typedef struct
 
     // Access key
     AccessKey* accessKey;
-    pthread_mutex_t keyMutex;
+
+    // Setup
+    int setup;
+
+    // Accounting
+    int accounting;
 } State;
 
 extern State state;

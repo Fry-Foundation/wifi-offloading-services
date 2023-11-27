@@ -40,6 +40,8 @@ define Build/Compile
 		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/services/server.o -c $(PKG_BUILD_DIR)/services/server.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/services/scheduler.o -c $(PKG_BUILD_DIR)/services/scheduler.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/services/access.o -c $(PKG_BUILD_DIR)/services/access.c
+		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/services/setup.o -c $(PKG_BUILD_DIR)/services/setup.c
+		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/services/accounting.o -c $(PKG_BUILD_DIR)/services/accounting.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/lib/base64.o -c $(PKG_BUILD_DIR)/lib/base64.c	
 		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/store/config.o -c $(PKG_BUILD_DIR)/store/config.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/store/state.o -c $(PKG_BUILD_DIR)/store/state.c
@@ -52,6 +54,8 @@ define Build/Compile
         	$(PKG_BUILD_DIR)/services/server.o \
         	$(PKG_BUILD_DIR)/services/scheduler.o \
 			$(PKG_BUILD_DIR)/services/access.o \
+			$(PKG_BUILD_DIR)/services/setup.o \
+			$(PKG_BUILD_DIR)/services/accounting.o \
 			$(PKG_BUILD_DIR)/lib/base64.o \
 			$(PKG_BUILD_DIR)/store/config.o \
 			$(PKG_BUILD_DIR)/store/state.o \

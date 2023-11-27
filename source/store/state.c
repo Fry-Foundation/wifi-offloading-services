@@ -14,7 +14,10 @@ void initState(int mode, AccessKey *accessKey)
     pthread_mutex_init(&state.serverMutex, NULL);
 
     state.accessKey = accessKey;
-    pthread_mutex_init(&state.keyMutex, NULL);
+
+    state.setup = 0;
+
+    state.accounting = 0;
 }
 
 void cleanState()
@@ -27,5 +30,4 @@ void cleanState()
 
     pthread_cond_destroy(&state.serverCond);
     pthread_mutex_destroy(&state.serverMutex);
-    pthread_mutex_destroy(&state.keyMutex);
 }

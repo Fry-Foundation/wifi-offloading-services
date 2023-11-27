@@ -6,6 +6,8 @@
 #include "services/access.h"
 #include "services/scheduler.h"
 #include "services/server.h"
+#include "services/setup.h"
+#include "services/accounting.h"
 #include "store/config.h"
 #include "store/state.h"
 #include "utils/requests.h"
@@ -39,8 +41,17 @@ void *schedulerRoutine(void *arg)
     Scheduler *sch = (Scheduler *)arg;
 
     // Schedule the access task for now, and then with an interval of 12 hours
+    // @TODO: Dynamic interval
     scheduleAt(sch, time(NULL), accessTask);
     scheduleEvery(sch, 43200, accessTask);
+
+    // Schedule the setup task for now, and then with an interval of 1 minute
+    // @TODO: Remove / add to task list
+    scheduleEvery(sch, 60, setupTask);
+
+    // Schedule the accounting task with an interval of 1 minute
+    // @TODO: Dynamic interval, remove / add to task list
+    scheduleEvery(sch, 60, accountingTask);
 
     run(sch);
     return NULL;
@@ -51,29 +62,6 @@ int main(int argc, char *argv[])
     init(argc, argv);
 
     testGetRequest();
-    // int result = readAccessKey(&accessKey);
-    // if (result == 1)
-    // {
-    //     printf("Access key found.\n");
-    //     printf("Public key: %s\n", accessKey->key);
-    //     printf("Created at: %ld\n", accessKey->createdAt);
-    //     printf("Expires at: %ld\n", accessKey->expiresAt);
-
-    //     if (checkAccessKeyExpiration(&accessKey) == 1)
-    //     {
-    //         printf("Access key expired.\n");
-    //         requestAccessKey(&accessKey);
-    //         writeAccessKey(&accessKey);
-    //     } else {
-    //         printf("Access key is still valid.\n");
-    //     }
-    // }
-    // else if (result == 0)
-    // {
-    //     printf("Access key not found.\n");
-    //     requestAccessKey(&accessKey);
-    //     writeAccessKey(&accessKey);
-    // }
 
     printf("key: %s\n", state.accessKey->key);
 

@@ -8,26 +8,28 @@ Wayru services on OpenWrt:
 ## Dependencies
 > Work in progress. Dependencies should be version controlled for testing and production builds.
 
-### Install the `libmicrohttpd` and `libcurl` dependencies
+### Install the `libmicrohttpd`, `libcurl`, and `json-c` dependencies
 
 **Debian-based linux**
 
-Install this package with `apt-get`:
+Install with `apt-get`:
 
 ```bash
 sudo apt-get update
 sudo apt-get install libmicrohttpd-dev
 sudo apt-get install libcurl4-gnutls-dev
+sudo apt-get install libjson-c-dev
 ```
 
 **macOS**
 
-Install this package with `brew`:
+Install with `brew`:
 
 ```bash
 berw update
 brew install libmicrohttpd
 brew install curl
+brew install json-c
 ```
 
 **Windows**

@@ -1,0 +1,35 @@
+#!/bin/sh
+
+echo "{
+  "client_list_length":"1",
+  "clients":{
+    "00:a5:54:89:c7:ea":{
+      "gatewayname":"Wayru%20S%2fN%3a40a5efb9b9a7%20",
+      "gatewayaddress":"192.168.45.1:2050",
+      "gatewayfqdn":"status.client",
+      "version":"9.8.0",
+      "client_type":"cpd_can",
+      "mac":"00:a5:54:89:c7:ea",
+      "ip":"192.168.45.207",
+      "clientif":"radio0",
+      "session_start":"1701207929",
+      "session_end":"1701294329",
+      "last_active":"1701208229",
+      "token":"b14b2e38",
+      "state":"Authenticated",
+      "custom":"bmE=",
+      "download_rate_limit_threshold":"null",
+      "download_packet_rate":"null",
+      "download_bucket_size":"null",
+      "upload_rate_limit_threshold":"null",
+      "upload_packet_rate":"null",
+      "upload_bucket_size":"null",
+      "download_quota":"null",
+      "upload_quota":"null",
+      "download_this_session":"1739",
+      "download_session_avg":"47.51",
+      "upload_this_session":"33137",
+      "upload_session_avg":"904.88"
+    }
+  }
+}"

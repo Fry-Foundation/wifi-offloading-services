@@ -1,4 +1,4 @@
-#include <microhttpd.h>
+#include "microhttpd.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -68,7 +68,7 @@ void startHttpServer()
     }
 
     printf("[server] running on port %d\n", PORT);
-    
+
     pthread_mutex_lock(&state.serverMutex);
     while (state.server == 1)
     {
@@ -87,5 +87,5 @@ void stopHttpServer()
     pthread_mutex_lock(&state.serverMutex);
     state.server = 0;
     pthread_cond_signal(&state.serverCond);
-    pthread_mutex_unlock(&state.serverMutex);    
+    pthread_mutex_unlock(&state.serverMutex);
 }

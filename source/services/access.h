@@ -10,7 +10,7 @@ typedef struct
     time_t expiresAt;
 } AccessKey;
 
-AccessKey* initAccessKey();
+AccessKey *initAccessKey();
 
 int readAccessKey(AccessKey *accessKey);
 
@@ -19,6 +19,8 @@ void writeAccessKey(AccessKey *accessKey);
 int checkAccessKeyExpiration(AccessKey *accessKey);
 
 int requestAccessKey(AccessKey *accessKey);
+
+int checkAccessKeyNearExpiration(AccessKey *accessKey);
 
 void accessTask();
 

@@ -1,0 +1,31 @@
+config wayru_os_services
+	# enabled
+	# Default: 1 (enabled)
+	# Set to 0 to disable wayru-os-services
+	#option enabled 0
+	###########################################################
+
+    #main_api
+    #option main_api 'https://api.wayru.tech'
+    ###########################################################
+    
+    #accounting_api
+    #option accounting_api 'https://wifi-api.wayru.tech'
+    ###########################################################
+
+    #access_service
+    #0 access disabled
+    #1 access enabled
+    #option access_service '0' 
+    ###########################################################
+
+    #setup_service
+    #0 setup disabled
+    #1 setup enabled
+    #option setup_service '0'
+    ###########################################################
+
+    #accounting_Service
+    #0 accounting disabled
+    #1 accounting enabled
+    #option accounting_Service '0'

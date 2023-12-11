@@ -42,12 +42,12 @@ void *schedulerRoutine(void *arg)
 
     // Schedule the access task for now, and then with an interval of 12 hours
     // @TODO: Dynamic interval
-    scheduleAt(sch, time(NULL), accessTask);
-    scheduleEvery(sch, 43200, accessTask);
+    // scheduleAt(sch, time(NULL), accessTask);
+    // scheduleEvery(sch, 600, accessTask);
 
     // Schedule the setup task for now, and then with an interval of 1 minute
     // @TODO: Remove / add to task list
-    scheduleEvery(sch, 60, setupTask);
+    // scheduleEvery(sch, 60, setupTask);
 
     // Schedule the accounting task with an interval of 1 minute
     // @TODO: Dynamic interval, remove / add to task list

@@ -15,13 +15,15 @@
 #define MAX_TIMESTAMP_SIZE 256
 #define ACCESS_ENDPOINT "https://api.internal.wayru.tech/api/nfnode/access"
 
-time_t convertToTime_t(const char *timestampStr) {
+time_t convertToTime_t(const char *timestampStr)
+{
     long long int epoch = strtoll(timestampStr, NULL, 10);
     return (time_t)epoch;
 }
 
-AccessKey* initAccessKey() {
-    AccessKey* accessKey = malloc(sizeof(AccessKey));
+AccessKey *initAccessKey()
+{
+    AccessKey *accessKey = malloc(sizeof(AccessKey));
     accessKey->key = NULL;
     accessKey->createdAt = 0;
     accessKey->expiresAt = 0;
@@ -39,7 +41,8 @@ int readAccessKey(AccessKey *accessKey)
     snprintf(keyFile, sizeof(keyFile), "%s%s", getConfig().basePath, KEY_FILE);
 
     FILE *file = fopen(keyFile, "r");
-    if (file == NULL) {
+    if (file == NULL)
+    {
         // Handle error (e.g., file not found)
         fprintf(stderr, "Failed to open key file.\n");
         return 0;
@@ -57,7 +60,8 @@ int readAccessKey(AccessKey *accessKey)
             // Subtract the length of "public_key " from the total length
             size_t keyLength = strlen(line) - 11;
             accessKey->key = malloc(keyLength + 1);
-            if (accessKey->key == NULL) {
+            if (accessKey->key == NULL)
+            {
                 perror("Failed to allocate memory for key");
                 fclose(file);
                 return 0;
@@ -78,7 +82,7 @@ int readAccessKey(AccessKey *accessKey)
     fclose(file);
 
     time_t createdAt = convertToTime_t(created_at);
-    time_t expiresAt = convertToTime_t(expires_at);  
+    time_t expiresAt = convertToTime_t(expires_at);
 
     accessKey->createdAt = createdAt;
     accessKey->expiresAt = expiresAt;
@@ -110,7 +114,7 @@ void writeAccessKey(AccessKey *accessKey)
 size_t processAccessKeyResponse(char *ptr, size_t size, size_t nmemb, void *userdata)
 {
     size_t realsize = size * nmemb;
-    AccessKey *accessKey = (AccessKey *) userdata;
+    AccessKey *accessKey = (AccessKey *)userdata;
 
     // Parse JSON
     struct json_object *parsedResponse;
@@ -120,7 +124,8 @@ size_t processAccessKeyResponse(char *ptr, size_t size, size_t nmemb, void *user
     struct json_object *exp;
 
     parsedResponse = json_tokener_parse(ptr);
-    if (parsedResponse == NULL) {
+    if (parsedResponse == NULL)
+    {
         // JSON parsing failed
         fprintf(stderr, "Failed to parse JSON\n");
         return realsize;
@@ -130,13 +135,16 @@ size_t processAccessKeyResponse(char *ptr, size_t size, size_t nmemb, void *user
     if (json_object_object_get_ex(parsedResponse, "publicKey", &publicKey) &&
         json_object_object_get_ex(parsedResponse, "payload", &payload) &&
         json_object_object_get_ex(payload, "iat", &iat) &&
-        json_object_object_get_ex(payload, "exp", &exp)) {
+        json_object_object_get_ex(payload, "exp", &exp))
+    {
 
         accessKey->key = malloc(strlen(json_object_get_string(publicKey)) + 1); // +1 for null-terminator
         strcpy(accessKey->key, json_object_get_string(publicKey));
         accessKey->createdAt = json_object_get_int64(iat);
         accessKey->expiresAt = json_object_get_int64(exp);
-    } else {
+    }
+    else
+    {
         fprintf(stderr, "Failed to extract fields\n");
     }
 
@@ -147,14 +155,35 @@ size_t processAccessKeyResponse(char *ptr, size_t size, size_t nmemb, void *user
 }
 
 int checkAccessKeyExpiration(AccessKey *accessKey)
-{   
+{
     printf("[access] Checking expiration\n");
     time_t now;
     time(&now);
 
-    if (difftime(now, accessKey->expiresAt) > 0) {
+    if (difftime(now, accessKey->expiresAt) > 0)
+    {
         return 1;
-    } else {
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+int checkAccessKeyNearExpiration(AccessKey *accessKey)
+{
+    printf("[access] Checking if key is near expiration\n");
+    time_t now;
+    time(&now);
+
+    if (difftime(accessKey->expiresAt, now) <= 600)
+    {
+        printf("[access] Key is near expiration\n");
+        return 1;
+    }
+    else
+    {
+        printf("[access] Key is not near expiration\n");
         return 0;
     }
 }
@@ -197,8 +226,7 @@ int requestAccessKey(AccessKey *accessKey)
         .filePath = NULL,
         .key = NULL,
         .writeFunction = processAccessKeyResponse,
-        .writeData = accessKey
-    };
+        .writeData = accessKey};
 
     int resultPost = performHttpPost(&options);
     if (resultPost == 0)
@@ -213,14 +241,18 @@ int requestAccessKey(AccessKey *accessKey)
     }
 };
 
-void accessTask() {
+void accessTask()
+{
     printf("[access] access task\n");
 
-    int isExpired = checkAccessKeyExpiration(state.accessKey);
-    if (isExpired == 1 || state.accessKey->key == NULL) {
+    int isExpired = checkAccessKeyNearExpiration(state.accessKey);
+    if (isExpired == 1 || state.accessKey->key == NULL)
+    {
         requestAccessKey(state.accessKey);
         writeAccessKey(state.accessKey);
-    } else {
+    }
+    else
+    {
         printf("[access] key is still valid\n");
     }
 }

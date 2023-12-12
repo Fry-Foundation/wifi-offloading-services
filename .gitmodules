@@ -1,0 +1,3 @@
+[submodule "admin/wayru-os-services"]
+	path = admin/wayru-os-services
+	url = /home/lmva/wayru-os-services/.git

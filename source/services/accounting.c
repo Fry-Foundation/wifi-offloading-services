@@ -49,13 +49,15 @@ char *executeCommand(const char *command)
 char *queryOpenNds(char *scriptsPath, int devEnv, const char *command)
 {
     printf("[accounting] querying OpenNDS\n");
+    char scriptFile[256];
     if (devEnv != 1)
     {
-        return executeCommand(command);
+        //return executeCommand(command);        
+        snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/nds-clients.sh");
+        char *accountingOputput = runScript(scriptFile);
     }
     else
     {
-        char scriptFile[256];
         snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/nds-clients.sh");
         char *accountingOputput = runScript(scriptFile);
     }
@@ -74,8 +76,8 @@ void deauthenticateSessions()
 void accountingTask(int argc, char *argv[])
 {
     // Set up paths
-    int devEnv = 1;
-    const char *command = "ndsctl json";
+    int devEnv = 0;
+    //const char *command = "ndsctl json";
 
     for (int i = 1; i < argc; i++)
     {

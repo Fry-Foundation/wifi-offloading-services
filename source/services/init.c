@@ -1,7 +1,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "../lib/base64.h"
 #include "../store/config.h"
 #include "../store/state.h"
 #include "../utils/script_runner.h"
@@ -13,6 +12,10 @@
 #define DATA_PATH "/data"
 #define OS_VERSION_FILE "/etc/openwrt_release"
 #define PACKAGE_VERSION_FILE "/etc/wayru/VERSION"
+#define DEV_ID "devdevdevdevdev"
+#define ID_LENGTH 37
+#define ID_FIELD "option uuid"
+#define OPENWISP_CONFIG_FILE "/etc/config/openwisp"
 
 char *initOSVersion(int devEnv)
 {
@@ -146,37 +149,43 @@ char *initModel(char *scriptsPath)
     return model;
 }
 
-char *initId(char *mac, char *model)
+char *initId(int devEnv)
 {
-    // Calculate the length of the combined string
-    int combinedLength = strlen(mac) + strlen(model) + 2; // +1 for hyphen, +1 for null terminator
-    char *combined = (char *)malloc(combinedLength);
-    if (combined == NULL)
+    if (devEnv == 1)
     {
-        perror("Failed to allocate memory for combined string");
+        return strdup(DEV_ID);
+    }
+
+    FILE *file = fopen(OPENWISP_CONFIG_FILE, "r");    
+    if (file == NULL)
+    {
+        perror("Error opening file");
         return NULL;
     }
 
-    // Concatenate MAC and model with a hyphen
-    snprintf(combined, combinedLength, "%s-%s", mac, model);
+    char *id = NULL;
+    char line[256];
 
-    // Calculate the length of the encoded string
-    int encodedLength = Base64encode_len(combinedLength);
-
-    // Allocate memory for the encoded string
-    char *encoded = (char *)malloc(encodedLength);
-    if (encoded == NULL)
+    while(fgets(line, sizeof(line), file))
     {
-        perror("Failed to allocate memory for encoded data");
-        free(combined);
-        return NULL;
+        if (strstr(line, ID_FIELD) != NULL) {
+            // Find the start of the UUID in the line
+            char *start = strchr(line, '\'');
+            if (start != NULL && strlen(start) >= ID_LENGTH) {
+                // Allocate memory for the UUID
+                id = malloc(ID_LENGTH * sizeof(char));
+                if (id != NULL) {
+                    // Copy the UUID to the buffer, including the null terminator
+                    strncpy(id, start + 1, ID_LENGTH - 1);
+                    id[ID_LENGTH - 1] = '\0';
+                    break;
+                }
+            }
+        }
     }
 
-    // Encode the combined string
-    Base64encode(encoded, combined, combinedLength - 1); // -1 to exclude null terminator
-
-    free(combined);
-    return encoded;
+    fclose(file);
+    return id;
 }
 
 void init(int argc, char *argv[])
@@ -205,7 +214,7 @@ void init(int argc, char *argv[])
     char *servicesVersion = initServicesVersion(devEnv);
     char *mac = initMac(scriptsPath);
     char *model = initModel(scriptsPath);
-    char *id = initId(mac, model);
+    char *id = initId(devEnv);
 
     initConfig(devEnv, basePath, id, mac, model, osVersion, servicesVersion);
 

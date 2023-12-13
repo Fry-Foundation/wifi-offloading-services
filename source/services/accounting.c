@@ -13,83 +13,35 @@
 
 #define MAX_BUFFER_SIZE 1024
 
-char *executeCommand(const char *command)
-{
-    FILE *fp;
-    char *output = (char *)malloc(sizeof(char) * MAX_BUFFER_SIZE);
-
-    if (output == NULL)
-    {
-        fprintf(stderr, "Memory allocation failed.\n");
-        return NULL;
-    }
-
-    // Ejecuta el comando pasado como argumento y captura su salida
-    fp = popen(command, "r");
-
-    if (fp == NULL)
-    {
-        fprintf(stderr, "Failed to execute command.\n");
-        free(output);
-        return NULL;
-    }
-
-    // Lee la salida del comando
-    if (fgets(output, MAX_BUFFER_SIZE, fp) == NULL)
-    {
-        fprintf(stderr, "Failed to read command output.\n");
-    }
-
-    // Cierra el pipe
-    pclose(fp);
-
-    return output;
-}
-
 char *queryOpenNds(char *scriptsPath)
 {
     printf("[accounting] querying OpenNDS\n");
     char scriptFile[256];
     snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/nds-clients.sh");
-    char *accountingOputput = runScript(scriptFile);
-    return accountingOputput;
-    // if (devEnv != 1)
-    //{
-    // return executeCommand(command);
-    //    snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/nds-clients.sh");
-    //    char *accountingOputput = runScript(scriptFile);
-    //}
-    // else
-    //{
-    //    snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/nds-clients.sh");
-    //    char *accountingOputput = runScript(scriptFile);
-    //}
+    char *accountingOutput = runScript(scriptFile);
+    return accountingOutput;
 }
 
-void postAccountingUpdate()
+void postAccountingUpdate(char *scriptsPath)
 {
     printf("[accounting] posting accounting update\n");
 }
 
-void deauthenticateSessions()
+char *deauthenticateSessions(char *scriptsPath)
 {
     printf("[accounting] ending sessions\n");
+    char scriptFile[256];
+    snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/nds-deauth.sh");
+    char *deauthenticateOputput = runScript(scriptFile);
+    return deauthenticateOputput;
 }
 
 void accountingTask(int argc, char *argv[])
 {
     // Set up paths
-    int devEnv = 0;
-    // const char *command = "ndsctl json";
+    // int devEnv = 0;
+    int devEnv = getConfig().devEnv;
 
-    for (int i = 1; i < argc; i++)
-    {
-        if (strcmp(argv[i], "--dev") == 0)
-        {
-            devEnv = 1;
-            break;
-        }
-    }
     printf("[init] devEnv: %d\n", devEnv);
 
     // Set up paths
@@ -113,4 +65,6 @@ void accountingTask(int argc, char *argv[])
     // postAccountingUpdate();
 
     // deauthenticateSessions();
+    char *deauth = deauthenticateSessions(scriptsPath);
+    printf("[accounting] Deauthenticated clients: %s\n", deauth);
 }

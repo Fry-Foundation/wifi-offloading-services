@@ -87,7 +87,7 @@ define Package/wayru-os-services/install
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/get-mac.sh $(1)/etc/wayru/scripts/
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/get-model.sh $(1)/etc/wayru/scripts/
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/nds-clients.sh $(1)/etc/wayru/scripts/
-
+		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/nds-deauth.sh $(1)/etc/wayru/scripts/
 		$(INSTALL_DATA) VERSION $(1)/etc/wayru/VERSION
 endef
 

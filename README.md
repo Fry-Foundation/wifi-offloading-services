@@ -1,7 +1,7 @@
 # wayru-os-services
 Wayru services on OpenWrt:
-- Identity
-- Onboarding
+- Access key
+- Setup / onboarding
 - Accounting
 - API
 
@@ -51,44 +51,33 @@ bash dev
 ```
 
 ## Compiling for OpenWrt
+
 Compilations are done using the OpenWrt build system.
 
+The script `compile` automates the process, **but the build system needs to be set up correctly**.
+
 ### Requirements
-- Meet the OpenWrt build system requirements on your local machine: https://openwrt.org/docs/guide-developer/toolchain/install-buildsystem
-- Relevant wayru-os repositories cloned in your local machine:
-    - [wayru-os](https://github.com/Wayru-Network/wayru-os.git)
-    - [wayru-os-feed](https://github.com/Wayru-Network/wayru-os-feed.git)
-    - wayru-os-services (this repo)
+- Meet the [OpenWrt build system requirements](https://openwrt.org/docs/guide-developer/toolchain/install-buildsystem) on your local machine or VM 
+- Clone the [wayru-os](https://github.com/Wayru-Network/wayru-os.git) repository
+
+Note that your directory structure should look like this:
+```
+/path/to/
+├── wayru-os/
+└── wayru-os-services/
+```
 
 ### Build system setup
-Install the tools and toolchain in the `wayru-os` repo.
+Install the tools and toolchain in the `wayru-os` repo:
 
 ```bash
 make tools/install
 make toolchain/install
 ```
 
-Make sure the `wayru-os-feed` repo is added as a feed to the build system. The `feeds.conf` file in the root directory should include the following line:
-
-```bash
-src-git wayru_os_feed https://github.com/Wayru-Network/wayru-os-feed.git
-```
-
-Update the feed.
-
-```bash
-./scripts/feeds update wayru_os_feed
-```
-
-Install the feed's packages.
-
-```bash
-./scripts/feeds install -a -p wayru_os_feed
-```
-
 ### Build the package
-Build the package with the OpenWrt build system.
+Run the `compile` script from the `wayru-os-services` repo:
 
 ```bash
-make package/wayru-os-services/compile
+bash compile
 ```

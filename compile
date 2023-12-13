@@ -1,0 +1,60 @@
+#!/bin/bash
+
+set -e
+
+START_TIME=$(date +"%Y-%m-%d-%H%M%S")
+CURRENT_DIR=$(pwd)
+BUILD_DIR="$CURRENT_DIR/build"
+VERSIONED_DIR="$BUILD_DIR/$START_TIME"
+OPENWRT_DIR="../wayru-os"
+
+mkdir -p "$BUILD_DIR"
+mkdir -p "$VERSIONED_DIR"
+
+# Check if the build system repo exists
+if [ ! -d "$OPENWRT_DIR/.git" ]; then
+    echo "Error: The wayru-os repo does not exist"
+    echo "Make sure to read the README.md file"
+    exit 1
+fi
+
+cd "$OPENWRT_DIR"
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+echo "The wayru-os repo was found"
+echo "Current branch is '$CURRENT_BRANCH'"
+
+# Read the compile target
+CONFIG_LINE=$(grep 'CONFIG_TARGET_' '.config')
+
+if [ -z "$CONFIG_LINE" ]; then
+    echo "Error: Compile target not found in the configuration file"
+    echo "Please make sure the wayru-os repo is set up correctly"
+    exit 1
+fi
+
+COMPILE_TARGET=$(echo $CONFIG_LINE | sed -E 's/CONFIG_TARGET_([^_=]+).*/\1/')
+
+# Configure custom feed
+echo "src-link wayru_custom $CURRENT_DIR" > feeds.conf
+cat feeds.conf.default >> feeds.conf
+sed -i '/luci/d' feeds.conf
+sed -i '/telephony/d' feeds.conf
+sed -i '/routing/d' feeds.conf
+./scripts/feeds update -a
+./scripts/feeds install -a
+
+# Make sure our package is selected for compilation
+echo "CONFIG_PACKAGE_wayru-os-services=y" >> .config
+
+# Complete the configuration
+make defconfig
+
+# Compile
+make -j"$(nproc)" package/wayru-os-services/compile || exit 1
+
+# Move the compiled package to the build directory
+mv "bin/packages/"$COMPILE_TARGET"/wayru-os-services" "$VERSIONED_DIR"
+
+echo "✨ Done!"
+exit 0

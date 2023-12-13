@@ -3,7 +3,7 @@
 
 void accountingTask();
 char *statusOpenNds();
-char *stopOpenNds();
-char *restartOpenNds();
+int stopOpenNds();
+int startOpenNds();
 
 #endif // ACCOUNTING_H

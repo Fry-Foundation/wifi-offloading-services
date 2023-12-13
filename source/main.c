@@ -41,7 +41,7 @@ void *schedulerRoutine(void *arg)
     Scheduler *sch = (Scheduler *)arg;
 
     scheduleAt(sch, time(NULL) + 60, stopOpenNds);
-    scheduleAt(sch, time(NULL) + 120, restartOpenNds);
+    scheduleAt(sch, time(NULL) + 120, startOpenNds);
 
     // Schedule the access task for now, and then with an interval of 12 hours
     // @TODO: Dynamic interval

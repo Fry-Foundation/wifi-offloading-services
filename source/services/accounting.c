@@ -62,7 +62,7 @@ char *statusOpenNds()
     return status;
 }
 
-char *stopOpenNds()
+int stopOpenNds()
 {
     snprintf(command, sizeof(command), "service opennds stop");
 
@@ -70,44 +70,72 @@ char *stopOpenNds()
     if (fp == NULL)
     {
         printf("Error executing command opennds stop.\n");
-        return NULL;
+        return -1;
     }
 
-    char *stop = (char *)malloc(MAX_BUFFER_SIZE * sizeof(char));
-    if (fgets(stop, MAX_BUFFER_SIZE, fp) == NULL)
+    int status = pclose(fp);
+    if (status == -1)
     {
-        printf("Could not read command opennds stop.\n");
-        pclose(fp);
-        free(stop);
-        return NULL;
+        printf("Error closing opennds stop command.\n");
+        return -1;
     }
-
-    pclose(fp);
-    return stop;
+    else if (WIFEXITED(status))
+    {
+        int exitStatus = WEXITSTATUS(status);
+        if (exitStatus == 0)
+        {
+            printf("Opennds stop command executed successfully.\n");
+            return 0;
+        }
+        else
+        {
+            printf("Error executing the opennds stop command. Exit code: %d\n", exitStatus);
+            return exitStatus;
+        }
+    }
+    else
+    {
+        printf("Opennds stop command terminated unexpectedly.\n");
+        return -1;
+    }
 }
 
-char *restartOpenNds(char *scriptsPath)
+int startOpenNds()
 {
-    snprintf(command, sizeof(command), "service opennds restart");
+    snprintf(command, sizeof(command), "service opennds start");
 
     FILE *fp = popen(command, "r");
     if (fp == NULL)
     {
-        printf("Error executing command opennds restart.\n");
-        return NULL;
+        printf("Error executing command opennds start.\n");
+        return -1;
     }
 
-    char *restart = (char *)malloc(MAX_BUFFER_SIZE * sizeof(char));
-    if (fgets(restart, MAX_BUFFER_SIZE, fp) == NULL)
+    int status = pclose(fp);
+    if (status == -1)
     {
-        printf("Could not read command opennds restart.\n");
-        pclose(fp);
-        free(restart);
-        return NULL;
+        printf("Error closing opennds start command.\n");
+        return -1;
     }
-
-    pclose(fp);
-    return restart;
+    else if (WIFEXITED(status))
+    {
+        int exitStatus = WEXITSTATUS(status);
+        if (exitStatus == 0)
+        {
+            printf("Opennds start command executed successfully.\n");
+            return 0;
+        }
+        else
+        {
+            printf("Error executing the opennds start command. Exit code: %d\n", exitStatus);
+            return exitStatus;
+        }
+    }
+    else
+    {
+        printf("Opennds start command terminated unexpectedly.\n");
+        return -1;
+    }
 }
 
 void accountingTask(int argc, char *argv[])

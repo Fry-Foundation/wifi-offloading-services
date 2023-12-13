@@ -46,21 +46,24 @@ char *executeCommand(const char *command)
     return output;
 }
 
-char *queryOpenNds(char *scriptsPath, int devEnv)
+char *queryOpenNds(char *scriptsPath)
 {
     printf("[accounting] querying OpenNDS\n");
     char scriptFile[256];
-    if (devEnv != 1)
-    {
-        // return executeCommand(command);
-        snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/nds-clients.sh");
-        char *accountingOputput = runScript(scriptFile);
-    }
-    else
-    {
-        snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/nds-clients.sh");
-        char *accountingOputput = runScript(scriptFile);
-    }
+    snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/nds-clients.sh");
+    char *accountingOputput = runScript(scriptFile);
+    return accountingOputput;
+    // if (devEnv != 1)
+    //{
+    // return executeCommand(command);
+    //    snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/nds-clients.sh");
+    //    char *accountingOputput = runScript(scriptFile);
+    //}
+    // else
+    //{
+    //    snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/nds-clients.sh");
+    //    char *accountingOputput = runScript(scriptFile);
+    //}
 }
 
 void postAccountingUpdate()
@@ -105,7 +108,7 @@ void accountingTask(int argc, char *argv[])
     printf("[accounting] ccounting task\n");
 
     // queryOpenNds();
-    char *query = queryOpenNds(scriptsPath, devEnv);
+    char *query = queryOpenNds(scriptsPath);
     printf("[accounting] Current clients: %s\n", query);
     // postAccountingUpdate();
 

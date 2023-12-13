@@ -96,9 +96,9 @@ int performHttpPost(const PostRequestOptions *options)
         printf("Response code: %d\n", res);
 
         // Response
-        if(res != CURLE_OK)
-            fprintf(stderr, "curl_easy_perform() failed: %s\n",
-                    curl_easy_strerror(res));
+        if(res != CURLE_OK) {
+            fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+        }
 
         // Cleanup
         if(options->filePath != NULL) {

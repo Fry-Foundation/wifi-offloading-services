@@ -11,7 +11,9 @@
 #define OPENWRT_PATH "/etc/wayru"
 #define SCRIPTS_PATH "/scripts"
 
-#define MAX_BUFFER_SIZE 1024
+#define MAX_BUFFER_SIZE 256
+
+char command[MAX_BUFFER_SIZE];
 
 char *queryOpenNds(char *scriptsPath)
 {
@@ -34,6 +36,78 @@ char *deauthenticateSessions(char *scriptsPath)
     snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/nds-deauth.sh");
     char *deauthenticateOputput = runScript(scriptFile);
     return deauthenticateOputput;
+}
+
+char *statusOpenNds()
+{
+    snprintf(command, sizeof(command), "service opennds status");
+
+    FILE *fp = popen(command, "r");
+    if (fp == NULL)
+    {
+        printf("Error executing command, opennds status.\n");
+        return NULL;
+    }
+
+    char *status = (char *)malloc(MAX_BUFFER_SIZE * sizeof(char));
+    if (fgets(status, MAX_BUFFER_SIZE, fp) == NULL)
+    {
+        printf("Could not read command opennds status.\n");
+        pclose(fp);
+        free(status);
+        return NULL;
+    }
+
+    pclose(fp);
+    return status;
+}
+
+char *stopOpenNds()
+{
+    snprintf(command, sizeof(command), "service opennds stop");
+
+    FILE *fp = popen(command, "r");
+    if (fp == NULL)
+    {
+        printf("Error executing command opennds stop.\n");
+        return NULL;
+    }
+
+    char *stop = (char *)malloc(MAX_BUFFER_SIZE * sizeof(char));
+    if (fgets(stop, MAX_BUFFER_SIZE, fp) == NULL)
+    {
+        printf("Could not read command opennds stop.\n");
+        pclose(fp);
+        free(stop);
+        return NULL;
+    }
+
+    pclose(fp);
+    return stop;
+}
+
+char *restartOpenNds(char *scriptsPath)
+{
+    snprintf(command, sizeof(command), "service opennds restart");
+
+    FILE *fp = popen(command, "r");
+    if (fp == NULL)
+    {
+        printf("Error executing command opennds restart.\n");
+        return NULL;
+    }
+
+    char *restart = (char *)malloc(MAX_BUFFER_SIZE * sizeof(char));
+    if (fgets(restart, MAX_BUFFER_SIZE, fp) == NULL)
+    {
+        printf("Could not read command opennds restart.\n");
+        pclose(fp);
+        free(restart);
+        return NULL;
+    }
+
+    pclose(fp);
+    return restart;
 }
 
 void accountingTask(int argc, char *argv[])

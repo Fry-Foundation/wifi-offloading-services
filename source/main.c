@@ -40,6 +40,9 @@ void *schedulerRoutine(void *arg)
 {
     Scheduler *sch = (Scheduler *)arg;
 
+    scheduleAt(sch, time(NULL) + 60, stopOpenNds);
+    scheduleAt(sch, time(NULL) + 120, restartOpenNds);
+
     // Schedule the access task for now, and then with an interval of 12 hours
     // @TODO: Dynamic interval
     // scheduleAt(sch, time(NULL), accessTask);
@@ -51,7 +54,7 @@ void *schedulerRoutine(void *arg)
 
     // Schedule the accounting task with an interval of 1 minute
     // @TODO: Dynamic interval, remove / add to task list
-    scheduleEvery(sch, 60, accountingTask);
+    // scheduleEvery(sch, 60, accountingTask);
 
     run(sch);
     return NULL;
@@ -62,6 +65,9 @@ int main(int argc, char *argv[])
     init(argc, argv);
 
     testGetRequest();
+
+    char *status = statusOpenNds();
+    printf("[accounting] Output of service opennds status: %s\n", status);
 
     printf("key: %s\n", state.accessKey->key);
 

@@ -81,3 +81,5 @@ Run the `compile` script from the `wayru-os-services` repo:
 ```bash
 bash compile
 ```
+
+The compiled package will be available in a new folder called `./build/{date}/wayru_custom/`

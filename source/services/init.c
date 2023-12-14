@@ -123,8 +123,13 @@ char *initServicesVersion(int devEnv)
     return servicesVersion;
 }
 
-char *initMac(char *scriptsPath)
+char *initMac(int devEnv, char *scriptsPath)
 {
+    if (devEnv == 1)
+    {
+        return strdup("00:00:00:00:00:00");
+    }
+
     char scriptFile[256];
     snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/get-mac.sh");
     char *mac = runScript(scriptFile);
@@ -133,7 +138,7 @@ char *initMac(char *scriptsPath)
         mac[strcspn(mac, "\n")] = 0;
     }
 
-    return strdup("00:00:00:00:00:00");
+    return mac;
 }
 
 char *initModel(char *scriptsPath)
@@ -212,7 +217,7 @@ void init(int argc, char *argv[])
     // Initialize config
     char *osVersion = initOSVersion(devEnv);
     char *servicesVersion = initServicesVersion(devEnv);
-    char *mac = initMac(scriptsPath);
+    char *mac = initMac(devEnv, scriptsPath);
     char *model = initModel(scriptsPath);
     char *id = initId(devEnv);
 

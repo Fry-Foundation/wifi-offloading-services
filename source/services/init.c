@@ -12,16 +12,13 @@
 #define DATA_PATH "/data"
 #define OS_VERSION_FILE "/etc/openwrt_release"
 #define PACKAGE_VERSION_FILE "/etc/wayru/VERSION"
-#define DEV_ID "devdevdevdevdev"
 #define ID_LENGTH 37
-#define ID_FIELD "option uuid"
-#define OPENWISP_CONFIG_FILE "/etc/config/openwisp"
 
 char *initOSVersion(int devEnv)
 {
     if (devEnv == 1)
     {
-        return strdup("1.0.0");
+        return strdup("2.0.0");
     }
 
     FILE *file = fopen(OS_VERSION_FILE, "r");
@@ -73,6 +70,8 @@ char *initOSVersion(int devEnv)
         fprintf(stderr, "OS version string is empty\n");
     }
 
+    printf("[init] OS version is: %s\n", osVersion);
+
     return osVersion;
 }
 
@@ -101,8 +100,6 @@ char *initServicesVersion(int devEnv)
         return NULL; // Handle failed read attempt
     }
 
-    printf("Services Version is: %s\n", version);
-
     if (strchr(version, '\n') != NULL)
     {
         version[strcspn(version, "\n")] = 0;
@@ -118,18 +115,13 @@ char *initServicesVersion(int devEnv)
         return NULL;
     }
 
-    printf("Dynamic version is: %s\n", servicesVersion);
+    printf("[init] Services version is: %s\n", servicesVersion);
 
     return servicesVersion;
 }
 
-char *initMac(int devEnv, char *scriptsPath)
+char *initMac(char *scriptsPath)
 {
-    if (devEnv == 1)
-    {
-        return strdup("00:00:00:00:00:00");
-    }
-
     char scriptFile[256];
     snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/get-mac.sh");
     char *mac = runScript(scriptFile);
@@ -137,6 +129,8 @@ char *initMac(int devEnv, char *scriptsPath)
     {
         mac[strcspn(mac, "\n")] = 0;
     }
+
+    printf("[init] MAC address is: %s\n", mac);
 
     return mac;
 }
@@ -151,45 +145,23 @@ char *initModel(char *scriptsPath)
         model[strcspn(model, "\n")] = 0;
     }
 
+     printf("[init] Model is: %s\n", model);
+
     return model;
 }
 
-char *initId(int devEnv)
+char *initId(char *scriptsPath)
 {
-    if (devEnv == 1)
+    char scriptFile[256];
+    snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/get-uuid.sh");
+    char *id = runScript(scriptFile);
+    if (strchr(id, '\n') != NULL)
     {
-        return strdup(DEV_ID);
+        id[strcspn(id, "\n")] = 0;
     }
 
-    FILE *file = fopen(OPENWISP_CONFIG_FILE, "r");    
-    if (file == NULL)
-    {
-        perror("Error opening file");
-        return NULL;
-    }
+    printf("[init] UUID is: %s\n", id);
 
-    char *id = NULL;
-    char line[256];
-
-    while(fgets(line, sizeof(line), file))
-    {
-        if (strstr(line, ID_FIELD) != NULL) {
-            // Find the start of the UUID in the line
-            char *start = strchr(line, '\'');
-            if (start != NULL && strlen(start) >= ID_LENGTH) {
-                // Allocate memory for the UUID
-                id = malloc(ID_LENGTH * sizeof(char));
-                if (id != NULL) {
-                    // Copy the UUID to the buffer, including the null terminator
-                    strncpy(id, start + 1, ID_LENGTH - 1);
-                    id[ID_LENGTH - 1] = '\0';
-                    break;
-                }
-            }
-        }
-    }
-
-    fclose(file);
     return id;
 }
 
@@ -217,9 +189,9 @@ void init(int argc, char *argv[])
     // Initialize config
     char *osVersion = initOSVersion(devEnv);
     char *servicesVersion = initServicesVersion(devEnv);
-    char *mac = initMac(devEnv, scriptsPath);
+    char *mac = initMac(scriptsPath);
     char *model = initModel(scriptsPath);
-    char *id = initId(devEnv);
+    char *id = initId(scriptsPath);
 
     initConfig(devEnv, basePath, id, mac, model, osVersion, servicesVersion);
 

@@ -119,6 +119,7 @@ size_t processAccessKeyResponse(char *ptr, size_t size, size_t nmemb, void *user
     // Parse JSON
     struct json_object *parsedResponse;
     struct json_object *publicKey;
+    struct json_object *status;
     struct json_object *payload;
     struct json_object *iat;
     struct json_object *exp;
@@ -133,15 +134,44 @@ size_t processAccessKeyResponse(char *ptr, size_t size, size_t nmemb, void *user
 
     // Extract fields
     if (json_object_object_get_ex(parsedResponse, "publicKey", &publicKey) &&
+        json_object_object_get_ex(parsedResponse, "status", &status) &&
         json_object_object_get_ex(parsedResponse, "payload", &payload) &&
         json_object_object_get_ex(payload, "iat", &iat) &&
         json_object_object_get_ex(payload, "exp", &exp))
     {
-
         accessKey->key = malloc(strlen(json_object_get_string(publicKey)) + 1); // +1 for null-terminator
         strcpy(accessKey->key, json_object_get_string(publicKey));
         accessKey->createdAt = json_object_get_int64(iat);
         accessKey->expiresAt = json_object_get_int64(exp);
+
+        // @TODO: Move this logic outside this function
+        char *statusValue = malloc(strlen(json_object_get_string(status)) + 1);
+        strcpy(statusValue, json_object_get_string(status));
+        printf("[access] status: %s\n", statusValue);
+        if (strcmp(statusValue, "initial") == 0 || strcmp(statusValue, "setup-pending") == 0)
+        {
+            printf("setting state setup to 1");
+            state.setup = 1;
+            state.accounting = 0;
+        }
+        else if (strcmp(statusValue, "setup-approved") == 0)
+        {
+            // Complete setup (POST request to backend)
+            // completeSetup();
+            state.setup = 0;
+            state.accounting = 1;
+        }
+        else if (strcmp(statusValue, "setup-completed") == 0)
+        {
+            state.setup = 0;
+            state.accounting = 1;
+        }
+        else if (strcmp(statusValue, "banned") == 0)
+        {
+            printf("[access] Device is banned\n");
+            state.setup = 0;
+            state.accounting = 0;
+        }
     }
     else
     {

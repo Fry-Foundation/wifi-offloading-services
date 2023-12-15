@@ -17,7 +17,7 @@ void initState(int mode, AccessKey *accessKey)
 
     state.setup = 0;
 
-    state.accounting = 1;
+    state.accounting = 0;
 }
 
 void cleanState()

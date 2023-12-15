@@ -58,6 +58,7 @@ int performHttpPost(const PostRequestOptions *options)
 
         // Options
         curl_easy_setopt(curl, CURLOPT_URL, options->url);
+        curl_easy_setopt(curl, CURLOPT_POST, 1L);
 
         if (options->key != NULL) {
             char keyHeader[255];
@@ -68,9 +69,11 @@ int performHttpPost(const PostRequestOptions *options)
         if (options->body != NULL) {
             headers = curl_slist_append(headers, "Content-Type: application/json");
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, options->body);
+        } else {
+            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "");
         }
 
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);        
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
         if(options->filePath != NULL) {
             file = fopen(options->filePath, "wb");

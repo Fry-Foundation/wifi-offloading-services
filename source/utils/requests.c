@@ -41,7 +41,7 @@ int performHttpGet(const char *url, const char *filePath)
         return -1;
     }
 
-    return 0;
+    return 1;
 }
 
 // HTTP POST request
@@ -113,5 +113,5 @@ int performHttpPost(const PostRequestOptions *options)
         return -1;
     }
 
-    return 0;
+    return 1;
 }

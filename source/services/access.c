@@ -259,15 +259,15 @@ int requestAccessKey(AccessKey *accessKey)
         .writeData = accessKey};
 
     int resultPost = performHttpPost(&options);
-    if (resultPost == 0)
+    if (resultPost == 1)
     {
         printf("POST request was a success.\n");
-        return 0;
+        return 1;
     }
     else
     {
         printf("POST request failed.\n");
-        return 1;
+        return 0;
     }
 };
 

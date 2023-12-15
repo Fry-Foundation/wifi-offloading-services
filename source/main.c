@@ -20,7 +20,7 @@ void testGetRequest()
     char httpTestFile[256];
     snprintf(httpTestFile, sizeof(httpTestFile), "%s%s%s", getConfig().basePath, "/data", "/test");
     int resultGet = performHttpGet(TEST_URL, httpTestFile);
-    if (resultGet == 0)
+    if (resultGet == 1)
     {
         printf("GET request was a success.\n");
     }

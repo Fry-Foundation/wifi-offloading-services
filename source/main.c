@@ -73,7 +73,8 @@ int main(int argc, char *argv[])
     // but the periodic access task does check expiration
     // @TODO: This should probably be part of the access key initialization
     requestAccessKey(state.accessKey);
-    writeAccessKey(state.accessKey);    
+    writeAccessKey(state.accessKey);
+    configureWithAccessStatus(state.accessStatus);
 
     Scheduler sch = {NULL, 0};
 

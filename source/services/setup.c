@@ -10,9 +10,10 @@
 // If no setup request exists, create one
 void requestSetup()
 {
-    printf("[setup] request setup\n");
+    printf("[setup] Request setup\n");
+    printf("[setup] Access key: %s\n", state.accessKey->key);
     
-    PostRequestOptions setupRequestOptions = {
+    PostRequestOptions requestSetup = {
         .url = REQUEST_SETUP_ENDPOINT,
         .key = state.accessKey->key,
         .body = NULL,
@@ -21,20 +22,27 @@ void requestSetup()
         .writeData = NULL,
     };
 
-    performHttpPost(&setupRequestOptions);
+    int result = performHttpPost(&requestSetup);
+    if (result == 1) {
+        printf("[setup] setup request was a success\n");
+    } else {
+        printf("[setup] setup request failed\n");
+    }
 }
 
 // @TODO: Pending backend implementation
 int checkApprovedSetup()
 {
-    printf("[setup] check if the setup has been approved\n");
+    printf("[setup] Not yet implemented - Check if the setup has been approved\n");
+    printf("[setup] Not yet implemented - Access key: %s\n", state.accessKey->key);
 }
 
 void completeSetup()
 {
-    printf("[setup] complete setup\n");
+    printf("[setup] Complete setup\n");
+    printf("[setup] Access key: %s\n", state.accessKey->key);
 
-    PostRequestOptions setupRequestOptions = {
+    PostRequestOptions completeSetupOptions = {
         .url = COMPLETE_SETUP_ENDPOINT,
         .key = state.accessKey->key,
         .body = NULL,
@@ -43,20 +51,24 @@ void completeSetup()
         .writeData = NULL,
     };
 
-    performHttpPost(&setupRequestOptions);    
+    performHttpPost(&completeSetupOptions);    
 }
 
 void setupTask()
 {
     if (state.setup != 1)
     {
-        printf("[setup] setup is disabled\n");
+        printf("[setup] Setup is disabled\n");
         return;
     }
 
-    printf("[setup] setup task\n");
+    printf("[setup] Setup task\n");
 
-    requestSetup();
-    checkApprovedSetup();
-    completeSetup();
+    if (state.accessStatus == 0) {
+        requestSetup();
+    } else if(state.accessStatus == 2) {
+        checkApprovedSetup();
+    } else if(state.accessStatus == 3) {
+        completeSetup();
+    }
 }

@@ -4,6 +4,8 @@
 #include <time.h>
 #include <json-c/json.h>
 #include "access.h"
+#include "setup.h"
+#include "accounting.h"
 #include "../store/config.h"
 #include "../store/state.h"
 #include "../utils/requests.h"
@@ -111,6 +113,31 @@ void writeAccessKey(AccessKey *accessKey)
     fclose(file);
 }
 
+void processAccessStatus(char *status)
+{
+    printf("[access] Processing access status\n");
+    if (strcmp(status, "initial") == 0)
+    {
+        state.accessStatus = 0;
+    }
+    else if (strcmp(status, "banned") == 0)
+    {
+        state.accessStatus = 1;
+    }
+    else if (strcmp(status, "setup-pending") == 0)
+    {
+        state.accessStatus = 2;
+    }
+    else if (strcmp(status, "setup-approved") == 0)
+    {
+        state.accessStatus = 3;
+    }
+    else if (strcmp(status, "setup-completed") == 0)
+    {
+        state.accessStatus = 4;
+    }
+}
+
 size_t processAccessKeyResponse(char *ptr, size_t size, size_t nmemb, void *userdata)
 {
     size_t realsize = size * nmemb;
@@ -148,30 +175,7 @@ size_t processAccessKeyResponse(char *ptr, size_t size, size_t nmemb, void *user
         char *statusValue = malloc(strlen(json_object_get_string(status)) + 1);
         strcpy(statusValue, json_object_get_string(status));
         printf("[access] status: %s\n", statusValue);
-        if (strcmp(statusValue, "initial") == 0 || strcmp(statusValue, "setup-pending") == 0)
-        {
-            printf("setting state setup to 1");
-            state.setup = 1;
-            state.accounting = 0;
-        }
-        else if (strcmp(statusValue, "setup-approved") == 0)
-        {
-            // Complete setup (POST request to backend)
-            // completeSetup();
-            state.setup = 0;
-            state.accounting = 1;
-        }
-        else if (strcmp(statusValue, "setup-completed") == 0)
-        {
-            state.setup = 0;
-            state.accounting = 1;
-        }
-        else if (strcmp(statusValue, "banned") == 0)
-        {
-            printf("[access] Device is banned\n");
-            state.setup = 0;
-            state.accounting = 0;
-        }
+        processAccessStatus(statusValue);
     }
     else
     {
@@ -261,25 +265,72 @@ int requestAccessKey(AccessKey *accessKey)
     int resultPost = performHttpPost(&options);
     if (resultPost == 1)
     {
-        printf("POST request was a success.\n");
+        printf("[access] Request was successful.\n");
         return 1;
     }
     else
     {
-        printf("POST request failed.\n");
+        printf("[access] Request failed.\n");
         return 0;
     }
 };
 
+void configureWithAccessStatus(int accessStatus)
+{
+    printf("[access] Configuring with access status\n");
+    if (accessStatus == 0)
+    {
+        printf("[access] Access status is 'initial'\n");
+        state.setup = 1;
+        state.accounting = 0;
+
+        stopOpenNds();
+    }
+    else if (accessStatus == 1)
+    {
+        printf("[access] Access status is 'banned'\n");
+        state.setup = 0;
+        state.accounting = 0;
+
+        stopOpenNds();
+    }
+    else if (accessStatus == 2)
+    {
+        printf("[access] Access status is 'setup-pending'\n");
+        state.setup = 1;
+        state.accounting = 0;
+
+        stopOpenNds();
+    }
+    else if (accessStatus == 3)
+    {
+        printf("[access] Access status is 'setup-approved'\n");
+        state.setup = 0;
+        state.accounting = 1;
+
+        completeSetup();
+        startOpenNds();
+    }
+    else if (accessStatus == 4)
+    {
+        printf("[access] Access status is 'setup-completed'\n");
+        state.setup = 0;
+        state.accounting = 1;
+
+        startOpenNds();
+    }
+}
+
 void accessTask()
 {
-    printf("[access] access task\n");
+    printf("[access] Access task\n");
 
     int isExpired = checkAccessKeyNearExpiration(state.accessKey);
     if (isExpired == 1 || state.accessKey->key == NULL)
     {
         requestAccessKey(state.accessKey);
         writeAccessKey(state.accessKey);
+        configureWithAccessStatus(state.accessStatus);
     }
     else
     {

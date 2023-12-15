@@ -61,8 +61,8 @@ int performHttpPost(const PostRequestOptions *options)
         curl_easy_setopt(curl, CURLOPT_POST, 1L);
 
         if (options->key != NULL) {
-            char keyHeader[255];
-            snprintf(keyHeader, 255, "public_key: %s", options->key);
+            char keyHeader[512];
+            snprintf(keyHeader, 512, "public_key: %s", options->key);
             headers = curl_slist_append(headers, keyHeader);
         }
 

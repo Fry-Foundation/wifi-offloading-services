@@ -75,6 +75,7 @@ int main(int argc, char *argv[])
     requestAccessKey(state.accessKey);
     writeAccessKey(state.accessKey);
     configureWithAccessStatus(state.accessStatus);
+    state.onBoot = 0;
 
     Scheduler sch = {NULL, 0};
 

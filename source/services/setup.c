@@ -69,6 +69,9 @@ void setupTask()
     } else if(state.accessStatus == 2) {
         checkApprovedSetup();
     } else if(state.accessStatus == 3) {
-        completeSetup();
+        // Note: We currently complete the setup from the access task
+        // since that call receives the updated status value first
+        // @TODO: Implement a status endpoint that we can call from here
+        // completeSetup();
     }
 }

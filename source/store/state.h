@@ -34,6 +34,9 @@ typedef struct
 
     // Accounting
     int accounting;
+
+    // On boot
+    int onBoot;
 } State;
 
 extern State state;

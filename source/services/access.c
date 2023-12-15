@@ -240,7 +240,8 @@ int requestAccessKey(AccessKey *accessKey)
         "  \"model\": \"%s\",\n"
         "  \"os_name\": \"%s\",\n"
         "  \"os_version\": \"%s\",\n"
-        "  \"os_services_version\": \"%s\"\n"
+        "  \"os_services_version\": \"%s\",\n"
+        "  \"on_boot\": \"%s\"\n"
         "}",
         getConfig().deviceId,
         getConfig().mac,
@@ -248,7 +249,8 @@ int requestAccessKey(AccessKey *accessKey)
         getConfig().model,
         "openwrt",
         getConfig().osVersion,
-        getConfig().servicesVersion);
+        getConfig().servicesVersion,
+        state.onBoot == 1 ? "true" : "false");
 
     printf("DeviceData -> %s\n", jsonData);
     printf("json length %ld\n", strlen(jsonData));

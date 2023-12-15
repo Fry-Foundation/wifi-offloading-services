@@ -3,4 +3,6 @@
 
 void setupTask();
 
+void completeSetup();
+
 #endif // SETUP_H

@@ -15,7 +15,7 @@
 #define REQUEST_BODY_BUFFER_SIZE 256
 #define MAX_KEY_SIZE 256
 #define MAX_TIMESTAMP_SIZE 256
-#define ACCESS_ENDPOINT "https://api.internal.wayru.tech/api/nfnode/access"
+#define ACCESS_ENDPOINT "https://api.wayru.tech/api/nfnode/access"
 
 time_t convertToTime_t(const char *timestampStr)
 {

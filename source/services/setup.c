@@ -3,8 +3,8 @@
 #include "../store/state.h"
 #include "../utils/requests.h"
 
-#define REQUEST_SETUP_ENDPOINT "https://api.internal.wayru.tech/api/nfNode/setup"
-#define COMPLETE_SETUP_ENDPOINT "https://api.internal.wayru.tech/api/nfNode/setup/complete"
+#define REQUEST_SETUP_ENDPOINT "https://api.wayru.tech/api/nfNode/setup"
+#define COMPLETE_SETUP_ENDPOINT "https://api.wayru.tech/api/nfNode/setup/complete"
 
 // Backend should handle setup requests that have already been created for this access key
 // If no setup request exists, create one

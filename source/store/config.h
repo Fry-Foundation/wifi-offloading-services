@@ -7,6 +7,7 @@ typedef struct
     char *basePath;
     char *deviceId;
     char *mac;
+    char *brand;
     char *model;
     char *osVersion;
     char *servicesVersion;
@@ -17,6 +18,7 @@ void initConfig(
     char *basePath,
     char *deviceId,
     char *mac,
+    char *brand,
     char *model,
     char *osVersion,
     char *servicesVersion);

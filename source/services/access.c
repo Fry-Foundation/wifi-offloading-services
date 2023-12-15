@@ -211,6 +211,7 @@ int requestAccessKey(AccessKey *accessKey)
         getConfig().deviceId,
         getConfig().mac,
         "tp-link",
+        getConfig().brand,
         getConfig().model,
         "openwrt",
         getConfig().osVersion,

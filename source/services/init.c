@@ -135,6 +135,21 @@ char *initMac(char *scriptsPath)
     return mac;
 }
 
+char *initBrand(char *scriptsPath)
+{
+    char scriptFile[256];
+    snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/get-brand.sh");
+    char *brand = runScript(scriptFile);
+    if (strchr(brand, '\n') != NULL)
+    {
+        brand[strcspn(brand, "\n")] = 0;
+    }
+
+    printf("[init] Brand is: %s\n", brand);
+
+    return brand;
+}
+
 char *initModel(char *scriptsPath)
 {
     char scriptFile[256];
@@ -145,7 +160,7 @@ char *initModel(char *scriptsPath)
         model[strcspn(model, "\n")] = 0;
     }
 
-     printf("[init] Model is: %s\n", model);
+    printf("[init] Model is: %s\n", model);
 
     return model;
 }
@@ -190,10 +205,11 @@ void init(int argc, char *argv[])
     char *osVersion = initOSVersion(devEnv);
     char *servicesVersion = initServicesVersion(devEnv);
     char *mac = initMac(scriptsPath);
+    char *brand = initBrand(scriptsPath);
     char *model = initModel(scriptsPath);
     char *id = initId(scriptsPath);
 
-    initConfig(devEnv, basePath, id, mac, model, osVersion, servicesVersion);
+    initConfig(devEnv, basePath, id, mac, brand, model, osVersion, servicesVersion);
 
     AccessKey *accessKey = initAccessKey();
     initState(0, accessKey);

@@ -11,9 +11,9 @@
 #include "../utils/requests.h"
 
 #define KEY_FILE "/data/access-key"
-#define KEY_FILE_BUFFER_SIZE 256
+#define KEY_FILE_BUFFER_SIZE 768
 #define REQUEST_BODY_BUFFER_SIZE 256
-#define MAX_KEY_SIZE 256
+#define MAX_KEY_SIZE 512
 #define MAX_TIMESTAMP_SIZE 256
 #define ACCESS_ENDPOINT "https://api.wayru.tech/api/nfnode/access"
 
@@ -50,7 +50,7 @@ int readAccessKey(AccessKey *accessKey)
         return 0;
     }
 
-    char line[256];
+    char line[512];
     char public_key[MAX_KEY_SIZE];
     char created_at[MAX_TIMESTAMP_SIZE];
     char expires_at[MAX_TIMESTAMP_SIZE];

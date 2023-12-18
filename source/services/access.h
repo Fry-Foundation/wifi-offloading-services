@@ -22,6 +22,8 @@ int requestAccessKey(AccessKey *accessKey);
 
 int checkAccessKeyNearExpiration(AccessKey *accessKey);
 
+void configureWithAccessStatus(int accessStatus);
+
 void accessTask();
 
 #endif /* ACCESS_H */

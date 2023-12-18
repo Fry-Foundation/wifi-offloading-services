@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "pthread.h"
 #include "services/init.h"
 #include "services/access.h"
@@ -20,7 +21,7 @@ void testGetRequest()
     char httpTestFile[256];
     snprintf(httpTestFile, sizeof(httpTestFile), "%s%s%s", getConfig().basePath, "/data", "/test");
     int resultGet = performHttpGet(TEST_URL, httpTestFile);
-    if (resultGet == 0)
+    if (resultGet == 1)
     {
         printf("GET request was a success.\n");
     }
@@ -40,21 +41,18 @@ void *schedulerRoutine(void *arg)
 {
     Scheduler *sch = (Scheduler *)arg;
 
-    scheduleAt(sch, time(NULL) + 60, stopOpenNds);
-    scheduleAt(sch, time(NULL) + 120, startOpenNds);
+    // scheduleAt(sch, time(NULL) + 60, stopOpenNds);
+    // scheduleAt(sch, time(NULL) + 120, startOpenNds);
 
-    // Schedule the access task for now, and then with an interval of 12 hours
-    // @TODO: Dynamic interval
-    // scheduleAt(sch, time(NULL), accessTask);
+    // Schedule the access task with an interval of 10 minutes
     scheduleEvery(sch, 600, accessTask);
 
     // Schedule the setup task for now, and then with an interval of 1 minute
-    // @TODO: Remove / add to task list
-    // scheduleEvery(sch, 60, setupTask);
+    scheduleAt(sch, time(NULL), setupTask);
+    scheduleEvery(sch, 60, setupTask);
 
     // Schedule the accounting task with an interval of 1 minute
-    // @TODO: Dynamic interval, remove / add to task list
-    // scheduleEvery(sch, 60, accountingTask);
+    scheduleEvery(sch, 60, accountingTask);
 
     run(sch);
     return NULL;
@@ -62,14 +60,25 @@ void *schedulerRoutine(void *arg)
 
 int main(int argc, char *argv[])
 {
+    usleep(30000000);
+
     init(argc, argv);
 
-    testGetRequest();
+    // testGetRequest();
 
-    char *status = statusOpenNds();
-    printf("[accounting] Output of service opennds status: %s\n", status);
+    // char *status = statusOpenNds();
+    // printf("[accounting] Output of service opennds status: %s\n", status);
 
-    printf("key: %s\n", state.accessKey->key);
+    // printf("key: %s\n", state.accessKey->key);
+
+    // Request access key to get backend status
+    // Note that we disregard the expiration time for now,
+    // but the periodic access task does check expiration
+    // @TODO: This should probably be part of the access key initialization
+    requestAccessKey(state.accessKey);
+    writeAccessKey(state.accessKey);
+    configureWithAccessStatus(state.accessStatus);
+    state.onBoot = 0;
 
     Scheduler sch = {NULL, 0};
 

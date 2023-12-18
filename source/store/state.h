@@ -21,11 +21,22 @@ typedef struct
     // Access key
     AccessKey* accessKey;
 
+    // Access status
+    // 0 - initial
+    // 1 - banned
+    // 2 - setup-pending
+    // 3 - setup-approved
+    // 4 - setup-completed
+    int accessStatus;
+
     // Setup
     int setup;
 
     // Accounting
     int accounting;
+
+    // On boot
+    int onBoot;
 } State;
 
 extern State state;

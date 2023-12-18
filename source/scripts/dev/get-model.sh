@@ -1,1 +1,1 @@
-echo "comfast-cf-e375ac"
+echo "cf-e375ac"

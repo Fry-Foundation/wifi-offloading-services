@@ -41,11 +41,8 @@ void *schedulerRoutine(void *arg)
 {
     Scheduler *sch = (Scheduler *)arg;
 
-    // scheduleAt(sch, time(NULL) + 60, stopOpenNds);
-    // scheduleAt(sch, time(NULL) + 120, startOpenNds);
-
-    // Schedule the access task with an interval of 10 minutes
-    scheduleEvery(sch, 600, accessTask);
+    // Schedule the access task with an interval of 2 minutes
+    scheduleEvery(sch, 120, accessTask);
 
     // Schedule the setup task for now, and then with an interval of 1 minute
     scheduleAt(sch, time(NULL), setupTask);
@@ -60,8 +57,6 @@ void *schedulerRoutine(void *arg)
 
 int main(int argc, char *argv[])
 {
-    // usleep(30000000);
-
     init(argc, argv);
 
     // testGetRequest();

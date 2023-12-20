@@ -178,6 +178,10 @@ char *initId(char *scriptsPath)
         // if (id != NULL && strlen(id) > 0 && strlen(id) == ID_LENGTH - 1)
         if (id != NULL && strlen(id) > 1)
         {
+            if (strchr(id, '\n') != NULL)
+            {
+                id[strcspn(id, "\n")] = 0;
+            }
             printf("[init] UUID is: %s\n", id);
             break; // Exit the loop if a valid UUID is obtained
         }

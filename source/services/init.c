@@ -169,15 +169,39 @@ char *initId(char *scriptsPath)
 {
     char scriptFile[256];
     snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/get-uuid.sh");
-    char *id = runScript(scriptFile);
-    if (strchr(id, '\n') != NULL)
+    char *id = NULL;
+
+    // Loop indefinitely until a valid UUID is obtained
+    while (1)
     {
-        id[strcspn(id, "\n")] = 0;
+        id = runScript(scriptFile);
+        // if (id != NULL && strlen(id) > 0 && strlen(id) == ID_LENGTH - 1)
+        if (id != NULL && strlen(id) > 1)
+        {
+            printf("[init] UUID is: %s\n", id);
+            break; // Exit the loop if a valid UUID is obtained
+        }
+
+        printf("[init] Retrying to obtain UUID...\n");
+        sleep(1); // Wait for 1 second before retrying
     }
 
-    printf("[init] UUID is: %s\n", id);
-
     return id;
+}
+
+char *publicIP(char *scriptsPath)
+{
+    char scriptFile[256];
+    snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/get-public-ip.sh");
+    char *public_ip = runScript(scriptFile);
+    if (strchr(public_ip, '\n') != NULL)
+    {
+        public_ip[strcspn(public_ip, "\n")] = 0;
+    }
+
+    printf("[init] Public IP: %s\n", public_ip);
+
+    return public_ip;
 }
 
 void init(int argc, char *argv[])
@@ -210,6 +234,8 @@ void init(int argc, char *argv[])
     char *id = initId(scriptsPath);
 
     initConfig(devEnv, basePath, id, mac, brand, model, osVersion, servicesVersion);
+
+    char *public_ip = publicIP(scriptsPath);
 
     AccessKey *accessKey = initAccessKey();
     initState(0, accessKey);

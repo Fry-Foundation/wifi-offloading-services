@@ -245,10 +245,9 @@ int requestAccessKey(AccessKey *accessKey)
         "}",
         getConfig().deviceId,
         getConfig().mac,
-        "tp-link",
         getConfig().brand,
         getConfig().model,
-        "openwrt",
+        "wayru-os",
         getConfig().osVersion,
         getConfig().servicesVersion,
         state.onBoot == 1 ? "true" : "false");

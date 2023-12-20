@@ -237,7 +237,8 @@ int requestAccessKey(AccessKey *accessKey)
         "  \"device_id\": \"%s\",\n"
         "  \"mac\": \"%s\",\n"
         "  \"brand\": \"%s\",\n"
-        "  \"model\": \"%s\",\n"
+        "  \"model\": \"%s\",\n",
+        "  \"public_ip\": \"%s\",\n",
         "  \"os_name\": \"%s\",\n"
         "  \"os_version\": \"%s\",\n"
         "  \"os_services_version\": \"%s\",\n"
@@ -248,6 +249,7 @@ int requestAccessKey(AccessKey *accessKey)
         getConfig().brand,
         getConfig().model,
         "wayru-os",
+        getConfig().public_ip,
         getConfig().osVersion,
         getConfig().servicesVersion,
         state.onBoot == 1 ? "true" : "false");

@@ -231,11 +231,10 @@ void init(int argc, char *argv[])
     char *mac = initMac(scriptsPath);
     char *brand = initBrand(scriptsPath);
     char *model = initModel(scriptsPath);
+    char *public_ip = publicIP(scriptsPath);
     char *id = initId(scriptsPath);
 
-    initConfig(devEnv, basePath, id, mac, brand, model, osVersion, servicesVersion);
-
-    char *public_ip = publicIP(scriptsPath);
+    initConfig(devEnv, basePath, id, mac, brand, model, public_ip, osVersion, servicesVersion);
 
     AccessKey *accessKey = initAccessKey();
     initState(0, accessKey);

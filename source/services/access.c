@@ -4,16 +4,18 @@
 #include <time.h>
 #include <json-c/json.h>
 #include "access.h"
+#include "setup.h"
+#include "accounting.h"
 #include "../store/config.h"
 #include "../store/state.h"
 #include "../utils/requests.h"
 
 #define KEY_FILE "/data/access-key"
-#define KEY_FILE_BUFFER_SIZE 256
+#define KEY_FILE_BUFFER_SIZE 768
 #define REQUEST_BODY_BUFFER_SIZE 256
-#define MAX_KEY_SIZE 256
+#define MAX_KEY_SIZE 512
 #define MAX_TIMESTAMP_SIZE 256
-#define ACCESS_ENDPOINT "https://api.internal.wayru.tech/api/nfnode/access"
+#define ACCESS_ENDPOINT "https://api.wayru.tech/api/nfnode/access"
 
 time_t convertToTime_t(const char *timestampStr)
 {
@@ -48,7 +50,7 @@ int readAccessKey(AccessKey *accessKey)
         return 0;
     }
 
-    char line[256];
+    char line[512];
     char public_key[MAX_KEY_SIZE];
     char created_at[MAX_TIMESTAMP_SIZE];
     char expires_at[MAX_TIMESTAMP_SIZE];
@@ -111,6 +113,31 @@ void writeAccessKey(AccessKey *accessKey)
     fclose(file);
 }
 
+void processAccessStatus(char *status)
+{
+    printf("[access] Processing access status\n");
+    if (strcmp(status, "initial") == 0)
+    {
+        state.accessStatus = 0;
+    }
+    else if (strcmp(status, "banned") == 0)
+    {
+        state.accessStatus = 1;
+    }
+    else if (strcmp(status, "setup-pending") == 0)
+    {
+        state.accessStatus = 2;
+    }
+    else if (strcmp(status, "setup-approved") == 0)
+    {
+        state.accessStatus = 3;
+    }
+    else if (strcmp(status, "setup-completed") == 0)
+    {
+        state.accessStatus = 4;
+    }
+}
+
 size_t processAccessKeyResponse(char *ptr, size_t size, size_t nmemb, void *userdata)
 {
     size_t realsize = size * nmemb;
@@ -119,6 +146,7 @@ size_t processAccessKeyResponse(char *ptr, size_t size, size_t nmemb, void *user
     // Parse JSON
     struct json_object *parsedResponse;
     struct json_object *publicKey;
+    struct json_object *status;
     struct json_object *payload;
     struct json_object *iat;
     struct json_object *exp;
@@ -133,15 +161,21 @@ size_t processAccessKeyResponse(char *ptr, size_t size, size_t nmemb, void *user
 
     // Extract fields
     if (json_object_object_get_ex(parsedResponse, "publicKey", &publicKey) &&
+        json_object_object_get_ex(parsedResponse, "status", &status) &&
         json_object_object_get_ex(parsedResponse, "payload", &payload) &&
         json_object_object_get_ex(payload, "iat", &iat) &&
         json_object_object_get_ex(payload, "exp", &exp))
     {
-
         accessKey->key = malloc(strlen(json_object_get_string(publicKey)) + 1); // +1 for null-terminator
         strcpy(accessKey->key, json_object_get_string(publicKey));
         accessKey->createdAt = json_object_get_int64(iat);
         accessKey->expiresAt = json_object_get_int64(exp);
+
+        // @TODO: Move this logic outside this function
+        char *statusValue = malloc(strlen(json_object_get_string(status)) + 1);
+        strcpy(statusValue, json_object_get_string(status));
+        printf("[access] status: %s\n", statusValue);
+        processAccessStatus(statusValue);
     }
     else
     {
@@ -206,7 +240,8 @@ int requestAccessKey(AccessKey *accessKey)
         "  \"model\": \"%s\",\n"
         "  \"os_name\": \"%s\",\n"
         "  \"os_version\": \"%s\",\n"
-        "  \"os_services_version\": \"%s\"\n"
+        "  \"os_services_version\": \"%s\",\n"
+        "  \"on_boot\": \"%s\"\n"
         "}",
         getConfig().deviceId,
         getConfig().mac,
@@ -215,7 +250,8 @@ int requestAccessKey(AccessKey *accessKey)
         getConfig().model,
         "openwrt",
         getConfig().osVersion,
-        getConfig().servicesVersion);
+        getConfig().servicesVersion,
+        state.onBoot == 1 ? "true" : "false");
 
     printf("DeviceData -> %s\n", jsonData);
     printf("json length %ld\n", strlen(jsonData));
@@ -230,27 +266,74 @@ int requestAccessKey(AccessKey *accessKey)
         .writeData = accessKey};
 
     int resultPost = performHttpPost(&options);
-    if (resultPost == 0)
+    if (resultPost == 1)
     {
-        printf("POST request was a success.\n");
-        return 0;
+        printf("[access] Request was successful.\n");
+        return 1;
     }
     else
     {
-        printf("POST request failed.\n");
-        return 1;
+        printf("[access] Request failed.\n");
+        return 0;
     }
 };
 
+void configureWithAccessStatus(int accessStatus)
+{
+    printf("[access] Configuring with access status\n");
+    if (accessStatus == 0)
+    {
+        printf("[access] Access status is 'initial'\n");
+        state.setup = 1;
+        state.accounting = 0;
+
+        stopOpenNds();
+    }
+    else if (accessStatus == 1)
+    {
+        printf("[access] Access status is 'banned'\n");
+        state.setup = 0;
+        state.accounting = 0;
+
+        stopOpenNds();
+    }
+    else if (accessStatus == 2)
+    {
+        printf("[access] Access status is 'setup-pending'\n");
+        state.setup = 1;
+        state.accounting = 0;
+
+        stopOpenNds();
+    }
+    else if (accessStatus == 3)
+    {
+        printf("[access] Access status is 'setup-approved'\n");
+        state.setup = 0;
+        state.accounting = 1;
+
+        completeSetup();
+        startOpenNds();
+    }
+    else if (accessStatus == 4)
+    {
+        printf("[access] Access status is 'setup-completed'\n");
+        state.setup = 0;
+        state.accounting = 1;
+
+        startOpenNds();
+    }
+}
+
 void accessTask()
 {
-    printf("[access] access task\n");
+    printf("[access] Access task\n");
 
     int isExpired = checkAccessKeyNearExpiration(state.accessKey);
     if (isExpired == 1 || state.accessKey->key == NULL)
     {
         requestAccessKey(state.accessKey);
         writeAccessKey(state.accessKey);
+        configureWithAccessStatus(state.accessStatus);
     }
     else
     {

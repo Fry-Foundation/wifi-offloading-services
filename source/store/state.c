@@ -15,9 +15,13 @@ void initState(int mode, AccessKey *accessKey)
 
     state.accessKey = accessKey;
 
+    state.accessStatus = 0;
+
     state.setup = 0;
 
-    state.accounting = 1;
+    state.accounting = 0;
+
+    state.onBoot = 1;
 }
 
 void cleanState()

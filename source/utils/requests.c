@@ -41,7 +41,7 @@ int performHttpGet(const char *url, const char *filePath)
         return -1;
     }
 
-    return 0;
+    return 1;
 }
 
 // HTTP POST request
@@ -58,19 +58,22 @@ int performHttpPost(const PostRequestOptions *options)
 
         // Options
         curl_easy_setopt(curl, CURLOPT_URL, options->url);
+        curl_easy_setopt(curl, CURLOPT_POST, 1L);
 
         if (options->key != NULL) {
-            char keyHeader[255];
-            snprintf(keyHeader, 255, "public_key: %s", options->key);
+            char keyHeader[512];
+            snprintf(keyHeader, 512, "public_key: %s", options->key);
             headers = curl_slist_append(headers, keyHeader);
         }
 
         if (options->body != NULL) {
             headers = curl_slist_append(headers, "Content-Type: application/json");
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, options->body);
+        } else {
+            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "");
         }
 
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);        
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
         if(options->filePath != NULL) {
             file = fopen(options->filePath, "wb");
@@ -113,5 +116,5 @@ int performHttpPost(const PostRequestOptions *options)
         return -1;
     }
 
-    return 0;
+    return 1;
 }

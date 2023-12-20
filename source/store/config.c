@@ -11,6 +11,7 @@ void initConfig(
     char *mac,
     char *brand,
     char *model,
+    char *public_ip,
     char *osVersion,
     char *servicesVersion)
 {
@@ -20,6 +21,7 @@ void initConfig(
     config.mac = strdup(mac);
     config.brand = strdup(brand);
     config.model = strdup(model);
+    config.public_ip = strdup(public_ip);
     config.osVersion = strdup(osVersion);
     config.servicesVersion = strdup(servicesVersion);
 }
@@ -31,6 +33,7 @@ void cleanConfig()
     free(config.mac);
     free(config.brand);
     free(config.model);
+    free(config.public_ip);
     free(config.osVersion);
     free(config.servicesVersion);
 }

@@ -9,6 +9,7 @@ typedef struct
     char *mac;
     char *brand;
     char *model;
+    char *public_ip;
     char *osVersion;
     char *servicesVersion;
 } Config;
@@ -20,6 +21,7 @@ void initConfig(
     char *mac,
     char *brand,
     char *model,
+    char *public_ip,
     char *osVersion,
     char *servicesVersion);
 

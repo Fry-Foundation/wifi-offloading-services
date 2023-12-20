@@ -258,6 +258,7 @@ int requestAccessKey(AccessKey *accessKey)
     json_object_object_add(jsonData, "mac", json_object_new_string(getConfig().mac));
     json_object_object_add(jsonData, "brand", json_object_new_string(getConfig().brand));
     json_object_object_add(jsonData, "model", json_object_new_string(getConfig().model));
+    json_object_object_add(jsonData, "public_ip", json_object_new_string(getConfig().public_ip));
     json_object_object_add(jsonData, "os_name", json_object_new_string("wayru-os"));
     json_object_object_add(jsonData, "os_version", json_object_new_string(getConfig().osVersion));
     json_object_object_add(jsonData, "os_services_version", json_object_new_string(getConfig().servicesVersion));

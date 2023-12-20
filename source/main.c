@@ -60,8 +60,6 @@ void *schedulerRoutine(void *arg)
 
 int main(int argc, char *argv[])
 {
-    usleep(30000000);
-
     init(argc, argv);
 
     // testGetRequest();

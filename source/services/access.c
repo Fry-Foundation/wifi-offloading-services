@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <time.h>
 #include <json-c/json.h>
 #include "access.h"
@@ -143,6 +144,8 @@ size_t processAccessKeyResponse(char *ptr, size_t size, size_t nmemb, void *user
     size_t realsize = size * nmemb;
     AccessKey *accessKey = (AccessKey *)userdata;
 
+    fprintf(stderr, "[access] Received JSON data: %s\n", ptr);
+
     // Parse JSON
     struct json_object *parsedResponse;
     struct json_object *publicKey;
@@ -160,31 +163,51 @@ size_t processAccessKeyResponse(char *ptr, size_t size, size_t nmemb, void *user
     }
 
     // Extract fields
-    if (json_object_object_get_ex(parsedResponse, "publicKey", &publicKey) &&
-        json_object_object_get_ex(parsedResponse, "status", &status) &&
-        json_object_object_get_ex(parsedResponse, "payload", &payload) &&
-        json_object_object_get_ex(payload, "iat", &iat) &&
-        json_object_object_get_ex(payload, "exp", &exp))
+    // Enhanced error logging
+    bool errorOccurred = false;
+    if (!json_object_object_get_ex(parsedResponse, "publicKey", &publicKey))
     {
-        accessKey->key = malloc(strlen(json_object_get_string(publicKey)) + 1); // +1 for null-terminator
-        strcpy(accessKey->key, json_object_get_string(publicKey));
-        accessKey->createdAt = json_object_get_int64(iat);
-        accessKey->expiresAt = json_object_get_int64(exp);
-
-        // @TODO: Move this logic outside this function
-        char *statusValue = malloc(strlen(json_object_get_string(status)) + 1);
-        strcpy(statusValue, json_object_get_string(status));
-        printf("[access] status: %s\n", statusValue);
-        processAccessStatus(statusValue);
+        fprintf(stderr, "[access] error: publicKey field missing or invalid\n");
+        errorOccurred = true;
     }
-    else
+    if (!json_object_object_get_ex(parsedResponse, "status", &status))
     {
-        fprintf(stderr, "Failed to extract fields\n");
+        fprintf(stderr, "[access] error: status field missing or invalid\n");
+        errorOccurred = true;
+    }
+    if (!json_object_object_get_ex(parsedResponse, "payload", &payload))
+    {
+        fprintf(stderr, "[access] error: payload field missing or invalid\n");
+        errorOccurred = true;
+    }
+    if (payload && !json_object_object_get_ex(payload, "iat", &iat))
+    {
+        fprintf(stderr, "[access] error: iat field missing or invalid in payload\n");
+        errorOccurred = true;
+    }
+    if (payload && !json_object_object_get_ex(payload, "exp", &exp))
+    {
+        fprintf(stderr, "[access] error: exp field missing or invalid in payload\n");
+        errorOccurred = true;
     }
 
-    // Clean up
+    if (errorOccurred)
+    {
+        json_object_put(parsedResponse);
+        return realsize;
+    }
+
+    accessKey->key = malloc(strlen(json_object_get_string(publicKey)) + 1); // +1 for null-terminator
+    strcpy(accessKey->key, json_object_get_string(publicKey));
+    accessKey->createdAt = json_object_get_int64(iat);
+    accessKey->expiresAt = json_object_get_int64(exp);
+
+    char *statusValue = malloc(strlen(json_object_get_string(status)) + 1);
+    strcpy(statusValue, json_object_get_string(status));
+    printf("[access] status: %s\n", statusValue);
+    processAccessStatus(statusValue);
+
     json_object_put(parsedResponse);
-
     return realsize;
 }
 
@@ -229,36 +252,23 @@ int requestAccessKey(AccessKey *accessKey)
     char keyFile[KEY_FILE_BUFFER_SIZE];
     snprintf(keyFile, sizeof(keyFile), "%s%s", getConfig().basePath, KEY_FILE);
 
-    char jsonData[REQUEST_BODY_BUFFER_SIZE];
-    int written = snprintf(
-        jsonData,
-        REQUEST_BODY_BUFFER_SIZE,
-        "{\n"
-        "  \"device_id\": \"%s\",\n"
-        "  \"mac\": \"%s\",\n"
-        "  \"brand\": \"%s\",\n"
-        "  \"model\": \"%s\",\n"
-        "  \"os_name\": \"%s\",\n"
-        "  \"os_version\": \"%s\",\n"
-        "  \"os_services_version\": \"%s\",\n"
-        "  \"on_boot\": \"%s\"\n"
-        "}",
-        getConfig().deviceId,
-        getConfig().mac,
-        getConfig().brand,
-        getConfig().model,
-        "wayru-os",
-        getConfig().osVersion,
-        getConfig().servicesVersion,
-        state.onBoot == 1 ? "true" : "false");
+    json_object *jsonData = json_object_new_object();
 
-    printf("DeviceData -> %s\n", jsonData);
-    printf("json length %ld\n", strlen(jsonData));
-    printf("written %d\n", written);
+    json_object_object_add(jsonData, "device_id", json_object_new_string(getConfig().deviceId));
+    json_object_object_add(jsonData, "mac", json_object_new_string(getConfig().mac));
+    json_object_object_add(jsonData, "brand", json_object_new_string(getConfig().brand));
+    json_object_object_add(jsonData, "model", json_object_new_string(getConfig().model));
+    json_object_object_add(jsonData, "os_name", json_object_new_string("wayru-os"));
+    json_object_object_add(jsonData, "os_version", json_object_new_string(getConfig().osVersion));
+    json_object_object_add(jsonData, "os_services_version", json_object_new_string(getConfig().servicesVersion));
+    json_object_object_add(jsonData, "on_boot", json_object_new_string(state.onBoot == 1 ? "true" : "false")); 
+
+    const char *jsonDataString = json_object_to_json_string(jsonData);
+    printf("[access] DeviceData -> %s\n", jsonDataString);
 
     PostRequestOptions options = {
         .url = ACCESS_ENDPOINT,
-        .body = jsonData,
+        .body = jsonDataString,
         .filePath = NULL,
         .key = NULL,
         .writeFunction = processAccessKeyResponse,

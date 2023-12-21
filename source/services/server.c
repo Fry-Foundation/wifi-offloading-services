@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <json-c/json.h>
 #include "server.h"
 #include "../store/config.h"
 #include "../store/state.h"
@@ -28,24 +29,20 @@ static enum MHD_Result answerToConnection(
     }
 
     // Build response with device data from shared store
+    json_object *jsonData = json_object_new_object();
     char json_response[1024];
-
-    printf("ID: %s\n", getConfig().deviceId);
-
-    snprintf(
-        json_response,
-        sizeof(json_response),
-        "{ \"id\": \"%s\" }",
-        getConfig().deviceId);
+    json_object_object_add(jsonData, "id", json_object_new_string(getConfig().deviceId));
+    const char *jsonDataString = json_object_to_json_string(jsonData);
 
     response = MHD_create_response_from_buffer(
-        strlen(json_response),
-        (void *)json_response,
+        strlen(jsonDataString),
+        (void *)jsonDataString,
         MHD_RESPMEM_MUST_COPY);
 
     MHD_add_response_header(response, "Content-Type", "application/json");
     ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
     MHD_destroy_response(response);
+    json_object_put(jsonData);
 
     return ret;
 }

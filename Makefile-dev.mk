@@ -24,7 +24,7 @@ compile:
 	$(SOURCE_PATH)/store/state.c \
 	$(SOURCE_PATH)/utils/requests.c \
 	$(SOURCE_PATH)/utils/script_runner.c \
-	-lpthread -lcurl -ljson-c
+	-lcurl -ljson-c
 
 # Copy scripts and data files
 copy-scripts:

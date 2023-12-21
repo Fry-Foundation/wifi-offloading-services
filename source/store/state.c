@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include <pthread.h>
 #include "state.h"
 #include <stdio.h>
 #include "../services/access.h"

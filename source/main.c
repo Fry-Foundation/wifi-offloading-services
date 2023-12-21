@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "pthread.h"
 #include "services/init.h"
 #include "services/access.h"
 #include "services/scheduler.h"
@@ -30,34 +29,9 @@ void testGetRequest()
     }
 }
 
-void *schedulerRoutine(void *arg)
-{
-    Scheduler *sch = (Scheduler *)arg;
-
-    // Schedule the access task with an interval of 2 minutes
-    scheduleEvery(sch, 120, accessTask);
-
-    // Schedule the setup task for now, and then with an interval of 1 minute
-    scheduleAt(sch, time(NULL), setupTask);
-    scheduleEvery(sch, 60, setupTask);
-
-    // Schedule the accounting task with an interval of 1 minute
-    scheduleEvery(sch, 60, accountingTask);
-
-    run(sch);
-    return NULL;
-}
-
 int main(int argc, char *argv[])
 {
     init(argc, argv);
-
-    // testGetRequest();
-
-    // char *status = statusOpenNds();
-    // printf("[accounting] Output of service opennds status: %s\n", status);
-
-    // printf("key: %s\n", state.accessKey->key);
 
     // Request access key to get backend status
     // Note that we disregard the expiration time for now,
@@ -70,11 +44,17 @@ int main(int argc, char *argv[])
 
     Scheduler sch = {NULL, 0};
 
-    pthread_t schedulerThread;
+    // Schedule the access task with an interval of 2 minutes
+    scheduleEvery(&sch, 120, accessTask);
 
-    pthread_create(&schedulerThread, NULL, schedulerRoutine, &sch);
+    // Schedule the setup task for now, and then with an interval of 1 minute
+    scheduleAt(&sch, time(NULL), setupTask);
+    scheduleEvery(&sch, 60, setupTask);
 
-    pthread_join(schedulerThread, NULL);
+    // Schedule the accounting task with an interval of 1 minute
+    scheduleEvery(&sch, 60, accountingTask);
+
+    run(&sch);
 
     cleanState();
     cleanConfig();

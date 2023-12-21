@@ -1,7 +1,6 @@
 #ifndef STATE_H
 #define STATE_H
 
-#include <pthread.h>
 #include "../services/access.h"
 
 typedef struct

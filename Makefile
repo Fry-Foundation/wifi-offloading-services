@@ -58,7 +58,7 @@ define Build/Compile
 			$(PKG_BUILD_DIR)/utils/requests.o \
 			$(PKG_BUILD_DIR)/utils/script_runner.o \
 			-o $(PKG_BUILD_DIR)/wayru-os-services \
-			-lpthread -lcurl -ljson-c
+			-lcurl -ljson-c
 endef
 
 # Package install instructions

@@ -22,7 +22,7 @@ endef
 
 # Package description; a more verbose description on what our package does
 define Package/wayru-os-services/description
-  An application for wayru-os.
+  Services for access, setup, and accounting for wayru-os
 endef
 
 # Package preparation instructions; create the build directory and copy the source code. 
@@ -69,25 +69,25 @@ endef
 define Package/wayru-os-services/install
 		$(INSTALL_DIR) $(1)/usr/bin
 		$(INSTALL_DIR) $(1)/etc/init.d
-		$(INSTALL_DIR) $(1)/etc/wayru
-		$(INSTALL_DIR) $(1)/etc/wayru/scripts
-		$(INSTALL_DIR) $(1)/etc/wayru/data
+		$(INSTALL_DIR) $(1)/etc/wayru-os-services
+		$(INSTALL_DIR) $(1)/etc/wayru-os-services/scripts
+		$(INSTALL_DIR) $(1)/etc/wayru-os-services/data
 
 		$(INSTALL_BIN) $(PKG_BUILD_DIR)/wayru-os-services $(1)/usr/bin/
 
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/wayru-os-services.init $(1)/etc/init.d/wayru-os-services
 		
-		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/binauth-accounting.sh $(1)/etc/wayru/scripts/
-		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/update-accounting.sh $(1)/etc/wayru/scripts/
-		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/update-config.sh $(1)/etc/wayru/scripts/
-		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/get-uuid.sh $(1)/etc/wayru/scripts/
-		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/get-brand.sh $(1)/etc/wayru/scripts/
-		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/get-mac.sh $(1)/etc/wayru/scripts/
-		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/get-model.sh $(1)/etc/wayru/scripts/
-		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/nds-clients.sh $(1)/etc/wayru/scripts/
-		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/nds-deauth.sh $(1)/etc/wayru/scripts/
-		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/get-public-ip.sh $(1)/etc/wayru/scripts/
-		$(INSTALL_DATA) VERSION $(1)/etc/wayru/VERSION
+		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/binauth-accounting.sh $(1)/etc/wayru-os-services/scripts/
+		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/update-accounting.sh $(1)/etc/wayru-os-services/scripts/
+		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/update-config.sh $(1)/etc/wayru-os-services/scripts/
+		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/get-uuid.sh $(1)/etc/wayru-os-services/scripts/
+		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/get-brand.sh $(1)/etc/wayru-os-services/scripts/
+		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/get-mac.sh $(1)/etc/wayru-os-services/scripts/
+		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/get-model.sh $(1)/etc/wayru-os-services/scripts/
+		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/nds-clients.sh $(1)/etc/wayru-os-services/scripts/
+		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/nds-deauth.sh $(1)/etc/wayru-os-services/scripts/
+		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/get-public-ip.sh $(1)/etc/wayru-os-services/scripts/
+		$(INSTALL_DATA) VERSION $(1)/etc/wayru-os-services/VERSION
 endef
 
 # This command is always the last, it uses the definitions and variables we give above in order to get the job done

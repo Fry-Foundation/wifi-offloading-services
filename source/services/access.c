@@ -276,6 +276,8 @@ int requestAccessKey(AccessKey *accessKey)
         .writeData = accessKey};
 
     int resultPost = performHttpPost(&options);
+    json_object_put(jsonData);
+
     if (resultPost == 1)
     {
         printf("[access] Request was successful.\n");

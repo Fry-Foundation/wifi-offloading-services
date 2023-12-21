@@ -5,4 +5,4 @@ void runScriptAndSaveOutput(const char *scriptPath, const char *outputPath);
 
 char* runScript(const char* scriptPath);
 
-#endif
+#endif // SCRIPT_RUNNER_H

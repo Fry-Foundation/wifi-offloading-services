@@ -65,7 +65,7 @@ endef
 # - Create the required directories
 # - Install main scripts in the /usr/bin directory
 # - Install init scripts in the /etc/init.d directory
-# - Install app files in the /etc/wayru directory
+# - Install app files in the /etc/wayru-os-services directory
 define Package/wayru-os-services/install
 		$(INSTALL_DIR) $(1)/usr/bin
 		$(INSTALL_DIR) $(1)/etc/init.d

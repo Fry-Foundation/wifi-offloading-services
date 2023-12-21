@@ -16,7 +16,6 @@ compile:
 	gcc -o $(DIST_PATH)/$(EXECUTABLE) \
 	$(SOURCE_PATH)/main.c \
 	$(SOURCE_PATH)/services/init.c \
-	$(SOURCE_PATH)/services/server.c \
 	$(SOURCE_PATH)/services/scheduler.c \
 	$(SOURCE_PATH)/services/access.c \
 	$(SOURCE_PATH)/services/setup.c \
@@ -25,7 +24,7 @@ compile:
 	$(SOURCE_PATH)/store/state.c \
 	$(SOURCE_PATH)/utils/requests.c \
 	$(SOURCE_PATH)/utils/script_runner.c \
-	-lpthread -lmicrohttpd -lcurl -ljson-c
+	-lcurl -ljson-c
 
 # Copy scripts and data files
 copy-scripts:

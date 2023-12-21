@@ -6,7 +6,6 @@
 #include "services/init.h"
 #include "services/access.h"
 #include "services/scheduler.h"
-#include "services/server.h"
 #include "services/setup.h"
 #include "services/accounting.h"
 #include "store/config.h"
@@ -29,12 +28,6 @@ void testGetRequest()
     {
         printf("GET request failed.\n");
     }
-}
-
-void *httpServerRoutine(void *arg)
-{
-    startHttpServer();
-    return NULL;
 }
 
 void *schedulerRoutine(void *arg)
@@ -77,12 +70,10 @@ int main(int argc, char *argv[])
 
     Scheduler sch = {NULL, 0};
 
-    pthread_t httpServerThread, schedulerThread;
+    pthread_t schedulerThread;
 
-    pthread_create(&httpServerThread, NULL, httpServerRoutine, NULL);
     pthread_create(&schedulerThread, NULL, schedulerRoutine, &sch);
 
-    pthread_join(httpServerThread, NULL);
     pthread_join(schedulerThread, NULL);
 
     cleanState();

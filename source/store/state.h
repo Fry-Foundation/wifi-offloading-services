@@ -11,13 +11,6 @@ typedef struct
     // 1 - operator
     int mode;
 
-    // Server state
-    // 0 - stopped
-    // 1 - running
-    int server;
-    pthread_cond_t serverCond;    
-    pthread_mutex_t serverMutex;
-
     // Access key
     AccessKey* accessKey;
 

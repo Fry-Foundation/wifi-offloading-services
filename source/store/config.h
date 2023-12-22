@@ -10,6 +10,7 @@ typedef struct
     char *brand;
     char *model;
     char *public_ip;
+    char *os_name;
     char *osVersion;
     char *servicesVersion;
 } Config;
@@ -22,6 +23,7 @@ void initConfig(
     char *brand,
     char *model,
     char *public_ip,
+    char *os_name,
     char *osVersion,
     char *servicesVersion);
 

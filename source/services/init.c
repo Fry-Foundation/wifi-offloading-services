@@ -208,6 +208,21 @@ char *publicIP(char *scriptsPath)
     return public_ip;
 }
 
+char *initOSName(char *scriptsPath)
+{
+    char scriptFile[256];
+    snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/get-osname.sh");
+    char *os_name = runScript(scriptFile);
+    if (strchr(os_name, '\n') != NULL)
+    {
+        os_name[strcspn(os_name, "\n")] = 0;
+    }
+
+    printf("[init] OS name: %s\n", os_name);
+
+    return os_name;
+}
+
 void init(int argc, char *argv[])
 {
     // Determine if we are running in dev mode
@@ -236,9 +251,10 @@ void init(int argc, char *argv[])
     char *brand = initBrand(scriptsPath);
     char *model = initModel(scriptsPath);
     char *public_ip = publicIP(scriptsPath);
+    char *os_name = initOSName(scriptsPath);
     char *id = initId(scriptsPath);
 
-    initConfig(devEnv, basePath, id, mac, brand, model, public_ip, osVersion, servicesVersion);
+    initConfig(devEnv, basePath, id, mac, brand, model, public_ip, os_name, osVersion, servicesVersion);
 
     AccessKey *accessKey = initAccessKey();
     initState(0, accessKey);

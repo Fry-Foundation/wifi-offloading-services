@@ -7,11 +7,11 @@
 #include "../services/access.h"
 
 #define DEV_PATH "."
-#define OPENWRT_PATH "/etc/wayru"
+#define OPENWRT_PATH "/etc/wayru-os-services"
 #define SCRIPTS_PATH "/scripts"
 #define DATA_PATH "/data"
 #define OS_VERSION_FILE "/etc/openwrt_release"
-#define PACKAGE_VERSION_FILE "/etc/wayru/VERSION"
+#define PACKAGE_VERSION_FILE "/etc/wayru-os-services/VERSION"
 #define ID_LENGTH 37
 
 char *initOSVersion(int devEnv)

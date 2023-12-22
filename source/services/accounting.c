@@ -8,7 +8,7 @@
 #include "../utils/script_runner.h"
 
 #define DEV_PATH "."
-#define OPENWRT_PATH "/etc/wayru"
+#define OPENWRT_PATH "/etc/wayru-os-services"
 #define SCRIPTS_PATH "/scripts"
 
 #define MAX_BUFFER_SIZE 256

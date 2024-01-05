@@ -43,7 +43,7 @@ void requestSetup()
 }
 
 // @TODO: Pending backend implementation
-int checkApprovedSetup()
+void checkApprovedSetup()
 {
     printf("[setup] Not yet implemented - Check if the setup has been approved\n");
     printf("[setup] Not yet implemented - Access key: %s\n", state.accessKey->key);

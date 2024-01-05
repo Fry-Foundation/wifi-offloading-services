@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "setup.h"
 #include "../store/state.h"
 #include "../utils/requests.h"
@@ -14,40 +16,9 @@ void requestSetup()
     printf("[setup] Request setup\n");
     printf("[setup] Access key: %s\n", state.accessKey->key);
 
-    //  Obtener MAIN API DE UCI
-    FILE *fp;
-    char buffer[256];
-    const char *main_api = NULL;
-
-    // Ejecutar el script de shell y capturar su salida
-    fp = popen("/usr/sbin/conf.sh", "r");
-    // fp = popen("/home/lmva/wayru-os-services/source/scripts/dev/conf.sh", "r");
-    if (fp == NULL)
-    {
-        printf("Error al abrir conf.sh");
-        return 1;
-    }
-
-    // Leer la salida del script línea por línea
-    while (fgets(buffer, sizeof(buffer), fp) != NULL)
-    {
-        char key[256], value[256];
-        if (sscanf(buffer, "%[^=]=%s", key, value) == 2)
-        {
-            if (strcmp(key, "main_api") == 0)
-            {
-                // Actualizar el valor de main_api
-                main_api = strdup(value); // Guardar una copia del valor
-                break;
-            }
-        }
-    }
-    // Cerrar el proceso del script
-    pclose(fp);
-
     // Obtener la longitud de main_api
     // size_t main_api_len = strlen(getConfig().main_api);
-    size_t main_api_len = strlen(main_api);
+    size_t main_api_len = strlen(getConfig().main_api);
     const char *suffix = "/api/nfNode/setup";
     size_t suffix_len = strlen(suffix);
 
@@ -58,7 +29,7 @@ void requestSetup()
     char *concatenated_url = malloc(total_len);
 
     // Copiar main_api en la cadena concatenada
-    strcpy(concatenated_url, main_api);
+    strcpy(concatenated_url, getConfig().main_api);
 
     // Concatenar el sufijo
     strcat(concatenated_url, suffix);
@@ -96,39 +67,8 @@ void completeSetup()
     printf("[setup] Complete setup\n");
     printf("[setup] Access key: %s\n", state.accessKey->key);
 
-    //  Obtener MAIN API DE UCI
-    FILE *fp;
-    char buffer[256];
-    const char *main_api = NULL;
-
-    // Ejecutar el script de shell y capturar su salida
-    fp = popen("/usr/sbin/conf.sh", "r");
-    // fp = popen("/home/lmva/wayru-os-services/source/scripts/dev/conf.sh", "r");
-    if (fp == NULL)
-    {
-        printf("Error al abrir conf.sh");
-        return 1;
-    }
-
-    // Leer la salida del script línea por línea
-    while (fgets(buffer, sizeof(buffer), fp) != NULL)
-    {
-        char key[256], value[256];
-        if (sscanf(buffer, "%[^=]=%s", key, value) == 2)
-        {
-            if (strcmp(key, "main_api") == 0)
-            {
-                // Actualizar el valor de main_api
-                main_api = strdup(value); // Guardar una copia del valor
-                break;
-            }
-        }
-    }
-    // Cerrar el proceso del script
-    pclose(fp);
-
     // Obtener la longitud de main_api
-    size_t main_api_len = strlen(main_api);
+    size_t main_api_len = strlen(getConfig().main_api);
     const char *suffix = "/api/nfNode/setup/complete";
     size_t suffix_len = strlen(suffix);
 
@@ -139,7 +79,7 @@ void completeSetup()
     char *concatenated_url = malloc(total_len);
 
     // Copiar main_api en la cadena concatenada
-    strcpy(concatenated_url, main_api);
+    strcpy(concatenated_url, getConfig().main_api);
 
     // Concatenar el sufijo
     strcat(concatenated_url, suffix);

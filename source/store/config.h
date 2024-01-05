@@ -18,21 +18,10 @@ typedef struct
     char *os_name;
     char *osVersion;
     char *servicesVersion;
-    // char configfile[255];
-    // int enabled;
-    // char *main_api;
-    // char *accounting_api;
-} Config;
-
-/*typedef struct
-{
-    char configfile[255];
     int enabled;
-    char *main_api
+    char *main_api;
     char *accounting_api;
-} s_config;*/
-
-// s_config *config_get_config(void);*/
+} Config;
 
 void initConfig(
     int devEnv,
@@ -44,15 +33,12 @@ void initConfig(
     char *public_ip,
     char *os_name,
     char *osVersion,
-    char *servicesVersion);
-// char configfile[255],
-// int enabled,
-// char *main_api,
-// char *accounting_api);
+    char *servicesVersion,
+    int enabled,
+    char *main_api,
+    char *accounting_api);
 
 void cleanConfig();
-
-void set_default_values();
 
 Config getConfig();
 

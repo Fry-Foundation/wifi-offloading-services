@@ -268,60 +268,8 @@ int requestAccessKey(AccessKey *accessKey)
     const char *jsonDataString = json_object_to_json_string(jsonData);
     printf("[access] DeviceData -> %s\n", jsonDataString);
 
-    //  Obtener MAIN API DE UCI
-    FILE *fp;
-    char buffer[256];
-    const char *main_api = NULL;
-
-    // Ejecutar el script de shell y capturar su salida
-    fp = popen("/usr/sbin/conf.sh", "r");
-    // fp = popen("/home/lmva/wayru-os-services/source/scripts/dev/conf.sh", "r");
-    if (fp == NULL)
-    {
-        printf("Error al abrir conf.sh");
-        return 1;
-    }
-
-    // Leer la salida del script línea por línea
-    while (fgets(buffer, sizeof(buffer), fp) != NULL)
-    {
-        char key[256], value[256];
-        if (sscanf(buffer, "%[^=]=%s", key, value) == 2)
-        {
-            if (strcmp(key, "main_api") == 0)
-            {
-                // Actualizar el valor de main_api
-                main_api = strdup(value); // Guardar una copia del valor
-                break;
-            }
-        }
-    }
-    // Cerrar el proceso del script
-    pclose(fp);
-
-    // Utilizar el valor capturado en el programa C
-    /*if (main_api != NULL)
-    {
-        printf("El valor de main_api obtenido del script es: %s\n", main_api);
-        // Ahora puedes utilizar 'main_api' en tu programa C como desees
-
-        // Por ejemplo, mostrar el valor en un mensaje
-        printf("Usando main_api en alguna funcionalidad:\n");
-        printf("main_api: %s\n", main_api);
-
-        // Liberar memoria si es necesario
-        free((void *)main_api);
-    }
-    else
-    {
-        printf("No se pudo obtener el valor de main_api del script\n");
-    }*/
-
-    // return 0;
-
     // Obtener la longitud de main_api
-    // size_t main_api_len = strlen(getConfig().main_api);
-    size_t main_api_len = strlen(main_api);
+    size_t main_api_len = strlen(getConfig().main_api);
     const char *suffix = "/api/nfnode/access";
     size_t suffix_len = strlen(suffix);
 
@@ -332,7 +280,7 @@ int requestAccessKey(AccessKey *accessKey)
     char *concatenated_url = malloc(total_len);
 
     // Copiar main_api en la cadena concatenada
-    strcpy(concatenated_url, main_api);
+    strcpy(concatenated_url, getConfig().main_api);
 
     // Concatenar el sufijo
     strcat(concatenated_url, suffix);

@@ -68,7 +68,6 @@ endef
 # - Install app files in the /etc/wayru-os-services directory
 define Package/wayru-os-services/install
 		$(INSTALL_DIR) $(1)/usr/bin
-		$(INSTALL_DIR) $(1)/usr/sbin
 		$(INSTALL_DIR) $(1)/etc/init.d
 		$(INSTALL_DIR) $(1)/etc/config
 		$(INSTALL_DIR) $(1)/etc/wayru-os-services
@@ -81,8 +80,6 @@ define Package/wayru-os-services/install
 		
 		$(INSTALL_CONF) $(SOURCE_DIR)/scripts/openwrt/wayru-os-services.config $(1)/etc/config/wayru-os-services
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/wayru-os-services.config $(1)/etc/wayru-os-services/config.uci
-
-		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/conf.sh $(1)/usr/sbin/
 
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/binauth-accounting.sh $(1)/etc/wayru-os-services/scripts/
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/update-accounting.sh $(1)/etc/wayru-os-services/scripts/

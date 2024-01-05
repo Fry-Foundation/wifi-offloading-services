@@ -20,7 +20,7 @@ char *queryOpenNds(char *scriptsPath)
     printf("[accounting] querying OpenNDS\n");
     char scriptFile[256];
     snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/nds-clients.sh");
-    char *accountingOutput = runScript(scriptFile);
+    char *accountingOutput = run_script(scriptFile);
     return accountingOutput;
 }
 
@@ -34,7 +34,7 @@ char *deauthenticateSessions(char *scriptsPath)
     printf("[accounting] ending sessions\n");
     char scriptFile[256];
     snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/nds-deauth.sh");
-    char *deauthenticateOputput = runScript(scriptFile);
+    char *deauthenticateOputput = run_script(scriptFile);
     return deauthenticateOputput;
 }
 
@@ -142,16 +142,16 @@ void accountingTask(int argc, char *argv[])
 {
     // Set up paths
     // int devEnv = 0;
-    int devEnv = getConfig().devEnv;
+    int dev_env = getConfig().devEnv;
 
-    printf("[init] devEnv: %d\n", devEnv);
+    printf("[init] dev_env: %d\n", dev_env);
 
     // Set up paths
-    char *basePath = (devEnv == 1) ? DEV_PATH : OPENWRT_PATH;
-    printf("[init] basePath: %s\n", basePath);
+    char *base_path = (dev_env == 1) ? DEV_PATH : OPENWRT_PATH;
+    printf("[init] base_path: %s\n", base_path);
 
-    char scriptsPath[256];
-    snprintf(scriptsPath, sizeof(scriptsPath), "%s%s", basePath, "/scripts");
+    char scripts_path[256];
+    snprintf(scripts_path, sizeof(scripts_path), "%s%s", base_path, "/scripts");
 
     if (state.accounting != 1)
     {
@@ -159,14 +159,14 @@ void accountingTask(int argc, char *argv[])
         return;
     }
 
-    printf("[accounting] ccounting task\n");
+    printf("[accounting] accounting task\n");
 
     // queryOpenNds();
-    char *query = queryOpenNds(scriptsPath);
+    char *query = queryOpenNds(scripts_path);
     printf("[accounting] Current clients: %s\n", query);
     // postAccountingUpdate();
 
     // deauthenticateSessions();
-    char *deauth = deauthenticateSessions(scriptsPath);
+    char *deauth = deauthenticateSessions(scripts_path);
     printf("[accounting] Deauthenticated clients: %s\n", deauth);
 }

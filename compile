@@ -21,9 +21,9 @@ mkdir -p "$TEMP_FEEDS_DIR/admin/wayru-os-services"
 echo -e "\nChecking required repositories... 🕵️"
 echo "---------------------------------------"
 if [ ! -d "$OPENWRT_DIR/.git" ]; then
-    echo "Error: The wayru-os repo does not exist"
-    echo "Make sure to read the README.md file"
-    exit 1
+	echo "Error: The wayru-os repo does not exist"
+	echo "Make sure to read the README.md file"
+	exit 1
 fi
 
 # Copy relevant files to the temp feed directory
@@ -40,9 +40,9 @@ echo "Current branch is '$CURRENT_BRANCH'"
 CONFIG_LINE=$(grep 'CONFIG_TARGET_ARCH_PACKAGES=' '.config')
 
 if [ -z "$CONFIG_LINE" ]; then
-    echo "Error: Compile target not found in the configuration file"
-    echo "Please make sure the wayru-os repo is set up correctly"
-    exit 1
+	echo "Error: Compile target not found in the configuration file"
+	echo "Please make sure the wayru-os repo is set up correctly"
+	exit 1
 fi
 
 COMPILE_TARGET=$(echo $CONFIG_LINE | sed -E 's/CONFIG_TARGET_ARCH_PACKAGES="([^"]+)"/\1/')

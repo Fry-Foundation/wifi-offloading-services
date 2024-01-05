@@ -253,8 +253,18 @@ void init(int argc, char *argv[])
     char *public_ip = publicIP(scriptsPath);
     char *os_name = initOSName(scriptsPath);
     char *id = initId(scriptsPath);
+    // int enabled = atoi(DEFAULT_ENABLED);
+    // char *main_api = strdup(DEFAULT_MAIN_API);
+    // char *accounting_api = strdup(DEFAULT_ACCOUNTING_API);
+    //  int enabled = set_default_values();
+    //  char *main_api = set_default_values();
+    //  char *accounting_api = set_default_values();
+
+    // set_default_values();
 
     initConfig(devEnv, basePath, id, mac, brand, model, public_ip, os_name, osVersion, servicesVersion);
+
+    // printf("Valor de config.main_api: %s\n", main_api);
 
     AccessKey *accessKey = initAccessKey();
     initState(0, accessKey);

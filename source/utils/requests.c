@@ -60,22 +60,27 @@ int performHttpPost(const PostRequestOptions *options)
         curl_easy_setopt(curl, CURLOPT_URL, options->url);
         curl_easy_setopt(curl, CURLOPT_POST, 1L);
 
-        if (options->key != NULL) {
+        if (options->key != NULL)
+        {
             char keyHeader[512];
             snprintf(keyHeader, 512, "public_key: %s", options->key);
             headers = curl_slist_append(headers, keyHeader);
         }
 
-        if (options->body != NULL) {
+        if (options->body != NULL)
+        {
             headers = curl_slist_append(headers, "Content-Type: application/json");
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, options->body);
-        } else {
+        }
+        else
+        {
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "");
         }
 
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
-        if(options->filePath != NULL) {
+        if (options->filePath != NULL)
+        {
             file = fopen(options->filePath, "wb");
             if (!file)
             {
@@ -86,11 +91,13 @@ int performHttpPost(const PostRequestOptions *options)
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, file);
         }
 
-        if(options->writeFunction != NULL) {
+        if (options->writeFunction != NULL)
+        {
             curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, options->writeFunction);
         }
 
-        if(options->writeData != NULL) {
+        if (options->writeData != NULL)
+        {
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, options->writeData);
         }
 
@@ -99,12 +106,14 @@ int performHttpPost(const PostRequestOptions *options)
         printf("Response code: %d\n", res);
 
         // Response
-        if(res != CURLE_OK) {
+        if (res != CURLE_OK)
+        {
             fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
         }
 
         // Cleanup
-        if(options->filePath != NULL) {
+        if (options->filePath != NULL)
+        {
             fclose(file);
         }
         curl_slist_free_all(headers); // Free the header list

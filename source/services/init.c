@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "../store/config.h"
 #include "../store/state.h"
 #include "../utils/script_runner.h"

@@ -6,8 +6,8 @@
 #include "../utils/requests.h"
 #include "../store/config.h"
 
-// #define REQUEST_SETUP_ENDPOINT "https://api.wayru.tech/api/nfNode/setup"
-// #define COMPLETE_SETUP_ENDPOINT "https://api.wayru.tech/api/nfNode/setup/complete"
+#define SETUP_ENDPOINT "/api/nfNode/setup"
+#define SETUP_COMPLETE_ENDPOINT "/api/nfNode/setup/complete"
 
 // Backend should handle setup requests that have already been created for this access key
 // If no setup request exists, create one
@@ -16,26 +16,14 @@ void requestSetup()
     printf("[setup] Request setup\n");
     printf("[setup] Access key: %s\n", state.accessKey->key);
 
-    // Obtener la longitud de main_api
-    // size_t main_api_len = strlen(getConfig().main_api);
-    size_t main_api_len = strlen(getConfig().main_api);
-    const char *suffix = "/api/nfNode/setup";
-    size_t suffix_len = strlen(suffix);
+    // Build setup URL
+    char setup_url[256];
+    snprintf(setup_url, sizeof(setup_url), "%s%s", getConfig().main_api, SETUP_ENDPOINT);
+    printf("[setup] setup_url: %s\n", setup_url);
 
-    // Calcular la longitud total de la cadena resultante
-    size_t total_len = main_api_len + suffix_len + 1; // +1 para el carácter nulo '\0'
-
-    // Asignar memoria suficiente para la cadena concatenada
-    char *concatenated_url = malloc(total_len);
-
-    // Copiar main_api en la cadena concatenada
-    strcpy(concatenated_url, getConfig().main_api);
-
-    // Concatenar el sufijo
-    strcat(concatenated_url, suffix);
-
+    // Request options
     PostRequestOptions requestSetup = {
-        .url = concatenated_url,
+        .url = setup_url,
         .key = state.accessKey->key,
         .body = NULL,
         .filePath = NULL,
@@ -52,7 +40,6 @@ void requestSetup()
     {
         printf("[setup] setup request failed\n");
     }
-    free(concatenated_url);
 }
 
 // @TODO: Pending backend implementation
@@ -67,25 +54,13 @@ void completeSetup()
     printf("[setup] Complete setup\n");
     printf("[setup] Access key: %s\n", state.accessKey->key);
 
-    // Obtener la longitud de main_api
-    size_t main_api_len = strlen(getConfig().main_api);
-    const char *suffix = "/api/nfNode/setup/complete";
-    size_t suffix_len = strlen(suffix);
-
-    // Calcular la longitud total de la cadena resultante
-    size_t total_len = main_api_len + suffix_len + 1; // +1 para el carácter nulo '\0'
-
-    // Asignar memoria suficiente para la cadena concatenada
-    char *concatenated_url = malloc(total_len);
-
-    // Copiar main_api en la cadena concatenada
-    strcpy(concatenated_url, getConfig().main_api);
-
-    // Concatenar el sufijo
-    strcat(concatenated_url, suffix);
+    // Build setup complete URL
+    char setup_complete_url[256];
+    snprintf(setup_complete_url, sizeof(setup_complete_url), "%s%s", getConfig().main_api, SETUP_COMPLETE_ENDPOINT);
+    printf("[setup] setup_complete_url: %s\n", setup_complete_url);
 
     PostRequestOptions completeSetupOptions = {
-        .url = concatenated_url,
+        .url = setup_complete_url,
         .key = state.accessKey->key,
         .body = NULL,
         .filePath = NULL,
@@ -94,8 +69,6 @@ void completeSetup()
     };
 
     performHttpPost(&completeSetupOptions);
-
-    free(concatenated_url);
 }
 
 void setupTask()

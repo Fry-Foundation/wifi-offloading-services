@@ -17,7 +17,7 @@
 #define REQUEST_BODY_BUFFER_SIZE 256
 #define MAX_KEY_SIZE 512
 #define MAX_TIMESTAMP_SIZE 256
-// #define ACCESS_ENDPOINT "https://api.wayru.tech/api/nfnode/access"
+#define ACCESS_ENDPOINT "/api/nfnode/access"
 
 time_t convertToTime_t(const char *timestampStr)
 {
@@ -268,26 +268,14 @@ int requestAccessKey(AccessKey *accessKey)
     const char *jsonDataString = json_object_to_json_string(jsonData);
     printf("[access] DeviceData -> %s\n", jsonDataString);
 
-    // Obtener la longitud de main_api
-    size_t main_api_len = strlen(getConfig().main_api);
-    const char *suffix = "/api/nfnode/access";
-    size_t suffix_len = strlen(suffix);
+    // Build access URL
+    char access_url[256];
+    snprintf(access_url, sizeof(access_url), "%s%s", getConfig().main_api, ACCESS_ENDPOINT);
+    printf("[access] access_url: %s\n", access_url);
 
-    // Calcular la longitud total de la cadena resultante
-    size_t total_len = main_api_len + suffix_len + 1; // +1 para el carácter nulo '\0'
-
-    // Asignar memoria suficiente para la cadena concatenada
-    char *concatenated_url = malloc(total_len);
-
-    // Copiar main_api en la cadena concatenada
-    strcpy(concatenated_url, getConfig().main_api);
-
-    // Concatenar el sufijo
-    strcat(concatenated_url, suffix);
-
-    // Usar concatenated en tu PostRequestOptions
+    // Request options
     PostRequestOptions options = {
-        .url = concatenated_url,
+        .url = access_url,
         .body = jsonDataString,
         .filePath = NULL,
         .key = NULL,
@@ -307,8 +295,6 @@ int requestAccessKey(AccessKey *accessKey)
         printf("[access] Request failed.\n");
         return 0;
     }
-
-    free(concatenated_url);
 };
 
 void configureWithAccessStatus(int accessStatus)

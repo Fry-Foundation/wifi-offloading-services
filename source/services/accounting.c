@@ -13,7 +13,7 @@
 #define SCRIPTS_PATH "/scripts"
 
 #define MAX_BUFFER_SIZE 256
-#define ACCOUNTING_ENDPOINT "/gateways/connections/accounting/"
+#define ACCOUNTING_ENDPOINT "/gateways/connections/accounting"
 
 char command[MAX_BUFFER_SIZE];
 char scripts_path[256];

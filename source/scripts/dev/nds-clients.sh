@@ -1,6 +1,6 @@
 #!/bin/sh
 
-echo "{
+echo '{
   "client_list_length":"3",
   "clients":{
     "f0:18:98:1b:ba:c0":{
@@ -88,4 +88,4 @@ echo "{
       "upload_session_avg":"0.00"
     }
   }
-}"
+}'

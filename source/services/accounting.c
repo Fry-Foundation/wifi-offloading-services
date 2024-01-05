@@ -15,30 +15,30 @@
 
 char command[MAX_BUFFER_SIZE];
 
-char *queryOpenNds(char *scriptsPath)
+char *query_opennds(char *scripts_path)
 {
     printf("[accounting] querying OpenNDS\n");
-    char scriptFile[256];
-    snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/nds-clients.sh");
-    char *accountingOutput = run_script(scriptFile);
-    return accountingOutput;
+    char script_file[256];
+    snprintf(script_file, sizeof(script_file), "%s%s", scripts_path, "/nds-clients.sh");
+    char *accounting_output = run_script(script_file);
+    return accounting_output;
 }
 
-void postAccountingUpdate(char *scriptsPath)
+void post_accounting_update(char *scripts_path)
 {
     printf("[accounting] posting accounting update\n");
 }
 
-char *deauthenticateSessions(char *scriptsPath)
+char *deauthenticate_sessions(char *scripts_path)
 {
     printf("[accounting] ending sessions\n");
-    char scriptFile[256];
-    snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/nds-deauth.sh");
-    char *deauthenticateOputput = run_script(scriptFile);
-    return deauthenticateOputput;
+    char script_file[256];
+    snprintf(script_file, sizeof(script_file), "%s%s", scripts_path, "/nds-deauth.sh");
+    char *deauthenticate_output = run_script(script_file);
+    return deauthenticate_output;
 }
 
-char *statusOpenNds()
+char *status_opennds()
 {
     snprintf(command, sizeof(command), "service opennds status");
 
@@ -62,7 +62,7 @@ char *statusOpenNds()
     return status;
 }
 
-int stopOpenNds()
+int stop_opennds()
 {
     snprintf(command, sizeof(command), "service opennds stop");
 
@@ -81,16 +81,16 @@ int stopOpenNds()
     }
     else if (WIFEXITED(status))
     {
-        int exitStatus = WEXITSTATUS(status);
-        if (exitStatus == 0)
+        int exit_status = WEXITSTATUS(status);
+        if (exit_status == 0)
         {
             printf("Opennds stop command executed successfully.\n");
             return 0;
         }
         else
         {
-            printf("Error executing the opennds stop command. Exit code: %d\n", exitStatus);
-            return exitStatus;
+            printf("Error executing the opennds stop command. Exit code: %d\n", exit_status);
+            return exit_status;
         }
     }
     else
@@ -100,7 +100,7 @@ int stopOpenNds()
     }
 }
 
-int startOpenNds()
+int start_opennds()
 {
     snprintf(command, sizeof(command), "service opennds start");
 
@@ -119,16 +119,16 @@ int startOpenNds()
     }
     else if (WIFEXITED(status))
     {
-        int exitStatus = WEXITSTATUS(status);
-        if (exitStatus == 0)
+        int exit_status = WEXITSTATUS(status);
+        if (exit_status == 0)
         {
             printf("Opennds start command executed successfully.\n");
             return 0;
         }
         else
         {
-            printf("Error executing the opennds start command. Exit code: %d\n", exitStatus);
-            return exitStatus;
+            printf("Error executing the opennds start command. Exit code: %d\n", exit_status);
+            return exit_status;
         }
     }
     else
@@ -138,10 +138,9 @@ int startOpenNds()
     }
 }
 
-void accountingTask(int argc, char *argv[])
+void accounting_task(int argc, char *argv[])
 {
     // Set up paths
-    // int devEnv = 0;
     int dev_env = getConfig().devEnv;
 
     printf("[init] dev_env: %d\n", dev_env);
@@ -161,13 +160,13 @@ void accountingTask(int argc, char *argv[])
 
     printf("[accounting] accounting task\n");
 
-    // queryOpenNds();
-    char *query = queryOpenNds(scripts_path);
+    // query_opennds();
+    char *query = query_opennds(scripts_path);
     printf("[accounting] Current clients: %s\n", query);
-    // postAccountingUpdate();
+    // post_accounting_update();
 
-    // deauthenticateSessions();
-    char *deauth = deauthenticateSessions(scripts_path);
+    // deauthenticate_sessions();
+    char *deauth = deauthenticate_sessions(scripts_path);
     printf("[accounting] Deauthenticated clients: %s\n", deauth);
 
     free(query);

@@ -52,8 +52,8 @@ int main(int argc, char *argv[])
     scheduleEvery(&sch, 60, setupTask);
 
     // Schedule the accounting task with an interval of 1 minute
-    scheduleAt(&sch, time(NULL), accountingTask);
-    // scheduleEvery(&sch, 60, accountingTask);
+    scheduleAt(&sch, time(NULL), accounting_task);
+    // scheduleEvery(&sch, 60, accounting_task);
 
     run(&sch);
 

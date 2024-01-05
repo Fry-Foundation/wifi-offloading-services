@@ -4,6 +4,7 @@
 #include "script_runner.h"
 
 #define MIN_OUTPUT_SIZE 512
+#define MAX_COMMAND_SIZE 256
 
 void run_script_and_save_output(const char *script_path, const char *output_path) {
     char buffer[1024];  // Buffer for reading script output
@@ -49,7 +50,11 @@ char* run_script(const char* script_path) {
     // Initialize the result string with a null character
     result[0] = '\0';
 
-    FILE *pipe = popen(script_path, "r");
+    // Create a command that redirects stderr
+    char command[MAX_COMMAND_SIZE];
+    snprintf(command, sizeof(command), "%s 2>&1", script_path);
+
+    FILE *pipe = popen(command, "r");
     if (!pipe) {
         perror("[run_script] popen failed");
         free(result);

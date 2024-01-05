@@ -21,9 +21,25 @@ char scripts_path[256];
 char *query_opennds()
 {
     printf("[accounting] querying OpenNDS\n");
+
     char script_file[256];
     snprintf(script_file, sizeof(script_file), "%s%s", scripts_path, "/nds-clients.sh");
+
     char *accounting_output = run_script(script_file);
+    printf("[accounting] query output: %s", accounting_output);
+
+    // Make sure this is a valid JSON
+    struct json_object *parsed_response;
+    parsed_response = json_tokener_parse(accounting_output);
+    if (parsed_response == NULL)
+    {
+        // JSON parsing failed
+        fprintf(stderr, "[accounting] failed to parse ndsctl JSON\n");
+        return NULL;
+    }
+
+    json_object_put(parsed_response);
+
     return accounting_output;
 }
 
@@ -229,6 +245,12 @@ void accounting_task(int argc, char *argv[])
     printf("[accounting] accounting task\n");
 
     char *opennds_clients_data = query_opennds();
+    if (opennds_clients_data == NULL)
+    {
+        printf("[accounting] failed to query OpenNDS; skipping server sync\n");
+        return;
+    }
+
     printf("[accounting] current clients: %s\n", opennds_clients_data);
     post_accounting_update(opennds_clients_data);
 

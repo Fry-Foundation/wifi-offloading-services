@@ -13,7 +13,7 @@
 #define SCRIPTS_PATH "/scripts"
 
 #define MAX_BUFFER_SIZE 256
-#define ACCOUNTING_URL "https://wifi.api.internal.wayru.tech/gateways/connections/accounting/"
+#define ACCOUNTING_ENDPOINT "/gateways/connections/accounting/"
 
 char command[MAX_BUFFER_SIZE];
 char scripts_path[256];
@@ -105,8 +105,14 @@ void post_accounting_update(char *opennds_clients_data)
 {
     printf("[accounting] posting accounting update\n");
 
+    // Build accounting URL
+    char accounting_url[256];
+    snprintf(accounting_url, sizeof(accounting_url), "%s%s", getConfig().accounting_api, ACCOUNTING_ENDPOINT);
+    printf("[accounting] accounting_url: %s\n", accounting_url);
+
+    // Request options
     PostRequestOptions post_accounting_options = {
-        .url = ACCOUNTING_URL,
+        .url = accounting_url,
         .key = state.accessKey->key,
         .body = opennds_clients_data,
         .filePath = NULL,

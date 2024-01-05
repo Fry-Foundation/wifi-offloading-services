@@ -4,7 +4,7 @@
 #define DEFAULT_CONFIGFILE "/etc/wayru-os-services/config.uci"
 #define DEFAULT_ENABLED "1"
 #define DEFAULT_MAIN_API "https://api.wayru.tech"
-#define DEFAULT_ACCOUNTING_API "https://api.wifi.wayru.tech"
+#define DEFAULT_ACCOUNTING_API "https://wifi.api.wayru.tech"
 
 typedef struct
 {

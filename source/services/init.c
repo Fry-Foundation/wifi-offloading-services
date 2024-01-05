@@ -239,6 +239,7 @@ void init(int argc, char *argv[])
 
         if (strcmp(argv[i], "--config-enabled") == 0)
         {
+            printf("enable argument: %s\n", argv[i + 1]);
             config_enabled = atoi(argv[i + 1]);
             if (config_enabled == 0)
             {
@@ -251,12 +252,14 @@ void init(int argc, char *argv[])
 
         if (strcmp(argv[i], "--config-main-api") == 0)
         {
+            printf("main api argument: %s\n", argv[i + 1]);
             snprintf(config_main_api, sizeof(config_main_api), "%s", argv[i + 1]);
             continue;
         }
 
         if (strcmp(argv[i], "--config-accounting-api") == 0)
         {
+            printf("accounting api argument: %s\n", argv[i + 1]);
             snprintf(config_accounting_api, sizeof(config_accounting_api), "%s", argv[i + 1]);
             continue;
         }

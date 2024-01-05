@@ -36,6 +36,7 @@ void run_script_and_save_output(const char *script_path, const char *output_path
     printf("Script executed successfully, output saved to: %s\n", output_path);
 }
 
+// Make sure to free the char* returned by this function
 char* run_script(const char* script_path) {
     char buffer[128];
     size_t result_size = MIN_OUTPUT_SIZE;

@@ -169,4 +169,7 @@ void accountingTask(int argc, char *argv[])
     // deauthenticateSessions();
     char *deauth = deauthenticateSessions(scripts_path);
     printf("[accounting] Deauthenticated clients: %s\n", deauth);
+
+    free(query);
+    free(deauth);
 }

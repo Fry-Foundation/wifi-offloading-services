@@ -299,10 +299,6 @@ int requestAccessKey(AccessKey *accessKey)
 
 void configureWithAccessStatus(int accessStatus)
 {
-    state.setup = 0;
-    state.accounting = 1;
-    return;
-
     printf("[access] Configuring with access status\n");
     if (accessStatus == 0)
     {

@@ -3,62 +3,89 @@
 #include <string.h>
 #include "script_runner.h"
 
-#define MAX_OUTPUT_SIZE 1024
+#define MIN_OUTPUT_SIZE 512
+#define MAX_COMMAND_SIZE 256
 
-void runScriptAndSaveOutput(const char *scriptPath, const char *outputPath) {
+void run_script_and_save_output(const char *script_path, const char *output_path) {
     char buffer[1024];  // Buffer for reading script output
-    FILE *scriptPipe, *outputFile;
+    FILE *script_pipe, *output_file;
 
     // Open the script for execution
-    scriptPipe = popen(scriptPath, "r");
-    if (scriptPipe == NULL) {
+    script_pipe = popen(script_path, "r");
+    if (script_pipe == NULL) {
         perror("Failed to run script");
         return;
     }
 
     // Open the output file for writing
-    outputFile = fopen(outputPath, "w");
-    if (outputFile == NULL) {
+    output_file = fopen(output_path, "w");
+    if (output_file == NULL) {
         perror("Failed to open output file for writing");
-        pclose(scriptPipe);
+        pclose(script_pipe);
         return;
     }
 
     // Read the output of the script and write it to the output file
-    while (fgets(buffer, sizeof(buffer), scriptPipe) != NULL) {
-        fputs(buffer, outputFile);
+    while (fgets(buffer, sizeof(buffer), script_pipe) != NULL) {
+        fputs(buffer, output_file);
     }
 
     // Close the script pipe and the output file
-    pclose(scriptPipe);
-    fclose(outputFile);
+    pclose(script_pipe);
+    fclose(output_file);
 
-    printf("Script executed successfully, output saved to: %s\n", outputPath);
+    printf("Script executed successfully, output saved to: %s\n", output_path);
 }
 
-char* runScript(const char* scriptPath) {
+// Make sure to free the char* returned by this function
+char* run_script(const char* script_path) {
     char buffer[128];
-    char *result = (char *)malloc(MAX_OUTPUT_SIZE);
+    size_t result_size = MIN_OUTPUT_SIZE;
+    char *result = (char *)malloc(result_size);
     if (result == NULL) {
-        perror("Memory allocation failed");
+        perror("[run_script] initial malloc failed");
         return NULL;
     }
-    result[0] = '\0'; // Initialize the string with a null character
 
-    FILE *pipe = popen(scriptPath, "r");
+    // Initialize the result string with a null character
+    result[0] = '\0';
+
+    // Create a command that redirects stderr
+    char command[MAX_COMMAND_SIZE];
+    snprintf(command, sizeof(command), "%s 2>&1", script_path);
+
+    FILE *pipe = popen(command, "r");
     if (!pipe) {
-        perror("popen failed");
+        perror("[run_script] popen failed");
         free(result);
         return NULL;
     }
 
+    size_t current_result_length = 0;
     while (fgets(buffer, sizeof(buffer), pipe) != NULL) {
+        // Make sure we have enough space in the result string, and reallocate if needed
+        size_t needed_size = current_result_length + strlen(buffer) + 1;
+        if (needed_size > result_size) {
+            result_size = needed_size;
+            char *new_result = realloc(result, result_size);
+            if (new_result == NULL) {
+                perror("[run_script] realloc failed");
+                free(result);
+                pclose(pipe);
+                return NULL;
+            }
+
+            result = new_result;
+        }
         strcat(result, buffer);
+        current_result_length += strlen(buffer);
     }
 
     if (pclose(pipe) == -1) {
-        perror("Error reported by pclose");
+        perror("[run_script] error reported by pclose");
     }
+
+    printf("[run_script] length of result: %zu\n", strlen(result));
 
     return result;
 }

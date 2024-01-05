@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "../store/config.h"
 #include "../store/state.h"
 #include "../utils/script_runner.h"
@@ -124,7 +125,7 @@ char *initMac(char *scriptsPath)
 {
     char scriptFile[256];
     snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/get-mac.sh");
-    char *mac = runScript(scriptFile);
+    char *mac = run_script(scriptFile);
     if (strchr(mac, '\n') != NULL)
     {
         mac[strcspn(mac, "\n")] = 0;
@@ -139,7 +140,7 @@ char *initBrand(char *scriptsPath)
 {
     char scriptFile[256];
     snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/get-brand.sh");
-    char *brand = runScript(scriptFile);
+    char *brand = run_script(scriptFile);
     if (strchr(brand, '\n') != NULL)
     {
         brand[strcspn(brand, "\n")] = 0;
@@ -154,7 +155,7 @@ char *initModel(char *scriptsPath)
 {
     char scriptFile[256];
     snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/get-model.sh");
-    char *model = runScript(scriptFile);
+    char *model = run_script(scriptFile);
     if (strchr(model, '\n') != NULL)
     {
         model[strcspn(model, "\n")] = 0;
@@ -174,7 +175,7 @@ char *initId(char *scriptsPath)
     // Loop indefinitely until a valid UUID is obtained
     while (1)
     {
-        id = runScript(scriptFile);
+        id = run_script(scriptFile);
         // if (id != NULL && strlen(id) > 0 && strlen(id) == ID_LENGTH - 1)
         if (id != NULL && strlen(id) > 1)
         {
@@ -197,7 +198,7 @@ char *publicIP(char *scriptsPath)
 {
     char scriptFile[256];
     snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/get-public-ip.sh");
-    char *public_ip = runScript(scriptFile);
+    char *public_ip = run_script(scriptFile);
     if (strchr(public_ip, '\n') != NULL)
     {
         public_ip[strcspn(public_ip, "\n")] = 0;
@@ -212,7 +213,7 @@ char *initOSName(char *scriptsPath)
 {
     char scriptFile[256];
     snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/get-osname.sh");
-    char *os_name = runScript(scriptFile);
+    char *os_name = run_script(scriptFile);
     if (strchr(os_name, '\n') != NULL)
     {
         os_name[strcspn(os_name, "\n")] = 0;

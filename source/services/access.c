@@ -313,6 +313,10 @@ int requestAccessKey(AccessKey *accessKey)
 
 void configureWithAccessStatus(int accessStatus)
 {
+    state.setup = 0;
+    state.accounting = 1;
+    return;
+
     printf("[access] Configuring with access status\n");
     if (accessStatus == 0)
     {
@@ -320,7 +324,7 @@ void configureWithAccessStatus(int accessStatus)
         state.setup = 1;
         state.accounting = 0;
 
-        stopOpenNds();
+        stop_opennds();
     }
     else if (accessStatus == 1)
     {
@@ -328,7 +332,7 @@ void configureWithAccessStatus(int accessStatus)
         state.setup = 0;
         state.accounting = 0;
 
-        stopOpenNds();
+        stop_opennds();
     }
     else if (accessStatus == 2)
     {
@@ -336,7 +340,7 @@ void configureWithAccessStatus(int accessStatus)
         state.setup = 1;
         state.accounting = 0;
 
-        stopOpenNds();
+        stop_opennds();
     }
     else if (accessStatus == 3)
     {
@@ -345,7 +349,7 @@ void configureWithAccessStatus(int accessStatus)
         state.accounting = 1;
 
         completeSetup();
-        startOpenNds();
+        start_opennds();
     }
     else if (accessStatus == 4)
     {
@@ -353,7 +357,7 @@ void configureWithAccessStatus(int accessStatus)
         state.setup = 0;
         state.accounting = 1;
 
-        startOpenNds();
+        start_opennds();
     }
 }
 

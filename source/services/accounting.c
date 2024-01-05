@@ -1,10 +1,11 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <json-c/json.h>
 #include "../store/config.h"
 #include "../store/state.h"
 #include "accounting.h"
-#include "../store/state.h"
+#include "../utils/requests.h"
 #include "../utils/script_runner.h"
 
 #define DEV_PATH "."
@@ -12,33 +13,111 @@
 #define SCRIPTS_PATH "/scripts"
 
 #define MAX_BUFFER_SIZE 256
+#define ACCOUNTING_URL "https://wifi.api.internal.wayru.tech/gateways/connections/accounting/"
 
 char command[MAX_BUFFER_SIZE];
+char scripts_path[256];
 
-char *queryOpenNds(char *scriptsPath)
+char *query_opennds()
 {
     printf("[accounting] querying OpenNDS\n");
-    char scriptFile[256];
-    snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/nds-clients.sh");
-    char *accountingOutput = runScript(scriptFile);
-    return accountingOutput;
+
+    char script_file[256];
+    snprintf(script_file, sizeof(script_file), "%s%s", scripts_path, "/nds-clients.sh");
+
+    char *accounting_output = run_script(script_file);
+    printf("[accounting] query output: %s", accounting_output);
+
+    // Make sure this is a valid JSON
+    struct json_object *parsed_response;
+    parsed_response = json_tokener_parse(accounting_output);
+    if (parsed_response == NULL)
+    {
+        // JSON parsing failed
+        fprintf(stderr, "[accounting] failed to parse ndsctl JSON\n");
+        return NULL;
+    }
+
+    json_object_put(parsed_response);
+
+    return accounting_output;
 }
 
-void postAccountingUpdate(char *scriptsPath)
+void deauthenticate_session(const char *client_mac_address)
+{
+    printf("[accounting] ending session %s\n", client_mac_address);
+
+    char script_file[256];
+    snprintf(script_file, sizeof(script_file), "%s%s %s", scripts_path, "/nds-deauth.sh", client_mac_address);
+    
+    char *deauthenticate_output = run_script(script_file);
+    printf("[accounting] deauthenticate: %s\n", deauthenticate_output);
+
+    free(deauthenticate_output);
+}
+
+size_t process_accounting_response(char *ptr, size_t size, size_t nmemb, void *userdata)
+{
+    printf("[accounting] processing accounting response\n");
+    printf("[accounting] ptr: %s\n", ptr);
+
+    size_t realsize = size * nmemb;
+
+    // Parse JSON
+    struct json_object *parsed_response;
+    struct json_object *end_list;
+
+    // Parse the response as JSON
+    parsed_response = json_tokener_parse(ptr);
+    if (parsed_response == NULL)
+    {
+        // JSON parsing failed
+        fprintf(stderr, "[accounting] failed to parse accounting response JSON\n");
+        return realsize;
+    }
+
+    // Make sure the 'end_list' key exists,  and extract it
+    if (!json_object_object_get_ex(parsed_response, "end_list", &end_list)) {
+        fprintf(stderr, "[accounting] 'end_list' key not found in JSON\n");
+        json_object_put(parsed_response);
+        return realsize;
+    }
+
+    // Ensure 'end_list' is an array
+    if (!json_object_is_type(end_list, json_type_array)) {
+        fprintf(stderr, "[accounting] 'end_list' is not an array\n");
+        json_object_put(parsed_response);
+        return realsize;
+    }
+
+    // Iterate over the end list
+    size_t n = json_object_array_length(end_list);
+    for (size_t i = 0; i < n; i ++) {
+        struct json_object *client_mac_address = json_object_array_get_idx(end_list, i);
+        deauthenticate_session(json_object_get_string(client_mac_address));
+    }
+
+    json_object_put(parsed_response);
+    return realsize;
+}
+
+void post_accounting_update(char *opennds_clients_data)
 {
     printf("[accounting] posting accounting update\n");
+
+    PostRequestOptions post_accounting_options = {
+        .url = ACCOUNTING_URL,
+        .key = state.accessKey->key,
+        .body = opennds_clients_data,
+        .filePath = NULL,
+        .writeFunction = process_accounting_response,
+        .writeData = NULL,
+    };
+
+    performHttpPost(&post_accounting_options);
 }
 
-char *deauthenticateSessions(char *scriptsPath)
-{
-    printf("[accounting] ending sessions\n");
-    char scriptFile[256];
-    snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/nds-deauth.sh");
-    char *deauthenticateOputput = runScript(scriptFile);
-    return deauthenticateOputput;
-}
-
-char *statusOpenNds()
+char *status_opennds()
 {
     snprintf(command, sizeof(command), "service opennds status");
 
@@ -62,7 +141,7 @@ char *statusOpenNds()
     return status;
 }
 
-int stopOpenNds()
+int stop_opennds()
 {
     snprintf(command, sizeof(command), "service opennds stop");
 
@@ -81,16 +160,16 @@ int stopOpenNds()
     }
     else if (WIFEXITED(status))
     {
-        int exitStatus = WEXITSTATUS(status);
-        if (exitStatus == 0)
+        int exit_status = WEXITSTATUS(status);
+        if (exit_status == 0)
         {
             printf("Opennds stop command executed successfully.\n");
             return 0;
         }
         else
         {
-            printf("Error executing the opennds stop command. Exit code: %d\n", exitStatus);
-            return exitStatus;
+            printf("Error executing the opennds stop command. Exit code: %d\n", exit_status);
+            return exit_status;
         }
     }
     else
@@ -100,7 +179,7 @@ int stopOpenNds()
     }
 }
 
-int startOpenNds()
+int start_opennds()
 {
     snprintf(command, sizeof(command), "service opennds start");
 
@@ -119,16 +198,16 @@ int startOpenNds()
     }
     else if (WIFEXITED(status))
     {
-        int exitStatus = WEXITSTATUS(status);
-        if (exitStatus == 0)
+        int exit_status = WEXITSTATUS(status);
+        if (exit_status == 0)
         {
             printf("Opennds start command executed successfully.\n");
             return 0;
         }
         else
         {
-            printf("Error executing the opennds start command. Exit code: %d\n", exitStatus);
-            return exitStatus;
+            printf("Error executing the opennds start command. Exit code: %d\n", exit_status);
+            return exit_status;
         }
     }
     else
@@ -138,20 +217,24 @@ int startOpenNds()
     }
 }
 
-void accountingTask(int argc, char *argv[])
+void accounting_task(int argc, char *argv[])
 {
     // Set up paths
-    // int devEnv = 0;
-    int devEnv = getConfig().devEnv;
+    int dev_env = getConfig().devEnv;
 
-    printf("[init] devEnv: %d\n", devEnv);
+    printf("[accounting] dev_env: %d\n", dev_env);
 
     // Set up paths
-    char *basePath = (devEnv == 1) ? DEV_PATH : OPENWRT_PATH;
-    printf("[init] basePath: %s\n", basePath);
-
-    char scriptsPath[256];
-    snprintf(scriptsPath, sizeof(scriptsPath), "%s%s", basePath, "/scripts");
+    char base_path[256];
+    if (dev_env == 1) {
+        strncpy(base_path, DEV_PATH, sizeof(base_path));
+        base_path[sizeof(base_path) - 1] = '\0'; // Ensure null termination
+    } else {
+        strncpy(base_path, OPENWRT_PATH, sizeof(base_path));
+        base_path[sizeof(base_path) - 1] = '\0'; // Ensure null termination
+    }
+    snprintf(scripts_path, sizeof(scripts_path), "%s%s", base_path, "/scripts");
+    printf("[accounting] scripts_path: %s\n", scripts_path);    
 
     if (state.accounting != 1)
     {
@@ -159,14 +242,17 @@ void accountingTask(int argc, char *argv[])
         return;
     }
 
-    printf("[accounting] ccounting task\n");
+    printf("[accounting] accounting task\n");
 
-    // queryOpenNds();
-    char *query = queryOpenNds(scriptsPath);
-    printf("[accounting] Current clients: %s\n", query);
-    // postAccountingUpdate();
+    char *opennds_clients_data = query_opennds();
+    if (opennds_clients_data == NULL)
+    {
+        printf("[accounting] failed to query OpenNDS; skipping server sync\n");
+        return;
+    }
 
-    // deauthenticateSessions();
-    char *deauth = deauthenticateSessions(scriptsPath);
-    printf("[accounting] Deauthenticated clients: %s\n", deauth);
+    printf("[accounting] current clients: %s\n", opennds_clients_data);
+    post_accounting_update(opennds_clients_data);
+
+    free(opennds_clients_data);
 }

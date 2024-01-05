@@ -1,8 +1,8 @@
 #ifndef SCRIPT_RUNNER_H
 #define SCRIPT_RUNNER_H
 
-void runScriptAndSaveOutput(const char *scriptPath, const char *outputPath);
+void run_script_and_save_output(const char *script_path, const char *output_path);
 
-char* runScript(const char* scriptPath);
+char* run_script(const char* script_path);
 
 #endif // SCRIPT_RUNNER_H

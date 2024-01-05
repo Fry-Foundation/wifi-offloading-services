@@ -1,3 +1,8 @@
+# Define development configuration
+CONFIG_ENABLED = 1
+CONFIG_MAIN_API = https://api.internal.wayru.tech
+CONFIG_ACCOUNTING_API = https://wifi.api.internal.wayru.tech
+
 # Define paths
 SOURCE_PATH := source
 DIST_PATH := dist

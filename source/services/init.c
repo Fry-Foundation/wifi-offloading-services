@@ -225,17 +225,67 @@ char *initOSName(char *scriptsPath)
 
 void init(int argc, char *argv[])
 {
-    // Determine if we are running in dev mode
     int devEnv = 0;
+    int config_enabled = -1;
+    char config_main_api[256] = {'\0'};
+    char config_accounting_api[256] = {'\0'};
     for (int i = 1; i < argc; i++)
     {
         if (strcmp(argv[i], "--dev") == 0)
         {
             devEnv = 1;
-            break;
+            continue;
+        }
+
+        if (strcmp(argv[i], "--config-enabled") == 0)
+        {
+            printf("enable argument: %s\n", argv[i + 1]);
+            config_enabled = atoi(argv[i + 1]);
+            if (config_enabled == 0)
+            {
+                printf("[init] wayru-os-services is disabled (see \"option enabled\" in config).\n");
+                exit(0);
+            }
+
+            continue;
+        }
+
+        if (strcmp(argv[i], "--config-main-api") == 0)
+        {
+            printf("main api argument: %s\n", argv[i + 1]);
+            snprintf(config_main_api, sizeof(config_main_api), "%s", argv[i + 1]);
+            continue;
+        }
+
+        if (strcmp(argv[i], "--config-accounting-api") == 0)
+        {
+            printf("accounting api argument: %s\n", argv[i + 1]);
+            snprintf(config_accounting_api, sizeof(config_accounting_api), "%s", argv[i + 1]);
+            continue;
         }
     }
+
+    // Set default values for configuration variables
+    if (config_enabled == -1)
+    {
+        config_enabled = atoi(DEFAULT_ENABLED);
+    }
+
+    if (config_main_api[0] == '\0')
+    {
+        snprintf(config_main_api, sizeof(config_main_api), "%s", DEFAULT_MAIN_API);
+    }
+
+    if (config_accounting_api[0] == '\0')
+    {
+        snprintf(config_accounting_api, sizeof(config_accounting_api), "%s", DEFAULT_ACCOUNTING_API);
+    }
+    
+
     printf("[init] devEnv: %d\n", devEnv);
+    printf("[init] config_enabled: %d\n", config_enabled);
+    printf("[init] config_main_api: %s\n", config_main_api);
+    printf("[init] config_accounting_api: %s\n", config_accounting_api);
 
     // Set up paths
     char *basePath = (devEnv == 1) ? DEV_PATH : OPENWRT_PATH;
@@ -253,8 +303,18 @@ void init(int argc, char *argv[])
     char *public_ip = publicIP(scriptsPath);
     char *os_name = initOSName(scriptsPath);
     char *id = initId(scriptsPath);
+    // int enabled = atoi(DEFAULT_ENABLED);
+    // char *main_api = strdup(DEFAULT_MAIN_API);
+    // char *accounting_api = strdup(DEFAULT_ACCOUNTING_API);
+    //  int enabled = set_default_values();
+    //  char *main_api = set_default_values();
+    //  char *accounting_api = set_default_values();
 
-    initConfig(devEnv, basePath, id, mac, brand, model, public_ip, os_name, osVersion, servicesVersion);
+    // set_default_values();
+
+    initConfig(devEnv, basePath, id, mac, brand, model, public_ip, os_name, osVersion, servicesVersion, config_enabled, config_main_api, config_accounting_api);
+
+    // printf("Valor de config.main_api: %s\n", main_api);
 
     AccessKey *accessKey = initAccessKey();
     initState(0, accessKey);

@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include "config.h"
 
 Config config;
@@ -14,7 +15,10 @@ void initConfig(
     char *public_ip,
     char *os_name,
     char *osVersion,
-    char *servicesVersion)
+    char *servicesVersion,
+    int enabled,
+    char *main_api,
+    char *accounting_api)
 {
     config.devEnv = devEnv;
     config.basePath = strdup(basePath);
@@ -26,6 +30,9 @@ void initConfig(
     config.os_name = strdup(os_name);
     config.osVersion = strdup(osVersion);
     config.servicesVersion = strdup(servicesVersion);
+    config.enabled = enabled;
+    config.main_api = strdup(main_api);
+    config.accounting_api = strdup(accounting_api);
 }
 
 void cleanConfig()
@@ -39,6 +46,8 @@ void cleanConfig()
     free(config.os_name);
     free(config.osVersion);
     free(config.servicesVersion);
+    free(config.main_api);
+    free(config.accounting_api);
 }
 
 Config getConfig()

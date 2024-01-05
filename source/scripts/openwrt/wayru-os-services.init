@@ -6,9 +6,27 @@ STOP=99
 
 USE_PROCD=1
 
-start_service() {
+CONFIGURATION=wayru-os-services
+
+start_service() {	
+	config_load "$CONFIGURATION"
+
+	local enabled
+	local main_api
+	local accounting_api
+
+	config_get enabled wayru_os_services1 enabled
+    config_get main_api wayru_os_services1 main_api
+    config_get accounting_api wayru_os_services1 accounting_api
+
+	logger -t "wayru-os-services" "$enabled"
+	logger -t "wayru-os-services" "$main_api"
+	logger -t "wayru-os-services" "$accounting_api"
+
 	procd_open_instance
-	procd_set_param command /usr/bin/wayru-os-services
+
+	procd_set_param command /usr/bin/wayru-os-services --config-enabled "$enabled" --config-main-api "$main_api" --config-accounting-api "$accounting_api"
+	procd_set_param file /etc/config/wayru-os-services
 	procd_set_param respawn 150 10 10
 	procd_set_param term_timeout 60
 	procd_set_param stdout 1

@@ -1,10 +1,13 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "setup.h"
 #include "../store/state.h"
 #include "../utils/requests.h"
+#include "../store/config.h"
 
-#define REQUEST_SETUP_ENDPOINT "https://api.wayru.tech/api/nfNode/setup"
-#define COMPLETE_SETUP_ENDPOINT "https://api.wayru.tech/api/nfNode/setup/complete"
+// #define REQUEST_SETUP_ENDPOINT "https://api.wayru.tech/api/nfNode/setup"
+// #define COMPLETE_SETUP_ENDPOINT "https://api.wayru.tech/api/nfNode/setup/complete"
 
 // Backend should handle setup requests that have already been created for this access key
 // If no setup request exists, create one
@@ -12,9 +15,27 @@ void requestSetup()
 {
     printf("[setup] Request setup\n");
     printf("[setup] Access key: %s\n", state.accessKey->key);
-    
+
+    // Obtener la longitud de main_api
+    // size_t main_api_len = strlen(getConfig().main_api);
+    size_t main_api_len = strlen(getConfig().main_api);
+    const char *suffix = "/api/nfNode/setup";
+    size_t suffix_len = strlen(suffix);
+
+    // Calcular la longitud total de la cadena resultante
+    size_t total_len = main_api_len + suffix_len + 1; // +1 para el carácter nulo '\0'
+
+    // Asignar memoria suficiente para la cadena concatenada
+    char *concatenated_url = malloc(total_len);
+
+    // Copiar main_api en la cadena concatenada
+    strcpy(concatenated_url, getConfig().main_api);
+
+    // Concatenar el sufijo
+    strcat(concatenated_url, suffix);
+
     PostRequestOptions requestSetup = {
-        .url = REQUEST_SETUP_ENDPOINT,
+        .url = concatenated_url,
         .key = state.accessKey->key,
         .body = NULL,
         .filePath = NULL,
@@ -23,11 +44,15 @@ void requestSetup()
     };
 
     int result = performHttpPost(&requestSetup);
-    if (result == 1) {
+    if (result == 1)
+    {
         printf("[setup] setup request was a success\n");
-    } else {
+    }
+    else
+    {
         printf("[setup] setup request failed\n");
     }
+    free(concatenated_url);
 }
 
 // @TODO: Pending backend implementation
@@ -42,8 +67,25 @@ void completeSetup()
     printf("[setup] Complete setup\n");
     printf("[setup] Access key: %s\n", state.accessKey->key);
 
+    // Obtener la longitud de main_api
+    size_t main_api_len = strlen(getConfig().main_api);
+    const char *suffix = "/api/nfNode/setup/complete";
+    size_t suffix_len = strlen(suffix);
+
+    // Calcular la longitud total de la cadena resultante
+    size_t total_len = main_api_len + suffix_len + 1; // +1 para el carácter nulo '\0'
+
+    // Asignar memoria suficiente para la cadena concatenada
+    char *concatenated_url = malloc(total_len);
+
+    // Copiar main_api en la cadena concatenada
+    strcpy(concatenated_url, getConfig().main_api);
+
+    // Concatenar el sufijo
+    strcat(concatenated_url, suffix);
+
     PostRequestOptions completeSetupOptions = {
-        .url = COMPLETE_SETUP_ENDPOINT,
+        .url = concatenated_url,
         .key = state.accessKey->key,
         .body = NULL,
         .filePath = NULL,
@@ -51,7 +93,9 @@ void completeSetup()
         .writeData = NULL,
     };
 
-    performHttpPost(&completeSetupOptions);    
+    performHttpPost(&completeSetupOptions);
+
+    free(concatenated_url);
 }
 
 void setupTask()
@@ -64,11 +108,16 @@ void setupTask()
 
     printf("[setup] Setup task\n");
 
-    if (state.accessStatus == 0) {
+    if (state.accessStatus == 0)
+    {
         requestSetup();
-    } else if(state.accessStatus == 2) {
+    }
+    else if (state.accessStatus == 2)
+    {
         checkApprovedSetup();
-    } else if(state.accessStatus == 3) {
+    }
+    else if (state.accessStatus == 3)
+    {
         // Note: We currently complete the setup from the access task
         // since that call receives the updated status value first
         // @TODO: Implement a status endpoint that we can call from here

@@ -49,7 +49,7 @@ define Build/Compile
 		$(TARGET_CC) $(TARGET_LDFLAGS) \
 			$(PKG_BUILD_DIR)/main.o \
 			$(PKG_BUILD_DIR)/services/init.o \
-        	$(PKG_BUILD_DIR)/services/scheduler.o \
+			$(PKG_BUILD_DIR)/services/scheduler.o \
 			$(PKG_BUILD_DIR)/services/access.o \
 			$(PKG_BUILD_DIR)/services/setup.o \
 			$(PKG_BUILD_DIR)/services/accounting.o \
@@ -69,6 +69,7 @@ endef
 define Package/wayru-os-services/install
 		$(INSTALL_DIR) $(1)/usr/bin
 		$(INSTALL_DIR) $(1)/etc/init.d
+		$(INSTALL_DIR) $(1)/etc/config
 		$(INSTALL_DIR) $(1)/etc/wayru-os-services
 		$(INSTALL_DIR) $(1)/etc/wayru-os-services/scripts
 		$(INSTALL_DIR) $(1)/etc/wayru-os-services/data
@@ -77,6 +78,9 @@ define Package/wayru-os-services/install
 
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/wayru-os-services.init $(1)/etc/init.d/wayru-os-services
 		
+		$(INSTALL_CONF) $(SOURCE_DIR)/scripts/openwrt/wayru-os-services.config $(1)/etc/config/wayru-os-services
+		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/wayru-os-services.config $(1)/etc/wayru-os-services/config.uci
+
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/binauth-accounting.sh $(1)/etc/wayru-os-services/scripts/
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/update-accounting.sh $(1)/etc/wayru-os-services/scripts/
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/update-config.sh $(1)/etc/wayru-os-services/scripts/
@@ -89,6 +93,10 @@ define Package/wayru-os-services/install
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/get-public-ip.sh $(1)/etc/wayru-os-services/scripts/
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/get-osname.sh $(1)/etc/wayru-os-services/scripts/
 		$(INSTALL_DATA) VERSION $(1)/etc/wayru-os-services/VERSION
+endef
+
+define Package/wayru-os-services/conffiles
+/etc/config/wayru-os-services
 endef
 
 # This command is always the last, it uses the definitions and variables we give above in order to get the job done

@@ -13,7 +13,7 @@ else
 fi
 
 if [ "$3" = '' ]; then
-    accounting_api="https://api.wifi.wayru.tech"
+    accounting_api="https://wifi.api.wayru.tech"
 else
     accounting_api="$3"
 fi

@@ -81,9 +81,6 @@ define Package/wayru-os-services/install
 		$(INSTALL_CONF) $(SOURCE_DIR)/scripts/openwrt/wayru-os-services.config $(1)/etc/config/wayru-os-services
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/wayru-os-services.config $(1)/etc/wayru-os-services/config.uci
 
-		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/binauth-accounting.sh $(1)/etc/wayru-os-services/scripts/
-		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/update-accounting.sh $(1)/etc/wayru-os-services/scripts/
-		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/update-config.sh $(1)/etc/wayru-os-services/scripts/
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/get-uuid.sh $(1)/etc/wayru-os-services/scripts/
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/get-brand.sh $(1)/etc/wayru-os-services/scripts/
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/get-mac.sh $(1)/etc/wayru-os-services/scripts/

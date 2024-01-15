@@ -10,6 +10,7 @@ void initConfig(
     char *basePath,
     char *deviceId,
     char *mac,
+    char *name,
     char *brand,
     char *model,
     char *public_ip,
@@ -24,6 +25,7 @@ void initConfig(
     config.basePath = strdup(basePath);
     config.deviceId = strdup(deviceId);
     config.mac = strdup(mac);
+    config.name = strdup(name);
     config.brand = strdup(brand);
     config.model = strdup(model);
     config.public_ip = strdup(public_ip);
@@ -40,6 +42,7 @@ void cleanConfig()
     free(config.basePath);
     free(config.deviceId);
     free(config.mac);
+    free(config.name);
     free(config.brand);
     free(config.model);
     free(config.public_ip);

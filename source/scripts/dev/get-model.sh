@@ -1,1 +1,0 @@
-echo "cf-e375ac"

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <json-c/json.h>
 #include "../store/config.h"
 #include "../store/state.h"
 #include "../utils/script_runner.h"
@@ -14,6 +15,14 @@
 #define OS_VERSION_FILE "/etc/openwrt_release"
 #define PACKAGE_VERSION_FILE "/etc/wayru-os-services/VERSION"
 #define ID_LENGTH 37
+#define DEVICE_INFO_FILE "/etc/wayru-os/device.json"
+
+typedef struct
+{
+    char *name;
+    char *brand;
+    char *model;
+} DeviceInfo;
 
 char *initOSVersion(int devEnv)
 {
@@ -136,34 +145,57 @@ char *initMac(char *scriptsPath)
     return mac;
 }
 
-char *initBrand(char *scriptsPath)
+DeviceInfo initDeviceInfo(int dev_env)
 {
-    char scriptFile[256];
-    snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/get-brand.sh");
-    char *brand = run_script(scriptFile);
-    if (strchr(brand, '\n') != NULL)
+    DeviceInfo device_info = {0};
+
+    if (dev_env == 1)
     {
-        brand[strcspn(brand, "\n")] = 0;
+        device_info.name = strdup("Genesis");
+        device_info.brand = strdup("Wayru");
+        device_info.model = strdup("Genesis");
+        return device_info;
     }
 
-    printf("[init] Brand is: %s\n", brand);
-
-    return brand;
-}
-
-char *initModel(char *scriptsPath)
-{
-    char scriptFile[256];
-    snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/get-model.sh");
-    char *model = run_script(scriptFile);
-    if (strchr(model, '\n') != NULL)
+    FILE *file = fopen(DEVICE_INFO_FILE, "r");
+    if (file == NULL)
     {
-        model[strcspn(model, "\n")] = 0;
+        perror("[inti] Error opening device info file");
+        return device_info;
     }
 
-    printf("[init] Model is: %s\n", model);
+    // Read the file into a string
+    fseek(file, 0, SEEK_END);
+    long fsize = ftell(file);
+    fseek(file, 0, SEEK_SET);
+    char *json_string = malloc(fsize + 1);
+    fread(json_string, 1, fsize, file);
+    fclose(file);
+    json_string[fsize] = 0;
 
-    return model;
+    // Parse the string into a json object
+    struct json_object *parsed_json = json_tokener_parse(json_string);
+    free(json_string);
+
+    struct json_object *name;
+    struct json_object *brand;
+    struct json_object *model;
+
+    json_object_object_get_ex(parsed_json, "name", &name);
+    json_object_object_get_ex(parsed_json, "brand", &brand);
+    json_object_object_get_ex(parsed_json, "model", &model);
+
+    // Copy the values into the device_info struct
+    device_info.name = strdup(json_object_get_string(name));
+    device_info.brand = strdup(json_object_get_string(brand));
+    device_info.model = strdup(json_object_get_string(model));
+
+    // Free the JSON object
+    json_object_put(parsed_json);
+
+    printf("[init] Device identifiers are: %s, %s, %s\n", device_info.name, device_info.brand, device_info.model);
+
+    return device_info;
 }
 
 char *initId(char *scriptsPath)
@@ -281,7 +313,6 @@ void init(int argc, char *argv[])
     {
         snprintf(config_accounting_api, sizeof(config_accounting_api), "%s", DEFAULT_ACCOUNTING_API);
     }
-    
 
     printf("[init] devEnv: %d\n", devEnv);
     printf("[init] config_enabled: %d\n", config_enabled);
@@ -299,8 +330,7 @@ void init(int argc, char *argv[])
     char *osVersion = initOSVersion(devEnv);
     char *servicesVersion = initServicesVersion(devEnv);
     char *mac = initMac(scriptsPath);
-    char *brand = initBrand(scriptsPath);
-    char *model = initModel(scriptsPath);
+    DeviceInfo device_info = initDeviceInfo(devEnv);
     char *public_ip = publicIP(scriptsPath);
     char *os_name = initOSName(scriptsPath);
     char *id = initId(scriptsPath);
@@ -313,7 +343,7 @@ void init(int argc, char *argv[])
 
     // set_default_values();
 
-    initConfig(devEnv, basePath, id, mac, brand, model, public_ip, os_name, osVersion, servicesVersion, config_enabled, config_main_api, config_accounting_api);
+    initConfig(devEnv, basePath, id, mac, device_info.name, device_info.brand, device_info.model, public_ip, os_name, osVersion, servicesVersion, config_enabled, config_main_api, config_accounting_api);
 
     // printf("Valor de config.main_api: %s\n", main_api);
 
@@ -326,4 +356,8 @@ void init(int argc, char *argv[])
     // free(model);
     // free(osVersion);
     // free(servicesVersion);
+
+    free(device_info.name);
+    free(device_info.brand);
+    free(device_info.model);
 }

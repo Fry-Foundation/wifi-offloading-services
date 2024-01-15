@@ -12,6 +12,7 @@ typedef struct
     char *basePath;
     char *deviceId;
     char *mac;
+    char *name;
     char *brand;
     char *model;
     char *public_ip;
@@ -28,6 +29,7 @@ void initConfig(
     char *basePath,
     char *deviceId,
     char *mac,
+    char *name,
     char *brand,
     char *model,
     char *public_ip,

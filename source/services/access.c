@@ -257,6 +257,7 @@ int requestAccessKey(AccessKey *accessKey)
 
     json_object_object_add(jsonData, "device_id", json_object_new_string(getConfig().deviceId));
     json_object_object_add(jsonData, "mac", json_object_new_string(getConfig().mac));
+    json_object_object_add(jsonData, "name", json_object_new_string(getConfig().name));
     json_object_object_add(jsonData, "brand", json_object_new_string(getConfig().brand));
     json_object_object_add(jsonData, "model", json_object_new_string(getConfig().model));
     json_object_object_add(jsonData, "public_ip", json_object_new_string(getConfig().public_ip));

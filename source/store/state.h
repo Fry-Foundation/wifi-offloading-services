@@ -11,15 +11,16 @@ typedef struct
     int mode;
 
     // Access key
-    AccessKey* accessKey;
+    AccessKey* access_key;
 
     // Access status
     // 0 - initial
-    // 1 - banned
-    // 2 - setup-pending
-    // 3 - setup-approved
-    // 4 - setup-completed
-    int accessStatus;
+    // 1 - setup-pending
+    // 2 - setup-approved
+    // 3 - mint-pending
+    // 4 - ready
+    // 5 - banned
+    int access_status;
 
     // Setup
     int setup;
@@ -33,7 +34,7 @@ typedef struct
 
 extern State state;
 
-void initState(int mode, AccessKey *accessKey);
+void initState(int mode, AccessKey *access_key);
 
 void cleanState();
 

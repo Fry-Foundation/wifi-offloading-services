@@ -6,24 +6,22 @@
 typedef struct
 {
     char *key;
-    time_t createdAt;
-    time_t expiresAt;
+    time_t created_at;
+    time_t expires_at;
 } AccessKey;
 
-AccessKey *initAccessKey();
+AccessKey *init_access_key();
 
-int readAccessKey(AccessKey *accessKey);
+int read_access_key(AccessKey *access_key);
 
-void writeAccessKey(AccessKey *accessKey);
+void write_access_key(AccessKey *access_key);
 
-int checkAccessKeyExpiration(AccessKey *accessKey);
+int request_access_key(AccessKey *access_key);
 
-int requestAccessKey(AccessKey *accessKey);
+int check_access_key_near_expiration(AccessKey *access_key);
 
-int checkAccessKeyNearExpiration(AccessKey *accessKey);
+void configure_with_access_status(int access_status);
 
-void configureWithAccessStatus(int accessStatus);
-
-void accessTask();
+void access_task();
 
 #endif /* ACCESS_H */

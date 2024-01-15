@@ -5,13 +5,13 @@
 
 State state;
 
-void initState(int mode, AccessKey *accessKey)
+void initState(int mode, AccessKey *access_key)
 {
     state.mode = mode;
 
-    state.accessKey = accessKey;
+    state.access_key = access_key;
 
-    state.accessStatus = 0;
+    state.access_status = 0;
 
     state.setup = 0;
 
@@ -22,9 +22,9 @@ void initState(int mode, AccessKey *accessKey)
 
 void cleanState()
 {
-    if (state.accessKey != NULL)
+    if (state.access_key != NULL)
     {
-        free(state.accessKey->key);
-        free(state.accessKey);
+        free(state.access_key->key);
+        free(state.access_key);
     }
 }

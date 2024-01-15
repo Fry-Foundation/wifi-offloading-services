@@ -356,8 +356,8 @@ void init(int argc, char *argv[])
 
     // printf("Valor de config.main_api: %s\n", main_api);
 
-    AccessKey *accessKey = initAccessKey();
-    initState(0, accessKey);
+    AccessKey *access_key = init_access_key();
+    initState(0, access_key);
 
     // free(basePath);
     // free(id);

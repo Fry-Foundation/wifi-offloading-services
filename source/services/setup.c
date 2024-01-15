@@ -14,7 +14,7 @@
 void requestSetup()
 {
     printf("[setup] Request setup\n");
-    printf("[setup] Access key: %s\n", state.accessKey->key);
+    printf("[setup] Access key: %s\n", state.access_key->key);
 
     // Build setup URL
     char setup_url[256];
@@ -24,7 +24,7 @@ void requestSetup()
     // Request options
     PostRequestOptions requestSetup = {
         .url = setup_url,
-        .key = state.accessKey->key,
+        .key = state.access_key->key,
         .body = NULL,
         .filePath = NULL,
         .writeFunction = NULL,
@@ -46,13 +46,13 @@ void requestSetup()
 void checkApprovedSetup()
 {
     printf("[setup] Not yet implemented - Check if the setup has been approved\n");
-    printf("[setup] Not yet implemented - Access key: %s\n", state.accessKey->key);
+    printf("[setup] Not yet implemented - Access key: %s\n", state.access_key->key);
 }
 
 void completeSetup()
 {
     printf("[setup] Complete setup\n");
-    printf("[setup] Access key: %s\n", state.accessKey->key);
+    printf("[setup] Access key: %s\n", state.access_key->key);
 
     // Build setup complete URL
     char setup_complete_url[256];
@@ -61,7 +61,7 @@ void completeSetup()
 
     PostRequestOptions completeSetupOptions = {
         .url = setup_complete_url,
-        .key = state.accessKey->key,
+        .key = state.access_key->key,
         .body = NULL,
         .filePath = NULL,
         .writeFunction = NULL,
@@ -81,15 +81,15 @@ void setupTask()
 
     printf("[setup] Setup task\n");
 
-    if (state.accessStatus == 0)
+    if (state.access_status == 0)
     {
         requestSetup();
     }
-    else if (state.accessStatus == 2)
+    else if (state.access_status == 2)
     {
         checkApprovedSetup();
     }
-    else if (state.accessStatus == 3)
+    else if (state.access_status == 3)
     {
         // Note: We currently complete the setup from the access task
         // since that call receives the updated status value first

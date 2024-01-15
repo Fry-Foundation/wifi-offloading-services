@@ -37,15 +37,15 @@ int main(int argc, char *argv[])
     // Note that we disregard the expiration time for now,
     // but the periodic access task does check expiration
     // @TODO: This should probably be part of the access key initialization
-    requestAccessKey(state.accessKey);
-    writeAccessKey(state.accessKey);
-    configureWithAccessStatus(state.accessStatus);
+    request_access_key(state.access_key);
+    write_access_key(state.access_key);
+    configure_with_access_status(state.access_status);
     state.onBoot = 0;
 
     Scheduler sch = {NULL, 0};
 
     // Schedule the access task with an interval of 2 minutes
-    scheduleEvery(&sch, 120, accessTask);
+    scheduleEvery(&sch, 120, access_task);
 
     // Schedule the setup task for now, and then with an interval of 1 minute
     scheduleAt(&sch, time(NULL), setupTask);

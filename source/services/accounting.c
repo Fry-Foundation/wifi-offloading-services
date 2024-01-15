@@ -113,7 +113,7 @@ void post_accounting_update(char *opennds_clients_data)
     // Request options
     PostRequestOptions post_accounting_options = {
         .url = accounting_url,
-        .key = state.accessKey->key,
+        .key = state.access_key->key,
         .body = opennds_clients_data,
         .filePath = NULL,
         .writeFunction = process_accounting_response,

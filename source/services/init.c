@@ -185,6 +185,7 @@ char *initId(char *scriptsPath)
             {
                 id[strcspn(id, "\n")] = 0;
             }
+            printf("[init] UUID found, took %d attempts.\n", retryCount + 1);
             printf("[init] UUID is: %s\n", id);
             break; // Exit the loop if a valid UUID is obtained
         }

@@ -14,6 +14,7 @@
 #define OS_VERSION_FILE "/etc/openwrt_release"
 #define PACKAGE_VERSION_FILE "/etc/wayru-os-services/VERSION"
 #define ID_LENGTH 37
+#define MAX_RETRIES 50
 
 char *initOSVersion(int devEnv)
 {
@@ -171,13 +172,14 @@ char *initId(char *scriptsPath)
     char scriptFile[256];
     snprintf(scriptFile, sizeof(scriptFile), "%s%s", scriptsPath, "/get-uuid.sh");
     char *id = NULL;
+    int retryCount = 0;
 
     // Loop indefinitely until a valid UUID is obtained
-    while (1)
+    while (retryCount < MAX_RETRIES)
     {
         id = run_script(scriptFile);
-        // if (id != NULL && strlen(id) > 0 && strlen(id) == ID_LENGTH - 1)
-        if (id != NULL && strlen(id) > 1)
+        // printf("[init] ID: %s\n", id);
+        if (id != NULL && strlen(id) > 1 && strncmp(id, "uci", 3) != 0)
         {
             if (strchr(id, '\n') != NULL)
             {
@@ -188,7 +190,13 @@ char *initId(char *scriptsPath)
         }
 
         printf("[init] Retrying to obtain UUID...\n");
-        sleep(1); // Wait for 1 second before retrying
+        sleep(5); // Wait for 5 seconds before retrying
+        retryCount++;
+    }
+    if (retryCount == MAX_RETRIES)
+    {
+        printf("[init] Error: Unable to obtain UUID after %d attempts. Exiting.\n", MAX_RETRIES);
+        exit(1);
     }
 
     return id;
@@ -281,7 +289,6 @@ void init(int argc, char *argv[])
     {
         snprintf(config_accounting_api, sizeof(config_accounting_api), "%s", DEFAULT_ACCOUNTING_API);
     }
-    
 
     printf("[init] devEnv: %d\n", devEnv);
     printf("[init] config_enabled: %d\n", config_enabled);

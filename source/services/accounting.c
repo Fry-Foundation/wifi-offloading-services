@@ -256,7 +256,6 @@ void accounting_task(int argc, char *argv[])
         return;
     }
 
-    printf("[accounting] current clients: %s\n", opennds_clients_data);
     post_accounting_update(opennds_clients_data);
 
     free(opennds_clients_data);

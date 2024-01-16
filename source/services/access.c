@@ -351,7 +351,7 @@ void configure_with_access_status(int access_status)
         printf("[access] Access status is 'ready'\n");
         state.setup = 0;
         state.accounting = 1;
-        disable_default_wireless_network();
+        // disable_default_wireless_network();
         start_opennds();
     } else if (access_status == 5) {
         printf("[access] Access status is 'banned'\n");

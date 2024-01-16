@@ -18,6 +18,7 @@
 #define MAX_KEY_SIZE 512
 #define MAX_TIMESTAMP_SIZE 256
 #define ACCESS_ENDPOINT "/api/nfnode/access"
+#define SCRIPTS_PATH "/etc/wayru-os-services/scripts"
 
 time_t convert_to_time_t(char *timestamp_str)
 {
@@ -275,6 +276,24 @@ int request_access_key(AccessKey *access_key)
         return 0;
     }
 };
+
+void disable_default_wireless_network()
+{
+    if (getConfig().devEnv == 1)
+    {
+        printf("[access] Not disabling default wireless network in dev environment\n");
+        return;
+    }
+
+    printf("[access] Disabling default wireless network\n");
+    
+    char script_file[256];
+    snprintf(script_file, sizeof(script_file), "%s%s", SCRIPTS_PATH, "/disable-default-wireless.sh");
+    
+    char *disable_output = run_script(script_file);
+    printf("[access] disable_output: %s\n", disable_output);
+    free(disable_output);
+}
 
 void configure_with_access_status(int access_status)
 {

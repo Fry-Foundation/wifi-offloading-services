@@ -30,6 +30,9 @@ typedef struct
 
     // On boot
     int onBoot;
+
+    // Wireless network
+    int already_disabled_wifi;
 } State;
 
 extern State state;

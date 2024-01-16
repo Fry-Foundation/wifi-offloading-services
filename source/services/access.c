@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <time.h>
 #include <json-c/json.h>
+#include <unistd.h>
 #include "access.h"
 #include "setup.h"
 #include "accounting.h"
@@ -293,6 +294,12 @@ void disable_default_wireless_network()
         return;
     }
 
+    if (state.already_disabled_wifi == 1)
+    {
+        printf("[access] Default wireless network already disabled\n");
+        return;
+    }
+
     printf("[access] Disabling default wireless network\n");
     
     char script_file[256];
@@ -300,7 +307,11 @@ void disable_default_wireless_network()
     
     char *disable_output = run_script(script_file);
     printf("[access] disable_output: %s\n", disable_output);
+
+    state.already_disabled_wifi = 1;
+
     free(disable_output);
+    sleep(10); // Wait for the network to be disabled
 }
 
 void configure_with_access_status(int access_status)
@@ -340,9 +351,8 @@ void configure_with_access_status(int access_status)
         printf("[access] Access status is 'ready'\n");
         state.setup = 0;
         state.accounting = 1;
+        disable_default_wireless_network();
         start_opennds();
-
-        // @TODO: Disable Wayru Operator network
     } else if (access_status == 5) {
         printf("[access] Access status is 'banned'\n");
         state.setup = 0;

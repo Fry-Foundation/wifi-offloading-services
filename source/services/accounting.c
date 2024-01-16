@@ -26,7 +26,6 @@ char *query_opennds()
     snprintf(script_file, sizeof(script_file), "%s%s", scripts_path, "/nds-clients.sh");
 
     char *accounting_output = run_script(script_file);
-    printf("[accounting] query output: %s", accounting_output);
 
     // Make sure this is a valid JSON
     struct json_object *parsed_response;

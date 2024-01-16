@@ -18,6 +18,8 @@ void initState(int mode, AccessKey *access_key)
     state.accounting = 0;
 
     state.onBoot = 1;
+
+    state.already_disabled_wifi = 0;
 }
 
 void cleanState()

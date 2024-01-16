@@ -289,7 +289,7 @@ void configure_with_access_status(int access_status)
     else if (access_status == 1)
     {
         printf("[access] Access status is 'setup-pending'\n");
-        state.setup = 1;
+        state.setup = 0;
         state.accounting = 0;
         stop_opennds();
     }
@@ -314,6 +314,8 @@ void configure_with_access_status(int access_status)
         state.setup = 0;
         state.accounting = 1;
         start_opennds();
+
+        // @TODO: Disable Wayru Operator network
     } else if (access_status == 5) {
         printf("[access] Access status is 'banned'\n");
         state.setup = 0;

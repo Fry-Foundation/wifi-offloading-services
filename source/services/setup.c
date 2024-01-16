@@ -43,11 +43,11 @@ void requestSetup()
 }
 
 // @TODO: Pending backend implementation
-void checkApprovedSetup()
-{
-    printf("[setup] Not yet implemented - Check if the setup has been approved\n");
-    printf("[setup] Not yet implemented - Access key: %s\n", state.access_key->key);
-}
+// void checkApprovedSetup()
+// {
+//     printf("[setup] Not yet implemented - Check if the setup has been approved\n");
+//     printf("[setup] Not yet implemented - Access key: %s\n", state.access_key->key);
+// }
 
 void completeSetup()
 {
@@ -83,17 +83,7 @@ void setupTask()
 
     if (state.access_status == 0)
     {
+        printf("[setup] Requesting setup\n");
         requestSetup();
-    }
-    else if (state.access_status == 2)
-    {
-        checkApprovedSetup();
-    }
-    else if (state.access_status == 3)
-    {
-        // Note: We currently complete the setup from the access task
-        // since that call receives the updated status value first
-        // @TODO: Implement a status endpoint that we can call from here
-        // completeSetup();
     }
 }

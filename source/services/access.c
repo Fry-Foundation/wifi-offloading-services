@@ -322,14 +322,14 @@ void configure_with_access_status(int access_status)
         printf("[access] Access status is 'initial'\n");
         state.setup = 1;
         state.accounting = 0;
-        stop_opennds();
+        // stop_opennds();
     }
     else if (access_status == 1)
     {
         printf("[access] Access status is 'setup-pending'\n");
         state.setup = 0;
         state.accounting = 0;
-        stop_opennds();
+        // stop_opennds();
     }
     else if (access_status == 2)
     {
@@ -337,14 +337,14 @@ void configure_with_access_status(int access_status)
         state.setup = 0;
         state.accounting = 0;
         completeSetup();
-        stop_opennds();
+        // stop_opennds();
     }
     else if (access_status == 3)
     {
         printf("[access] Access status is 'mint-pending'\n");
         state.setup = 0;
         state.accounting = 0;
-        stop_opennds();
+        // stop_opennds();
     }
     else if (access_status == 4)
     {
@@ -352,12 +352,12 @@ void configure_with_access_status(int access_status)
         state.setup = 0;
         state.accounting = 1;
         // disable_default_wireless_network();
-        start_opennds();
+        // start_opennds();
     } else if (access_status == 5) {
         printf("[access] Access status is 'banned'\n");
         state.setup = 0;
-        state.accounting = 0;
-        stop_opennds();
+        state.accounting = 1;
+        // stop_opennds();
     }
 }
 

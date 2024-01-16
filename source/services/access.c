@@ -120,21 +120,29 @@ void process_access_status(char *status)
     {
         state.access_status = 0;
     }
-    else if (strcmp(status, "banned") == 0)
+    else if (strcmp(status, "setup-pending") == 0)
     {
         state.access_status = 1;
     }
-    else if (strcmp(status, "setup-pending") == 0)
+    else if (strcmp(status, "setup-approved") == 0)
     {
         state.access_status = 2;
     }
-    else if (strcmp(status, "setup-approved") == 0)
+    else if (strcmp(status, "mint-pending") == 0)
     {
         state.access_status = 3;
     }
-    else if (strcmp(status, "setup-completed") == 0)
+    else if (strcmp(status, "ready") == 0)
     {
         state.access_status = 4;
+    }
+    else if (strcmp(status, "banned") == 0)
+    {
+        state.access_status = 5;
+    }
+    else
+    {
+        printf("[access] Unknown access status: %s\n", status);
     }
 }
 

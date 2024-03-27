@@ -19,7 +19,10 @@ void initConfig(
     char *servicesVersion,
     int enabled,
     char *main_api,
-    char *accounting_api)
+    int accounting_enabled,
+    int accounting_interval,
+    char *accounting_api,
+    int access_task_interval)
 {
     config.devEnv = devEnv;
     config.basePath = strdup(basePath);
@@ -34,7 +37,10 @@ void initConfig(
     config.servicesVersion = strdup(servicesVersion);
     config.enabled = enabled;
     config.main_api = strdup(main_api);
+    config.accounting_enabled = accounting_enabled;
+    config.accounting_interval = accounting_interval;
     config.accounting_api = strdup(accounting_api);
+    config.access_task_interval = access_task_interval;
 }
 
 void cleanConfig()

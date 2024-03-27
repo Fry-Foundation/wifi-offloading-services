@@ -25,6 +25,7 @@ compile:
 	$(SOURCE_PATH)/services/access.c \
 	$(SOURCE_PATH)/services/setup.c \
 	$(SOURCE_PATH)/services/accounting.c \
+	$(SOURCE_PATH)/services/end_report.c \
 	$(SOURCE_PATH)/store/config.c \
 	$(SOURCE_PATH)/store/state.c \
 	$(SOURCE_PATH)/utils/requests.c \

@@ -6,6 +6,7 @@
 #include "../store/config.h"
 #include "../store/state.h"
 #include "../utils/script_runner.h"
+#include "../utils/console.h"
 #include "../services/access.h"
 
 #define DEV_PATH "."
@@ -25,9 +26,9 @@ typedef struct
     char *model;
 } DeviceInfo;
 
-char *initOSVersion(int devEnv)
+char *initOSVersion(int dev_env)
 {
-    if (devEnv == 1)
+    if (dev_env == 1)
     {
         return strdup("2.0.0");
     }
@@ -35,7 +36,8 @@ char *initOSVersion(int devEnv)
     FILE *file = fopen(OS_VERSION_FILE, "r");
     if (file == NULL)
     {
-        perror("Error opening file");
+        console(CONSOLE_ERROR, "error opening OS version file");
+        perror("error opening file");
         return NULL;
     }
 
@@ -71,17 +73,18 @@ char *initOSVersion(int devEnv)
         osVersion = strdup(distrib_release);
         if (osVersion == NULL)
         {
-            perror("Memory allocation failed for osVersion");
+            console(CONSOLE_ERROR, "failed to allocate memory for OS version");
+            perror("memory allocation failed for osVersion");
             fclose(file);
             return NULL;
         }
     }
     else
     {
-        fprintf(stderr, "OS version string is empty\n");
+        console(CONSOLE_ERROR, "OS version is empty");
     }
 
-    printf("[init] OS version is: %s\n", osVersion);
+    console(CONSOLE_DEBUG, "OS version is: %s", osVersion);
 
     return osVersion;
 }
@@ -96,7 +99,8 @@ char *initServicesVersion(int devEnv)
     FILE *file = fopen(PACKAGE_VERSION_FILE, "r");
     if (file == NULL)
     {
-        perror("Error opening file");
+        console(CONSOLE_ERROR, "error opening services version file");
+        perror("error opening file");
         return NULL;
     }
 
@@ -106,7 +110,7 @@ char *initServicesVersion(int devEnv)
 
     if (fgets(version, MAX_LINE_LENGTH, file) == NULL)
     {
-        fprintf(stderr, "Failed to read version\n");
+        console(CONSOLE_ERROR, "failed to read services version");
         fclose(file);
         return NULL; // Handle failed read attempt
     }
@@ -122,11 +126,12 @@ char *initServicesVersion(int devEnv)
     servicesVersion = strdup(version);
     if (servicesVersion == NULL)
     {
-        perror("Memory allocation failed for dynamicVersion");
+        console(CONSOLE_ERROR, "memory allocation failed for services version");
+        perror("memory allocation failed for dynamicVersion");
         return NULL;
     }
 
-    printf("[init] Services version is: %s\n", servicesVersion);
+    console(CONSOLE_ERROR, "services version is: %s", servicesVersion);
 
     return servicesVersion;
 }
@@ -141,7 +146,7 @@ char *initMac(char *scriptsPath)
         mac[strcspn(mac, "\n")] = 0;
     }
 
-    printf("[init] MAC address is: %s\n", mac);
+    console(CONSOLE_DEBUG, "mac address is: %s", mac);
 
     return mac;
 }
@@ -161,7 +166,8 @@ DeviceInfo initDeviceInfo(int dev_env)
     FILE *file = fopen(DEVICE_INFO_FILE, "r");
     if (file == NULL)
     {
-        perror("[inti] Error opening device info file");
+        console(CONSOLE_ERROR, "error opening device info file");
+        perror("error opening device info file");
         return device_info;
     }
 
@@ -194,7 +200,7 @@ DeviceInfo initDeviceInfo(int dev_env)
     // Free the JSON object
     json_object_put(parsed_json);
 
-    printf("[init] Device identifiers are: %s, %s, %s\n", device_info.name, device_info.brand, device_info.model);
+    console(CONSOLE_DEBUG, "device identifiers are: %s, %s, %s", device_info.name, device_info.brand, device_info.model);
 
     return device_info;
 }
@@ -210,25 +216,26 @@ char *initId(char *scriptsPath)
     while (retryCount < MAX_RETRIES)
     {
         id = run_script(scriptFile);
-        // printf("[init] ID: %s\n", id);
         if (id != NULL && strlen(id) > 1 && strncmp(id, "uci", 3) != 0)
         {
             if (strchr(id, '\n') != NULL)
             {
                 id[strcspn(id, "\n")] = 0;
             }
-            printf("[init] UUID found, took %d attempts.\n", retryCount + 1);
-            printf("[init] UUID is: %s\n", id);
+
+            console(CONSOLE_DEBUG, "UUID found, took %d attempts.", retryCount + 1);
+            console(CONSOLE_DEBUG, "UUID is: %s", id);
+
             break; // Exit the loop if a valid UUID is obtained
         }
 
-        printf("[init] Retrying to obtain UUID...\n");
+        console(CONSOLE_DEBUG, "retrying to obtain UUID...");
         sleep(5); // Wait for 5 seconds before retrying
         retryCount++;
     }
     if (retryCount == MAX_RETRIES)
     {
-        printf("[init] Error: Unable to obtain UUID after %d attempts. Exiting.\n", MAX_RETRIES);
+        console(CONSOLE_ERROR, "unable to obtain UUID after %d attempts. Exiting.", MAX_RETRIES);
         exit(1);
     }
 
@@ -245,7 +252,7 @@ char *publicIP(char *scriptsPath)
         public_ip[strcspn(public_ip, "\n")] = 0;
     }
 
-    printf("[init] Public IP: %s\n", public_ip);
+    console(CONSOLE_DEBUG, "public IP: %s", public_ip);
 
     return public_ip;
 }
@@ -260,37 +267,34 @@ char *initOSName(char *scriptsPath)
         os_name[strcspn(os_name, "\n")] = 0;
     }
 
-    printf("[init] OS name: %s\n", os_name);
-
     return os_name;
 }
 
 void init(int argc, char *argv[])
 {
-    int devEnv = 0;
+    int dev_env = 0;
     int config_enabled = -1;
     char config_main_api[256] = {'\0'};
     int config_accounting_enabled = -1;
     int config_accounting_interval = -1;
     char config_accounting_api[256] = {'\0'};
     int config_access_task_interval = -1;
-    
 
     for (int i = 1; i < argc; i++)
     {
         if (strcmp(argv[i], "--dev") == 0)
         {
-            devEnv = 1;
+            dev_env = 1;
             continue;
         }
 
         if (strcmp(argv[i], "--config-enabled") == 0)
         {
-            printf("enable argument: %s\n", argv[i + 1]);
+            console(CONSOLE_DEBUG, "enable argument: %s", argv[i + 1]);
             config_enabled = atoi(argv[i + 1]);
             if (config_enabled == 0)
             {
-                printf("[init] wayru-os-services is disabled (see \"option enabled\" in config).\n");
+                console(CONSOLE_DEBUG, "daemon is configured as disabled (see \"option enabled\")");
                 exit(0);
             }
 
@@ -299,36 +303,36 @@ void init(int argc, char *argv[])
 
         if (strcmp(argv[i], "--config-main-api") == 0)
         {
-            printf("main api argument: %s\n", argv[i + 1]);
+            console(CONSOLE_DEBUG, "main api argument: %s", argv[i + 1]);
             snprintf(config_main_api, sizeof(config_main_api), "%s", argv[i + 1]);
             continue;
         }
 
         if (strcmp(argv[i], "--config-accounting-enabled") == 0)
         {
-            printf("accounting enable argument: %s\n", argv[i + 1]);
+            console(CONSOLE_DEBUG, "accounting enable argument: %s", argv[i + 1]);
             config_accounting_enabled = atoi(argv[i + 1]);
             continue;
         }
 
         if (strcmp(argv[i], "--config-accounting-interval") == 0)
         {
-            printf("accounting interval argument: %s\n", argv[i + 1]);
-            config_accounting_interval = atoi(argv[i + 1]);      
+            console(CONSOLE_DEBUG, "accounting interval argument: %s", argv[i + 1]);
+            config_accounting_interval = atoi(argv[i + 1]);
             continue;
         }
 
         if (strcmp(argv[i], "--config-accounting-api") == 0)
         {
-            printf("accounting api argument: %s\n", argv[i + 1]);
+            console(CONSOLE_DEBUG, "accounting api argument: %s", argv[i + 1]);
             snprintf(config_accounting_api, sizeof(config_accounting_api), "%s", argv[i + 1]);
             continue;
         }
 
         if (strcmp(argv[i], "--config-access-task-interval") == 0)
         {
-            printf("access task interval argument: %s\n", argv[i + 1]);
-            config_access_task_interval = atoi(argv[i + 1]);      
+            console(CONSOLE_DEBUG, "access task interval argument: %s", argv[i + 1]);
+            config_access_task_interval = atoi(argv[i + 1]);
             continue;
         }
     }
@@ -364,26 +368,26 @@ void init(int argc, char *argv[])
         config_access_task_interval = atoi(DEFAULT_ACCESS_TASK_INTERVAL);
     }
 
-    printf("[init] devEnv: %d\n", devEnv);
-    printf("[init] config_enabled: %d\n", config_enabled);
-    printf("[init] config_main_api: %s\n", config_main_api);
-    printf("[init] config_accounting_enabled: %d\n", config_accounting_enabled);
-    printf("[init] config_accounting_interval: %d\n", config_accounting_interval);
-    printf("[init] config_accounting_api: %s\n", config_accounting_api);
-    printf("[init] config_access_task_interval: %d\n", config_access_task_interval);
+    console(CONSOLE_DEBUG, "dev_env: %d", dev_env);
+    console(CONSOLE_DEBUG, "config_enabled: %d", config_enabled);
+    console(CONSOLE_DEBUG, "config_main_api: %s", config_main_api);
+    console(CONSOLE_DEBUG, "config_accounting_enabled: %d", config_accounting_enabled);
+    console(CONSOLE_DEBUG, "config_accounting_interval: %d", config_accounting_interval);
+    console(CONSOLE_DEBUG, "config_accounting_api: %s", config_accounting_api);
+    console(CONSOLE_DEBUG, "config_access_task_interval: %d", config_access_task_interval);
 
     // Set up paths
-    char *basePath = (devEnv == 1) ? DEV_PATH : OPENWRT_PATH;
-    printf("[init] basePath: %s\n", basePath);
+    char *base_path = (dev_env == 1) ? DEV_PATH : OPENWRT_PATH;
+    console(CONSOLE_DEBUG, "base_path: %s", base_path);
 
     char scriptsPath[256];
-    snprintf(scriptsPath, sizeof(scriptsPath), "%s%s", basePath, "/scripts");
+    snprintf(scriptsPath, sizeof(scriptsPath), "%s%s", base_path, "/scripts");
 
     // Initialize config
-    char *osVersion = initOSVersion(devEnv);
-    char *servicesVersion = initServicesVersion(devEnv);
+    char *osVersion = initOSVersion(dev_env);
+    char *servicesVersion = initServicesVersion(dev_env);
     char *mac = initMac(scriptsPath);
-    DeviceInfo device_info = initDeviceInfo(devEnv);
+    DeviceInfo device_info = initDeviceInfo(dev_env);
     char *public_ip = publicIP(scriptsPath);
     char *os_name = initOSName(scriptsPath);
     char *id = initId(scriptsPath);
@@ -396,9 +400,7 @@ void init(int argc, char *argv[])
 
     // set_default_values();
 
-    initConfig(devEnv, basePath, id, mac, device_info.name, device_info.brand, device_info.model, public_ip, os_name, osVersion, servicesVersion, config_enabled, config_main_api, config_accounting_enabled, config_accounting_interval, config_accounting_api, config_access_task_interval);
-
-    // printf("Valor de config.main_api: %s\n", main_api);
+    initConfig(dev_env, base_path, id, mac, device_info.name, device_info.brand, device_info.model, public_ip, os_name, osVersion, servicesVersion, config_enabled, config_main_api, config_accounting_enabled, config_accounting_interval, config_accounting_api, config_access_task_interval);
 
     AccessKey *access_key = init_access_key();
     initState(0, access_key);
@@ -413,4 +415,6 @@ void init(int argc, char *argv[])
     free(device_info.name);
     free(device_info.brand);
     free(device_info.model);
+
+    console(CONSOLE_INFO, "initialized");
 }

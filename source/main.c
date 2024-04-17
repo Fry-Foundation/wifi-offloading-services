@@ -32,12 +32,6 @@ void testGetRequest()
 
 int main(int argc, char *argv[])
 {
-    console(CONSOLE_WARN, "go wayru");
-    console(CONSOLE_ERROR, "go wayru");
-    console(CONSOLE_INFO, "go wayru");
-    console(CONSOLE_DEBUG, "go wayru");
-    console(CONSOLE_NONE, "go wayru");
-
     init(argc, argv);
     int accounting_interval = getConfig().accounting_interval;
     int access_task_interval = getConfig().access_task_interval;

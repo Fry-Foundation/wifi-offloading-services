@@ -14,6 +14,6 @@ typedef enum
 
 // Function declarations
 void set_console_level(ConsoleLevel level);
-void console(ConsoleLevel level, const char *message);
+void console(ConsoleLevel level, const char *format, ...);
 
 #endif // CONSOLE_H

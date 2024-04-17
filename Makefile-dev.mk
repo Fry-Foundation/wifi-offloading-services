@@ -1,7 +1,10 @@
 # Define development configuration
 CONFIG_ENABLED = 1
 CONFIG_MAIN_API = https://api.internal.wayru.tech
+CONFIG_ACCOUNTING_ENABLED = 1
+CONFIG_ACCOUNTING_INTERVAL = 300
 CONFIG_ACCOUNTING_API = https://wifi.api.internal.wayru.tech
+CONFIG_ACCESS_TASK_INTERVAL = 120
 
 # Define paths
 SOURCE_PATH := source

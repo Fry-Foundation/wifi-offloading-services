@@ -270,7 +270,12 @@ void init(int argc, char *argv[])
     int devEnv = 0;
     int config_enabled = -1;
     char config_main_api[256] = {'\0'};
+    int config_accounting_enabled = -1;
+    int config_accounting_interval = -1;
     char config_accounting_api[256] = {'\0'};
+    int config_access_task_interval = -1;
+    
+
     for (int i = 1; i < argc; i++)
     {
         if (strcmp(argv[i], "--dev") == 0)
@@ -299,10 +304,31 @@ void init(int argc, char *argv[])
             continue;
         }
 
+        if (strcmp(argv[i], "--config-accounting-enabled") == 0)
+        {
+            printf("accounting enable argument: %s\n", argv[i + 1]);
+            config_accounting_enabled = atoi(argv[i + 1]);
+            continue;
+        }
+
+        if (strcmp(argv[i], "--config-accounting-interval") == 0)
+        {
+            printf("accounting interval argument: %s\n", argv[i + 1]);
+            config_accounting_interval = atoi(argv[i + 1]);      
+            continue;
+        }
+
         if (strcmp(argv[i], "--config-accounting-api") == 0)
         {
             printf("accounting api argument: %s\n", argv[i + 1]);
             snprintf(config_accounting_api, sizeof(config_accounting_api), "%s", argv[i + 1]);
+            continue;
+        }
+
+        if (strcmp(argv[i], "--config-access-task-interval") == 0)
+        {
+            printf("access task interval argument: %s\n", argv[i + 1]);
+            config_access_task_interval = atoi(argv[i + 1]);      
             continue;
         }
     }
@@ -318,15 +344,33 @@ void init(int argc, char *argv[])
         snprintf(config_main_api, sizeof(config_main_api), "%s", DEFAULT_MAIN_API);
     }
 
+    if (config_accounting_enabled == -1)
+    {
+        config_accounting_enabled = atoi(DEFAULT_ACCOUNTING_ENABLED);
+    }
+
+    if (config_accounting_interval == -1)
+    {
+        config_accounting_interval = atoi(DEFAULT_ACCOUNTING_INTERVAL);
+    }
+
     if (config_accounting_api[0] == '\0')
     {
         snprintf(config_accounting_api, sizeof(config_accounting_api), "%s", DEFAULT_ACCOUNTING_API);
     }
 
+    if (config_access_task_interval == -1)
+    {
+        config_access_task_interval = atoi(DEFAULT_ACCESS_TASK_INTERVAL);
+    }
+
     printf("[init] devEnv: %d\n", devEnv);
     printf("[init] config_enabled: %d\n", config_enabled);
     printf("[init] config_main_api: %s\n", config_main_api);
+    printf("[init] config_accounting_enabled: %d\n", config_accounting_enabled);
+    printf("[init] config_accounting_interval: %d\n", config_accounting_interval);
     printf("[init] config_accounting_api: %s\n", config_accounting_api);
+    printf("[init] config_access_task_interval: %d\n", config_access_task_interval);
 
     // Set up paths
     char *basePath = (devEnv == 1) ? DEV_PATH : OPENWRT_PATH;
@@ -352,7 +396,7 @@ void init(int argc, char *argv[])
 
     // set_default_values();
 
-    initConfig(devEnv, basePath, id, mac, device_info.name, device_info.brand, device_info.model, public_ip, os_name, osVersion, servicesVersion, config_enabled, config_main_api, config_accounting_api);
+    initConfig(devEnv, basePath, id, mac, device_info.name, device_info.brand, device_info.model, public_ip, os_name, osVersion, servicesVersion, config_enabled, config_main_api, config_accounting_enabled, config_accounting_interval, config_accounting_api, config_access_task_interval);
 
     // printf("Valor de config.main_api: %s\n", main_api);
 

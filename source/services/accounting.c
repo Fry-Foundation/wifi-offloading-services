@@ -226,7 +226,7 @@ void accounting_task(int argc, char *argv[])
 {
     // Set up paths
     int dev_env = getConfig().devEnv;
-
+    int accounting_enabled = getConfig().accounting_enabled;
     printf("[accounting] dev_env: %d\n", dev_env);
 
     // Set up paths
@@ -243,7 +243,13 @@ void accounting_task(int argc, char *argv[])
 
     if (state.accounting != 1)
     {
-        printf("[accounting] accounting is disabled\n");
+        printf("[accounting] accounting is disabled by access status\n");
+        return;
+    }
+
+    if (accounting_enabled == 0)
+    {
+        printf("[accounting] accounting is disabled / This device doesn't run captive portal\n");
         return;
     }
 

@@ -4,7 +4,11 @@
 #define DEFAULT_CONFIGFILE "/etc/wayru-os-services/config.uci"
 #define DEFAULT_ENABLED "1"
 #define DEFAULT_MAIN_API "https://api.wayru.tech"
+#define DEFAULT_ACCOUNTING_ENABLED "1"
+#define DEFAULT_ACCOUNTING_INTERVAL "300"
 #define DEFAULT_ACCOUNTING_API "https://wifi.api.wayru.tech"
+#define DEFAULT_ACCESS_TASK_INTERVAL "120"
+
 
 typedef struct
 {
@@ -21,7 +25,10 @@ typedef struct
     char *servicesVersion;
     int enabled;
     char *main_api;
+    int accounting_enabled;
+    int accounting_interval;
     char *accounting_api;
+    int access_task_interval;
 } Config;
 
 void initConfig(
@@ -38,7 +45,10 @@ void initConfig(
     char *servicesVersion,
     int enabled,
     char *main_api,
-    char *accounting_api);
+    int accounting_enabled,
+    int accounting_interval,
+    char *accounting_api,
+    int access_task_interval);
 
 void cleanConfig();
 

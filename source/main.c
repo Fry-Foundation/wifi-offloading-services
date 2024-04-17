@@ -39,6 +39,8 @@ int main(int argc, char *argv[])
     console(CONSOLE_NONE, "go wayru");
 
     init(argc, argv);
+    int accounting_interval = getConfig().accounting_interval;
+    int access_task_interval = getConfig().access_task_interval;
 
     // Request access key to get backend status
     // Note that we disregard the expiration time for now,
@@ -52,7 +54,7 @@ int main(int argc, char *argv[])
     Scheduler sch = {NULL, 0};
 
     // Schedule the access task with an interval of 2 minutes
-    scheduleEvery(&sch, 120, access_task);
+    scheduleEvery(&sch, access_task_interval, access_task);
 
     // Schedule the setup task for now, and then with an interval of 1 minute
     scheduleAt(&sch, time(NULL), setupTask);
@@ -60,7 +62,7 @@ int main(int argc, char *argv[])
 
     // Schedule the accounting task with an interval of 1 minute
     scheduleAt(&sch, time(NULL), accounting_task);
-    scheduleEvery(&sch, 60, accounting_task);
+    scheduleEvery(&sch, accounting_interval, accounting_task);
 
     run(&sch);
 

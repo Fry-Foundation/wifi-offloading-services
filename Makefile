@@ -46,6 +46,7 @@ define Build/Compile
 		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/store/state.o -c $(PKG_BUILD_DIR)/store/state.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/utils/requests.o -c $(PKG_BUILD_DIR)/utils/requests.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/utils/script_runner.o -c $(PKG_BUILD_DIR)/utils/script_runner.c
+		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/utils/console.o -c $(PKG_BUILD_DIR)/utils/console.c
 
 		$(TARGET_CC) $(TARGET_LDFLAGS) \
 			$(PKG_BUILD_DIR)/main.o \
@@ -59,6 +60,7 @@ define Build/Compile
 			$(PKG_BUILD_DIR)/store/state.o \
 			$(PKG_BUILD_DIR)/utils/requests.o \
 			$(PKG_BUILD_DIR)/utils/script_runner.o \
+			$(PKG_BUILD_DIR)/utils/console.o \
 			-o $(PKG_BUILD_DIR)/wayru-os-services \
 			-lcurl -ljson-c
 endef

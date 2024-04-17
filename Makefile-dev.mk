@@ -30,6 +30,7 @@ compile:
 	$(SOURCE_PATH)/store/state.c \
 	$(SOURCE_PATH)/utils/requests.c \
 	$(SOURCE_PATH)/utils/script_runner.c \
+	$(SOURCE_PATH)/utils/console.c \
 	-lcurl -ljson-c
 
 # Copy scripts and data files

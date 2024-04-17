@@ -11,6 +11,7 @@
 #include "store/state.h"
 #include "utils/requests.h"
 #include "utils/script_runner.h"
+#include "utils/console.h"
 
 void testGetRequest()
 {
@@ -31,6 +32,12 @@ void testGetRequest()
 
 int main(int argc, char *argv[])
 {
+    console(CONSOLE_WARN, "go wayru");
+    console(CONSOLE_ERROR, "go wayru");
+    console(CONSOLE_INFO, "go wayru");
+    console(CONSOLE_DEBUG, "go wayru");
+    console(CONSOLE_NONE, "go wayru");
+
     init(argc, argv);
 
     // Request access key to get backend status

@@ -3,6 +3,7 @@
 #include "../utils/requests.h"
 #include <json-c/json.h>
 #include <stdio.h>
+#include <string.h>
 
 #define DEV_PATH "."
 #define OPENWRT_PATH "/etc/wayru-os-services"

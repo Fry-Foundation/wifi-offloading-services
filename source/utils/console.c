@@ -4,7 +4,7 @@
 #include <stdarg.h>
 
 // Global variable to store the current log level
-static ConsoleLevel current_console_level = CONSOLE_DEBUG;
+static ConsoleLevel current_console_level = CONSOLE_INFO;
 
 void set_console_level(ConsoleLevel level)
 {

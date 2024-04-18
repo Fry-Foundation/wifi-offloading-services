@@ -279,6 +279,7 @@ void init(int argc, char *argv[])
     int config_accounting_interval = -1;
     char config_accounting_api[256] = {'\0'};
     int config_access_task_interval = -1;
+    int config_console_log_level = -1;
 
     for (int i = 1; i < argc; i++)
     {
@@ -335,6 +336,13 @@ void init(int argc, char *argv[])
             config_access_task_interval = atoi(argv[i + 1]);
             continue;
         }
+
+        if (strcmp(argv[i], "--config-console_log_level") == 0)
+        {
+            console(CONSOLE_DEBUG, "console log level argument: %s", argv[i + 1]);
+            config_console_log_level = atoi(argv[i + 1]);
+            continue;
+        }
     }
 
     // Set default values for configuration variables
@@ -368,6 +376,11 @@ void init(int argc, char *argv[])
         config_access_task_interval = atoi(DEFAULT_ACCESS_TASK_INTERVAL);
     }
 
+    if (config_console_log_level != -1)
+    {
+        set_console_level(config_console_log_level);
+    }
+
     console(CONSOLE_DEBUG, "dev_env: %d", dev_env);
     console(CONSOLE_DEBUG, "config_enabled: %d", config_enabled);
     console(CONSOLE_DEBUG, "config_main_api: %s", config_main_api);
@@ -375,6 +388,7 @@ void init(int argc, char *argv[])
     console(CONSOLE_DEBUG, "config_accounting_interval: %d", config_accounting_interval);
     console(CONSOLE_DEBUG, "config_accounting_api: %s", config_accounting_api);
     console(CONSOLE_DEBUG, "config_access_task_interval: %d", config_access_task_interval);
+    console(CONSOLE_DEBUG, "config_console_log_level %d", config_console_log_level);
 
     // Set up paths
     char *base_path = (dev_env == 1) ? DEV_PATH : OPENWRT_PATH;

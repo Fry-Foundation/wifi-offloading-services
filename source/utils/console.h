@@ -5,11 +5,11 @@
 // Define consoole log levels
 typedef enum
 {
-  CONSOLE_NONE,  // No log output
-  CONSOLE_ERROR, // Critical errors
-  CONSOLE_WARN,  // Warning messages
-  CONSOLE_INFO,  // Information messages
-  CONSOLE_DEBUG  // Debug messages
+  CONSOLE_NONE = 0,  // No log output
+  CONSOLE_ERROR = 1, // Critical errors
+  CONSOLE_WARN = 2,  // Warning messages
+  CONSOLE_INFO = 3,  // Information messages
+  CONSOLE_DEBUG = 4  // Debug messages
 } ConsoleLevel;
 
 // Function declarations

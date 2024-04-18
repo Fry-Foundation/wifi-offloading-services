@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "script_runner.h"
+#include "console.h"
 
 #define MIN_OUTPUT_SIZE 512
 #define MAX_COMMAND_SIZE 256
@@ -13,14 +14,14 @@ void run_script_and_save_output(const char *script_path, const char *output_path
     // Open the script for execution
     script_pipe = popen(script_path, "r");
     if (script_pipe == NULL) {
-        perror("Failed to run script");
+        console(CONSOLE_ERROR, "failed to run script %s", script_path);
         return;
     }
 
     // Open the output file for writing
     output_file = fopen(output_path, "w");
     if (output_file == NULL) {
-        perror("Failed to open output file for writing");
+        console(CONSOLE_ERROR, "failed to open file for writing %s", output_path);
         pclose(script_pipe);
         return;
     }
@@ -34,7 +35,7 @@ void run_script_and_save_output(const char *script_path, const char *output_path
     pclose(script_pipe);
     fclose(output_file);
 
-    printf("Script executed successfully, output saved to: %s\n", output_path);
+    console(CONSOLE_DEBUG, "script executed successfully, output saved to: %s", output_path);
 }
 
 // Make sure to free the char* returned by this function
@@ -43,7 +44,7 @@ char* run_script(const char* script_path) {
     size_t result_size = MIN_OUTPUT_SIZE;
     char *result = (char *)malloc(result_size);
     if (result == NULL) {
-        perror("[run_script] initial malloc failed");
+        console(CONSOLE_ERROR, "memory allocation for script result failed");
         return NULL;
     }
 
@@ -56,7 +57,7 @@ char* run_script(const char* script_path) {
 
     FILE *pipe = popen(command, "r");
     if (!pipe) {
-        perror("[run_script] popen failed");
+        console(CONSOLE_ERROR, "failed to run script %s", script_path);
         free(result);
         return NULL;
     }
@@ -69,7 +70,7 @@ char* run_script(const char* script_path) {
             result_size = needed_size;
             char *new_result = realloc(result, result_size);
             if (new_result == NULL) {
-                perror("[run_script] realloc failed");
+                console(CONSOLE_ERROR, "script result reallocation failed for %s", script_path);
                 free(result);
                 pclose(pipe);
                 return NULL;
@@ -82,10 +83,10 @@ char* run_script(const char* script_path) {
     }
 
     if (pclose(pipe) == -1) {
-        perror("[run_script] error reported by pclose");
+        console(CONSOLE_ERROR, "pclose reported exit code -1");
     }
 
-    printf("[run_script] length of result: %zu\n", strlen(result));
+    console(CONSOLE_DEBUG, "length of result: %zu", strlen(result));
 
     return result;
 }

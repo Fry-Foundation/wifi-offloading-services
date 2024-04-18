@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <curl/curl.h>
 #include "requests.h"
+#include "console.h"
 
 // HTTP GET request
-int performHttpGet(const char *url, const char *filePath)
+int performHttpGet(const char *url, const char *file_path)
 {
     CURL *curl;
     CURLcode res = CURLE_OK;
@@ -11,10 +12,10 @@ int performHttpGet(const char *url, const char *filePath)
     curl = curl_easy_init();
     if (curl)
     {
-        FILE *file = fopen(filePath, "wb"); // Abrir el archivo en modo de escritura binaria
+        FILE *file = fopen(file_path, "wb"); // Abrir el archivo en modo de escritura binaria
         if (!file)
         {
-            fprintf(stderr, "Error al abrir el archivo para escritura.\n");
+            console(CONSOLE_ERROR, "failed to open file for writing %s", file_path);
             return -1;
         }
 
@@ -27,17 +28,17 @@ int performHttpGet(const char *url, const char *filePath)
 
         if (res != CURLE_OK)
         {
-            fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
-            fclose(file); // Cerrar el archivo si hubo un error
+            console(CONSOLE_ERROR, "curl GET failed: %s", curl_easy_strerror(res));
+            fclose(file);
             return -1;
         }
 
         curl_easy_cleanup(curl);
-        fclose(file); // Cerrar el archivo después de la operación exitosa
+        fclose(file);
     }
     else
     {
-        fprintf(stderr, "Error initializing curl\n");
+        console(CONSOLE_ERROR, "curl did not initialize");
         return -1;
     }
 
@@ -84,7 +85,7 @@ int performHttpPost(const PostRequestOptions *options)
             file = fopen(options->filePath, "wb");
             if (!file)
             {
-                fprintf(stderr, "Error al abrir el archivo para escritura.\n");
+                console(CONSOLE_ERROR, "failed to open the file for writing curl POST response");
                 return -1;
             }
 
@@ -103,12 +104,12 @@ int performHttpPost(const PostRequestOptions *options)
 
         // Request
         res = curl_easy_perform(curl);
-        printf("Response code: %d\n", res);
+        console(CONSOLE_DEBUG, "response code: %d", res);
 
         // Response
         if (res != CURLE_OK)
         {
-            fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+            console(CONSOLE_ERROR, "curl POST failed: %s", curl_easy_strerror(res));
         }
 
         // Cleanup
@@ -121,7 +122,7 @@ int performHttpPost(const PostRequestOptions *options)
     }
     else
     {
-        fprintf(stderr, "Error initializing curl\n");
+        console(CONSOLE_ERROR, "curl did not initialize");
         return -1;
     }
 

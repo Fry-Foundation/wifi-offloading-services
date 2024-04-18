@@ -1,6 +1,7 @@
 #include "../store/config.h"
 #include "../store/state.h"
 #include "../utils/requests.h"
+#include "../utils/console.h"
 #include <json-c/json.h>
 #include <stdio.h>
 #include <string.h>
@@ -19,7 +20,7 @@ json_object *load_end_report(const char *filename)
     FILE *file = fopen(filename, "r");
     if (file == NULL)
     {
-        perror("Error opening file");
+        console(CONSOLE_ERROR, "failed to open file with end report");
         return NULL;
     }
 
@@ -27,7 +28,7 @@ json_object *load_end_report(const char *filename)
     if (mac_array == NULL)
     {
         fclose(file);
-        fprintf(stderr, "Error creating JSON array\n");
+        console(CONSOLE_ERROR, "failed to create end report JSON array");
         return NULL;
     }
 
@@ -52,9 +53,9 @@ size_t process_end_report_response(char *ptr, size_t size, size_t nmemb, void *u
 
     // Check if the response is "ack"
     if (strncmp(ptr, "ack", num_bytes) == 0) {
-        printf("Received acknowledgment from server\n");
+        console(CONSOLE_DEBUG, "received ack from server");
     } else {
-        fprintf(stderr, "Unexpected response from server: %.*s\n", (int)num_bytes, ptr);
+        console(CONSOLE_ERROR, "unexpected response from server: %.*s", (int)num_bytes, ptr);
     }
 
     // Return the number of bytes processed
@@ -63,12 +64,12 @@ size_t process_end_report_response(char *ptr, size_t size, size_t nmemb, void *u
 
 void post_end_report(json_object *mac_address_array)
 {
-    printf("[end_report] posting end report\n");
+    console(CONSOLE_DEBUG, "posting end report");
 
     // Build end report url
     char end_report_url[256];
     snprintf(end_report_url, sizeof(end_report_url), "%s%s", getConfig().accounting_api, END_REPORT_ENDPOINT);
-    printf("[end_report] end_report_url: %s\n", end_report_url);
+    console(CONSOLE_DEBUG, "end_report_url: %s", end_report_url);
 
     // Stringify the JSON
     const char *mac_address_json = json_object_to_json_string(mac_address_array);
@@ -90,7 +91,7 @@ void end_report_task()
 {
     int dev_env = getConfig().devEnv;
 
-    printf("[end_report] dev_env: %d\n", dev_env);
+    console(CONSOLE_DEBUG, "dev_env: %d", dev_env);
 
     // Set up paths
     char base_path[256];
@@ -102,16 +103,16 @@ void end_report_task()
         base_path[sizeof(base_path) - 1] = '\0'; // Ensure null termination
     }
     snprintf(data_path, sizeof(data_path), "%s%s", base_path, DATA_PATH);
-    printf("[end_report] data_path: %s\n", data_path);
+    console(CONSOLE_DEBUG, "data_path: %s", data_path);
 
     snprintf(end_report_path, sizeof(end_report_path), "%s%s", data_path, END_REPORT_PATH);
-    printf("[end_report] end_report_path: %s\n", end_report_path);    
+    console(CONSOLE_DEBUG, "end_report_path: %s", end_report_path);    
 
     json_object *mac_address_array = load_end_report(end_report_path);
 
     if (mac_address_array != NULL)
     {
-        printf("Loaded MAC addresses:\n%s\n", json_object_to_json_string(mac_address_array));
+        console(CONSOLE_DEBUG, "loaded MAC addresses:\n%s", json_object_to_json_string(mac_address_array));
 
         // Post to server
         post_end_report(mac_address_array);

@@ -12,6 +12,7 @@
 #include "../store/state.h"
 #include "../utils/requests.h"
 #include "../utils/script_runner.h"
+#include "../utils/console.h"
 
 #define KEY_FILE "/data/access-key"
 #define KEY_FILE_BUFFER_SIZE 768
@@ -41,7 +42,7 @@ AccessKey *init_access_key()
 
 int read_access_key(AccessKey *access_key)
 {
-    printf("[access] reading stored access key\n");
+    console(CONSOLE_DEBUG, "reading stored access key");
 
     char key_file_path[KEY_FILE_BUFFER_SIZE];
     snprintf(key_file_path, sizeof(key_file_path), "%s%s", getConfig().basePath, KEY_FILE);
@@ -49,8 +50,7 @@ int read_access_key(AccessKey *access_key)
     FILE *file = fopen(key_file_path, "r");
     if (file == NULL)
     {
-        // Handle error (e.g., file not found)
-        fprintf(stderr, "Failed to open key file.\n");
+        console(CONSOLE_ERROR, "failed to open key file");
         return 0;
     }
 
@@ -68,7 +68,7 @@ int read_access_key(AccessKey *access_key)
             access_key->key = malloc(key_length + 1);
             if (access_key->key == NULL)
             {
-                perror("Failed to allocate memory for key");
+                console(CONSOLE_ERROR, "failed to allocate memory for key");
                 fclose(file);
                 return 0;
             }
@@ -95,7 +95,7 @@ int read_access_key(AccessKey *access_key)
 
 void write_access_key(AccessKey *access_key)
 {
-    printf("[access] writing new access key\n");
+    console(CONSOLE_DEBUG, "writing new access key");
 
     char keyFile[KEY_FILE_BUFFER_SIZE];
     snprintf(keyFile, sizeof(keyFile), "%s%s", getConfig().basePath, KEY_FILE);
@@ -103,7 +103,7 @@ void write_access_key(AccessKey *access_key)
     FILE *file = fopen(keyFile, "w");
     if (file == NULL)
     {
-        printf("Unable to open file for writing\n");
+        console(CONSOLE_DEBUG, "Unable to open file for writing");
         return;
     }
 
@@ -116,7 +116,7 @@ void write_access_key(AccessKey *access_key)
 
 void process_access_status(char *status)
 {
-    printf("[access] Processing access status\n");
+    console(CONSOLE_DEBUG, "Processing access status");
     if (strcmp(status, "initial") == 0)
     {
         state.access_status = 0;
@@ -143,7 +143,7 @@ void process_access_status(char *status)
     }
     else
     {
-        printf("[access] Unknown access status: %s\n", status);
+        console(CONSOLE_DEBUG, "Unknown access status: %s", status);
     }
 }
 
@@ -152,7 +152,7 @@ size_t process_access_key_response(char *ptr, size_t size, size_t nmemb, void *u
     size_t realsize = size * nmemb;
     AccessKey *access_key = (AccessKey *)userdata;
 
-    fprintf(stderr, "[access] Received JSON data: %s\n", ptr);
+    console(CONSOLE_DEBUG, "received access key JSON data");
 
     // Parse JSON
     struct json_object *parsed_response;
@@ -166,7 +166,7 @@ size_t process_access_key_response(char *ptr, size_t size, size_t nmemb, void *u
     if (parsed_response == NULL)
     {
         // JSON parsing failed
-        fprintf(stderr, "Failed to parse JSON\n");
+        console(CONSOLE_ERROR, "failed to parse access key JSON data");
         return realsize;
     }
 
@@ -175,27 +175,27 @@ size_t process_access_key_response(char *ptr, size_t size, size_t nmemb, void *u
     bool error_occurred = false;
     if (!json_object_object_get_ex(parsed_response, "publicKey", &public_key))
     {
-        fprintf(stderr, "[access] error: publicKey field missing or invalid\n");
+        console(CONSOLE_ERROR, "publicKey field missing or invalid");
         error_occurred = true;
     }
     if (!json_object_object_get_ex(parsed_response, "status", &status))
     {
-        fprintf(stderr, "[access] error: status field missing or invalid\n");
+        console(CONSOLE_ERROR, "status field missing or invalid");
         error_occurred = true;
     }
     if (!json_object_object_get_ex(parsed_response, "payload", &payload))
     {
-        fprintf(stderr, "[access] error: payload field missing or invalid\n");
+        console(CONSOLE_ERROR, "payload field missing or invalid");
         error_occurred = true;
     }
     if (payload && !json_object_object_get_ex(payload, "iat", &iat))
     {
-        fprintf(stderr, "[access] error: iat field missing or invalid in payload\n");
+        console(CONSOLE_ERROR, "iat field missing or invalid in payload");
         error_occurred = true;
     }
     if (payload && !json_object_object_get_ex(payload, "exp", &exp))
     {
-        fprintf(stderr, "[access] error: exp field missing or invalid in payload\n");
+        console(CONSOLE_ERROR, "exp field missing or invalid in payload");
         error_occurred = true;
     }
 
@@ -212,7 +212,7 @@ size_t process_access_key_response(char *ptr, size_t size, size_t nmemb, void *u
 
     char *status_value = malloc(strlen(json_object_get_string(status)) + 1);
     strcpy(status_value, json_object_get_string(status));
-    printf("[access] status: %s\n", status_value);
+    console(CONSOLE_DEBUG, "status: %s", status_value);
     process_access_status(status_value);
 
     json_object_put(parsed_response);
@@ -221,25 +221,25 @@ size_t process_access_key_response(char *ptr, size_t size, size_t nmemb, void *u
 
 int check_access_key_near_expiration(AccessKey *access_key)
 {
-    printf("[access] Checking if key is near expiration\n");
+    console(CONSOLE_DEBUG, "checking if key is near expiration");
     time_t now;
     time(&now);
 
     if (difftime(access_key->expires_at, now) <= 600)
     {
-        printf("[access] Key is near expiration\n");
+        console(CONSOLE_DEBUG, "key is near expiration");
         return 1;
     }
     else
     {
-        printf("[access] Key is not near expiration\n");
+        console(CONSOLE_DEBUG, "key is not near expiration");
         return 0;
     }
 }
 
 int request_access_key(AccessKey *access_key)
 {
-    printf("[access] Request access key\n");
+    console(CONSOLE_DEBUG, "request access key");
 
     json_object *json_data = json_object_new_object();
 
@@ -255,12 +255,12 @@ int request_access_key(AccessKey *access_key)
     json_object_object_add(json_data, "on_boot", json_object_new_string(state.onBoot == 1 ? "true" : "false"));
 
     const char *json_data_string = json_object_to_json_string(json_data);
-    printf("[access] DeviceData -> %s\n", json_data_string);
+    console(CONSOLE_DEBUG, "device data -> %s", json_data_string);
 
     // Build access URL
     char access_url[256];
     snprintf(access_url, sizeof(access_url), "%s%s", getConfig().main_api, ACCESS_ENDPOINT);
-    printf("[access] access_url: %s\n", access_url);
+    console(CONSOLE_DEBUG, "access_url: %s", access_url);
 
     // Request options
     PostRequestOptions options = {
@@ -276,12 +276,12 @@ int request_access_key(AccessKey *access_key)
 
     if (result_post == 1)
     {
-        printf("[access] Request was successful.\n");
+        console(CONSOLE_DEBUG, "access request was successful.");
         return 1;
     }
     else
     {
-        printf("[access] Request failed.\n");
+        console(CONSOLE_DEBUG, "access request failed.");
         return 0;
     }
 };
@@ -290,23 +290,23 @@ void disable_default_wireless_network()
 {
     if (getConfig().devEnv == 1)
     {
-        printf("[access] Not disabling default wireless network in dev environment\n");
+        console(CONSOLE_DEBUG, "not disabling default wireless network in dev environment");
         return;
     }
 
     if (state.already_disabled_wifi == 1)
     {
-        printf("[access] Default wireless network already disabled\n");
+        console(CONSOLE_DEBUG, "default wireless network already disabled");
         return;
     }
 
-    printf("[access] Disabling default wireless network\n");
+    console(CONSOLE_DEBUG, "disabling default wireless network");
     
     char script_file[256];
     snprintf(script_file, sizeof(script_file), "%s%s", SCRIPTS_PATH, "/disable-default-wireless.sh");
     
     char *disable_output = run_script(script_file);
-    printf("[access] disable_output: %s\n", disable_output);
+    console(CONSOLE_DEBUG, "disable_output: %s", disable_output);
 
     state.already_disabled_wifi = 1;
 
@@ -316,24 +316,24 @@ void disable_default_wireless_network()
 
 void configure_with_access_status(int access_status)
 {
-    printf("[access] Configuring with access status\n");
+    console(CONSOLE_DEBUG, "configuring with access status");
     if (access_status == 0)
     {
-        printf("[access] Access status is 'initial'\n");
+        console(CONSOLE_DEBUG, "access status is 'initial'");
         state.setup = 1;
         state.accounting = 0;
         // stop_opennds();
     }
     else if (access_status == 1)
     {
-        printf("[access] Access status is 'setup-pending'\n");
+        console(CONSOLE_DEBUG, "access status is 'setup-pending'");
         state.setup = 0;
         state.accounting = 0;
         // stop_opennds();
     }
     else if (access_status == 2)
     {
-        printf("[access] Access status is 'setup-approved'\n");
+        console(CONSOLE_DEBUG, "access status is 'setup-approved'");
         state.setup = 0;
         state.accounting = 0;
         completeSetup();
@@ -341,20 +341,20 @@ void configure_with_access_status(int access_status)
     }
     else if (access_status == 3)
     {
-        printf("[access] Access status is 'mint-pending'\n");
+        console(CONSOLE_DEBUG, "access status is 'mint-pending'");
         state.setup = 0;
         state.accounting = 0;
         // stop_opennds();
     }
     else if (access_status == 4)
     {
-        printf("[access] Access status is 'ready'\n");
+        console(CONSOLE_DEBUG, "access status is 'ready'");
         state.setup = 0;
         state.accounting = 1;
         // disable_default_wireless_network();
         // start_opennds();
     } else if (access_status == 5) {
-        printf("[access] Access status is 'banned'\n");
+        console(CONSOLE_DEBUG, "access status is 'banned'");
         state.setup = 0;
         state.accounting = 1;
         // stop_opennds();
@@ -363,7 +363,7 @@ void configure_with_access_status(int access_status)
 
 void access_task()
 {
-    printf("[access] Access task\n");
+    console(CONSOLE_DEBUG, "access task");
 
     int is_expired = check_access_key_near_expiration(state.access_key);
     if (is_expired == 1 || state.access_key->key == NULL)
@@ -374,6 +374,6 @@ void access_task()
     }
     else
     {
-        printf("[access] key is still valid\n");
+        console(CONSOLE_DEBUG, "key is still valid");
     }
 }

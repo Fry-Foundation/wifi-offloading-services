@@ -16,17 +16,17 @@
 void testGetRequest()
 {
     const char TEST_URL[] = "https://catfact.ninja/fact";
-    printf("Performing test GET request...\n");
+    console(CONSOLE_DEBUG, "Performing test GET request...");
     char httpTestFile[256];
     snprintf(httpTestFile, sizeof(httpTestFile), "%s%s%s", getConfig().basePath, "/data", "/test");
     int resultGet = performHttpGet(TEST_URL, httpTestFile);
     if (resultGet == 1)
     {
-        printf("GET request was a success.\n");
+        console(CONSOLE_DEBUG, "GET request was a success.");
     }
     else
     {
-        printf("GET request failed.\n");
+        console(CONSOLE_DEBUG, "GET request failed.");
     }
 }
 

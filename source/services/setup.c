@@ -5,6 +5,7 @@
 #include "../store/state.h"
 #include "../utils/requests.h"
 #include "../store/config.h"
+#include "../utils/console.h"
 
 #define SETUP_ENDPOINT "/api/nfNode/setup"
 #define SETUP_COMPLETE_ENDPOINT "/api/nfNode/setup/complete"
@@ -13,13 +14,13 @@
 // If no setup request exists, create one
 void requestSetup()
 {
-    printf("[setup] Request setup\n");
-    printf("[setup] Access key: %s\n", state.access_key->key);
+    console(CONSOLE_DEBUG, "Request setup");
+    console(CONSOLE_DEBUG, "Access key: %s", state.access_key->key);
 
     // Build setup URL
     char setup_url[256];
     snprintf(setup_url, sizeof(setup_url), "%s%s", getConfig().main_api, SETUP_ENDPOINT);
-    printf("[setup] setup_url: %s\n", setup_url);
+    console(CONSOLE_DEBUG, "setup_url: %s", setup_url);
 
     // Request options
     PostRequestOptions requestSetup = {
@@ -34,30 +35,30 @@ void requestSetup()
     int result = performHttpPost(&requestSetup);
     if (result == 1)
     {
-        printf("[setup] setup request was a success\n");
+        console(CONSOLE_DEBUG, "setup request was a success");
     }
     else
     {
-        printf("[setup] setup request failed\n");
+        console(CONSOLE_DEBUG, "setup request failed");
     }
 }
 
 // @TODO: Pending backend implementation
 // void checkApprovedSetup()
 // {
-//     printf("[setup] Not yet implemented - Check if the setup has been approved\n");
-//     printf("[setup] Not yet implemented - Access key: %s\n", state.access_key->key);
+//     console(CONSOLE_DEBUG, "Not yet implemented - Check if the setup has been approved");
+//     console(CONSOLE_DEBUG, "Not yet implemented - Access key: %s", state.access_key->key);
 // }
 
 void completeSetup()
 {
-    printf("[setup] Complete setup\n");
-    printf("[setup] Access key: %s\n", state.access_key->key);
+    console(CONSOLE_DEBUG, "complete setup");
+    console(CONSOLE_DEBUG, "access key: %s", state.access_key->key);
 
     // Build setup complete URL
     char setup_complete_url[256];
     snprintf(setup_complete_url, sizeof(setup_complete_url), "%s%s", getConfig().main_api, SETUP_COMPLETE_ENDPOINT);
-    printf("[setup] setup_complete_url: %s\n", setup_complete_url);
+    console(CONSOLE_DEBUG, "setup_complete_url: %s", setup_complete_url);
 
     PostRequestOptions completeSetupOptions = {
         .url = setup_complete_url,
@@ -75,15 +76,15 @@ void setupTask()
 {
     if (state.setup != 1)
     {
-        printf("[setup] Setup is disabled\n");
+        console(CONSOLE_DEBUG, "setup is disabled");
         return;
     }
 
-    printf("[setup] Setup task\n");
+    console(CONSOLE_DEBUG, "setup task");
 
     if (state.access_status == 0)
     {
-        printf("[setup] Requesting setup\n");
+        console(CONSOLE_DEBUG, "requesting setup");
         requestSetup();
     }
 }

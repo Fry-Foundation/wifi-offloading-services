@@ -20,6 +20,10 @@ void initState(int mode, AccessKey *access_key)
     state.onBoot = 1;
 
     state.already_disabled_wifi = 0;
+
+    // @todo: set this based on what the backend knows about the setup request
+    // we are setting it to peaq for DID experiments (for now)
+    state.chain = 1;
 }
 
 void cleanState()

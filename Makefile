@@ -17,7 +17,7 @@ define Package/wayru-os-services
   SECTION:=admin
   CATEGORY:=Administration
   TITLE:=Wayru config daemon and scripts
-  DEPENDS:=+libcurl +libjson-c
+  DEPENDS:=+libcurl +libjson-c +libopenssl
 endef
 
 # Package description; a more verbose description on what our package does
@@ -42,6 +42,7 @@ define Build/Compile
 		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/services/setup.o -c $(PKG_BUILD_DIR)/services/setup.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/services/accounting.o -c $(PKG_BUILD_DIR)/services/accounting.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/services/end_report.o -c $(PKG_BUILD_DIR)/services/end_report.c
+		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/services/peaq_id.o -c $(PKG_BUILD_DIR)/services/peaq_id.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/store/config.o -c $(PKG_BUILD_DIR)/store/config.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/store/state.o -c $(PKG_BUILD_DIR)/store/state.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/utils/requests.o -c $(PKG_BUILD_DIR)/utils/requests.c
@@ -56,13 +57,14 @@ define Build/Compile
 			$(PKG_BUILD_DIR)/services/setup.o \
 			$(PKG_BUILD_DIR)/services/accounting.o \
 			$(PKG_BUILD_DIR)/services/end_report.o \
+			$(PKG_BUILD_DIR)/services/peaq_id.o \
 			$(PKG_BUILD_DIR)/store/config.o \
 			$(PKG_BUILD_DIR)/store/state.o \
 			$(PKG_BUILD_DIR)/utils/requests.o \
 			$(PKG_BUILD_DIR)/utils/script_runner.o \
 			$(PKG_BUILD_DIR)/utils/console.o \
 			-o $(PKG_BUILD_DIR)/wayru-os-services \
-			-lcurl -ljson-c
+			-lcurl -ljson-c -lssl -lcrypto
 endef
 
 # Package install instructions

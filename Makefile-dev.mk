@@ -29,12 +29,13 @@ compile:
 	$(SOURCE_PATH)/services/setup.c \
 	$(SOURCE_PATH)/services/accounting.c \
 	$(SOURCE_PATH)/services/end_report.c \
+	$(SOURCE_PATH)/services/peaq_id.c \
 	$(SOURCE_PATH)/store/config.c \
 	$(SOURCE_PATH)/store/state.c \
 	$(SOURCE_PATH)/utils/requests.c \
 	$(SOURCE_PATH)/utils/script_runner.c \
 	$(SOURCE_PATH)/utils/console.c \
-	-lcurl -ljson-c
+	-lcurl -ljson-c -lssl -lcrypto
 
 # Copy scripts and data files
 copy-scripts:

@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include "access.h"
 #include "setup.h"
-#include "accounting.h"
+#include "peaq_id.h"
 #include "../store/config.h"
 #include "../store/state.h"
 #include "../utils/requests.h"
@@ -351,8 +351,11 @@ void configure_with_access_status(int access_status)
         console(CONSOLE_DEBUG, "access status is 'ready'");
         state.setup = 0;
         state.accounting = 1;
+
         // disable_default_wireless_network();
         // start_opennds();
+        
+        peaq_id_task();
     } else if (access_status == 5) {
         console(CONSOLE_DEBUG, "access status is 'banned'");
         state.setup = 0;

@@ -33,6 +33,12 @@ typedef struct
 
     // Wireless network
     int already_disabled_wifi;
+
+    // Chain
+    // 0 - algo
+    // 1 - peaq
+    // 2 - iotex
+    int chain;
 } State;
 
 extern State state;

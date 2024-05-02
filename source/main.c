@@ -4,13 +4,13 @@
 #include <unistd.h>
 #include "services/init.h"
 #include "services/access.h"
+#include "services/peaq_id.h"
 #include "services/scheduler.h"
 #include "services/setup.h"
 #include "services/accounting.h"
 #include "store/config.h"
 #include "store/state.h"
 #include "utils/requests.h"
-#include "utils/script_runner.h"
 #include "utils/console.h"
 
 void testGetRequest()
@@ -35,6 +35,9 @@ int main(int argc, char *argv[])
     init(argc, argv);
     int accounting_interval = getConfig().accounting_interval;
     int access_task_interval = getConfig().access_task_interval;
+
+    console(CONSOLE_INFO, "running peaq_id_task");
+    peaq_id_task();
 
     // Request access key to get backend status
     // Note that we disregard the expiration time for now,

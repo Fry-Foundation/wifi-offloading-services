@@ -3,8 +3,7 @@
 
 #include <time.h>
 
-typedef struct
-{
+typedef struct {
     char *key;
     time_t created_at;
     time_t expires_at;

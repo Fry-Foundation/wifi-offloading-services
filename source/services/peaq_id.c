@@ -1,13 +1,13 @@
-#include <stdbool.h>
-#include <openssl/rsa.h>
-#include <openssl/pem.h>
-#include "../store/state.h"
 #include "../store/config.h"
+#include "../store/state.h"
 #include "../utils/console.h"
+#include <openssl/pem.h>
+#include <openssl/rsa.h>
+#include <stdbool.h>
 
 const int KEY_PATH_BUFFER_SIZE = 1024;
 
-bool generate_key_pair(const char* active_path) {
+bool generate_key_pair(const char *active_path) {
     // 1. CHeck if a key-pair already exists, and continue if not
     // 2. Summon openssl-util command ot generate key pair at specific location
     // @todo: Encrypt private key
@@ -17,7 +17,8 @@ bool generate_key_pair(const char* active_path) {
     char public_key_filename[KEY_PATH_BUFFER_SIZE];
 
     snprintf(private_key_filename, sizeof(private_key_filename), "%s%s", active_path, "/peaq_key");
-    snprintf(public_key_filename, sizeof(public_key_filename), "%s%s", active_path, "/peaq_key.pub");
+    snprintf(public_key_filename, sizeof(public_key_filename), "%s%s", active_path,
+             "/peaq_key.pub");
 
     console(CONSOLE_INFO, "priv key filename %s", private_key_filename);
     console(CONSOLE_INFO, "pub key filename %s", public_key_filename);
@@ -73,38 +74,40 @@ bool generate_key_pair(const char* active_path) {
     success = true; // Set success to true if all operations succeeded
 
 free_all:
-    if (bp_public) BIO_free_all(bp_public);
-    if (bp_private) BIO_free_all(bp_private);
-    if (r) RSA_free(r);
-    if (bne) BN_free(bne);
+    if (bp_public)
+        BIO_free_all(bp_public);
+    if (bp_private)
+        BIO_free_all(bp_private);
+    if (r)
+        RSA_free(r);
+    if (bne)
+        BN_free(bne);
 
     return success;
 }
 
-
-char* read_private_key() {
+char *read_private_key() {
     // @todo Implement, but first fix global active_path
     // 1. Open private key file
     // 2. Read file contents
 }
 
-char* read_public_key() {
+char *read_public_key() {
     // @todo Implement, but first fix global active_path
     // 1. Open public key file
     // 2. Read file contents
 }
 
-void peaq_id_task()
-{
+void peaq_id_task() {
     // Check if the device is ready to generate a peaq_id
     // Mint complete and the proper chain (peaq) are a must!
     // if(state.access_status == 4 && state.chain == 1) {
     if (1) {
         console(CONSOLE_INFO, "Conditions met to generate peaq ID keys");
 
-        const char* dev_path = "./data";
-        const char* prod_path = "/etc/wayru-os-services/data";
-        const char* active_path;
+        const char *dev_path = "./data";
+        const char *prod_path = "/etc/wayru-os-services/data";
+        const char *active_path;
         if (getConfig().devEnv == 1) {
             active_path = dev_path;
         } else {

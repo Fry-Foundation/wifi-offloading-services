@@ -1,13 +1,13 @@
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <json-c/json.h>
+#include "accounting.h"
 #include "../store/config.h"
 #include "../store/state.h"
-#include "accounting.h"
+#include "../utils/console.h"
 #include "../utils/requests.h"
 #include "../utils/script_runner.h"
-#include "../utils/console.h"
+#include <json-c/json.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define DEV_PATH "."
 #define OPENWRT_PATH "/etc/wayru-os-services"
@@ -19,8 +19,7 @@
 char command[MAX_BUFFER_SIZE];
 char scripts_path[256];
 
-char *query_opennds()
-{
+char *query_opennds() {
     console(CONSOLE_DEBUG, "querying OpenNDS");
 
     char script_file[256];
@@ -31,8 +30,7 @@ char *query_opennds()
     // Make sure this is a valid JSON
     struct json_object *parsed_response;
     parsed_response = json_tokener_parse(accounting_output);
-    if (parsed_response == NULL)
-    {
+    if (parsed_response == NULL) {
         // JSON parsing failed
         console(CONSOLE_ERROR, "failed to parse ndsctl JSON");
         return NULL;
@@ -43,21 +41,20 @@ char *query_opennds()
     return accounting_output;
 }
 
-void deauthenticate_session(const char *client_mac_address)
-{
+void deauthenticate_session(const char *client_mac_address) {
     console(CONSOLE_DEBUG, "deauthenticating session %s", client_mac_address);
 
     char script_file[256];
-    snprintf(script_file, sizeof(script_file), "%s%s %s", scripts_path, "/nds-deauth.sh", client_mac_address);
-    
+    snprintf(script_file, sizeof(script_file), "%s%s %s", scripts_path, "/nds-deauth.sh",
+             client_mac_address);
+
     char *deauthenticate_output = run_script(script_file);
     console(CONSOLE_DEBUG, "deauthenticate result -> %s", deauthenticate_output);
 
     free(deauthenticate_output);
 }
 
-size_t process_accounting_response(char *ptr, size_t size, size_t nmemb, void *userdata)
-{
+size_t process_accounting_response(char *ptr, size_t size, size_t nmemb, void *userdata) {
     console(CONSOLE_DEBUG, "processing accounting response");
     console(CONSOLE_DEBUG, "ptr: %s", ptr);
 
@@ -69,8 +66,7 @@ size_t process_accounting_response(char *ptr, size_t size, size_t nmemb, void *u
 
     // Parse the response as JSON
     parsed_response = json_tokener_parse(ptr);
-    if (parsed_response == NULL)
-    {
+    if (parsed_response == NULL) {
         // JSON parsing failed
         console(CONSOLE_ERROR, "failed to parse accounting response JSON");
         return realsize;
@@ -92,7 +88,7 @@ size_t process_accounting_response(char *ptr, size_t size, size_t nmemb, void *u
 
     // Iterate over the end list
     size_t n = json_object_array_length(end_list);
-    for (size_t i = 0; i < n; i ++) {
+    for (size_t i = 0; i < n; i++) {
         struct json_object *client_mac_address = json_object_array_get_idx(end_list, i);
         deauthenticate_session(json_object_get_string(client_mac_address));
     }
@@ -101,12 +97,12 @@ size_t process_accounting_response(char *ptr, size_t size, size_t nmemb, void *u
     return realsize;
 }
 
-void post_accounting_update(char *opennds_clients_data)
-{
+void post_accounting_update(char *opennds_clients_data) {
     // Build accounting URL
     char accounting_url[256];
-    snprintf(accounting_url, sizeof(accounting_url), "%s%s", getConfig().accounting_api, ACCOUNTING_ENDPOINT);
-    
+    snprintf(accounting_url, sizeof(accounting_url), "%s%s", getConfig().accounting_api,
+             ACCOUNTING_ENDPOINT);
+
     console(CONSOLE_DEBUG, "accounting_url: %s", accounting_url);
     console(CONSOLE_DEBUG, "posting accounting update");
 
@@ -123,20 +119,17 @@ void post_accounting_update(char *opennds_clients_data)
     performHttpPost(&post_accounting_options);
 }
 
-char *status_opennds()
-{
+char *status_opennds() {
     snprintf(command, sizeof(command), "service opennds status");
 
     FILE *fp = popen(command, "r");
-    if (fp == NULL)
-    {
+    if (fp == NULL) {
         console(CONSOLE_ERROR, "failed to execute ndsctl status command");
         return NULL;
     }
 
     char *status = (char *)malloc(MAX_BUFFER_SIZE * sizeof(char));
-    if (fgets(status, MAX_BUFFER_SIZE, fp) == NULL)
-    {
+    if (fgets(status, MAX_BUFFER_SIZE, fp) == NULL) {
         console(CONSOLE_ERROR, "failed to read opennds status");
         pclose(fp);
         free(status);
@@ -147,84 +140,66 @@ char *status_opennds()
     return status;
 }
 
-int stop_opennds()
-{
+int stop_opennds() {
     snprintf(command, sizeof(command), "service opennds stop");
 
     FILE *fp = popen(command, "r");
-    if (fp == NULL)
-    {
+    if (fp == NULL) {
         console(CONSOLE_ERROR, "failed to execute command opennds stop");
         return -1;
     }
 
     int status = pclose(fp);
-    if (status == -1)
-    {
-        console(CONSOLE_ERROR, "failed to close opennds stop command; we could have a memory issue!");
+    if (status == -1) {
+        console(CONSOLE_ERROR,
+                "failed to close opennds stop command; we could have a memory issue!");
         return -1;
-    }
-    else if (WIFEXITED(status))
-    {
+    } else if (WIFEXITED(status)) {
         int exit_status = WEXITSTATUS(status);
-        if (exit_status == 0)
-        {
+        if (exit_status == 0) {
             console(CONSOLE_DEBUG, "openNDS stop command executed successfully");
             return 0;
-        }
-        else
-        {
-            console(CONSOLE_ERROR, "error executing the opennds stop command; exit code: %d", exit_status);
+        } else {
+            console(CONSOLE_ERROR, "error executing the opennds stop command; exit code: %d",
+                    exit_status);
             return exit_status;
         }
-    }
-    else
-    {
+    } else {
         console(CONSOLE_ERROR, "openNDS stop command terminated unexpectedly");
         return -1;
     }
 }
 
-int start_opennds()
-{
+int start_opennds() {
     snprintf(command, sizeof(command), "service opennds start");
 
     FILE *fp = popen(command, "r");
-    if (fp == NULL)
-    {
+    if (fp == NULL) {
         console(CONSOLE_DEBUG, "Error executing command opennds start.");
         return -1;
     }
 
     int status = pclose(fp);
-    if (status == -1)
-    {
+    if (status == -1) {
         console(CONSOLE_DEBUG, "Error closing opennds start command.");
         return -1;
-    }
-    else if (WIFEXITED(status))
-    {
+    } else if (WIFEXITED(status)) {
         int exit_status = WEXITSTATUS(status);
-        if (exit_status == 0)
-        {
+        if (exit_status == 0) {
             console(CONSOLE_DEBUG, "Opennds start command executed successfully.");
             return 0;
-        }
-        else
-        {
-            console(CONSOLE_DEBUG, "Error executing the opennds start command. Exit code: %d", exit_status);
+        } else {
+            console(CONSOLE_DEBUG, "Error executing the opennds start command. Exit code: %d",
+                    exit_status);
             return exit_status;
         }
-    }
-    else
-    {
+    } else {
         console(CONSOLE_DEBUG, "Opennds start command terminated unexpectedly.");
         return -1;
     }
 }
 
-void accounting_task(int argc, char *argv[])
-{
+void accounting_task(int argc, char *argv[]) {
     // Set up paths
     int dev_env = getConfig().devEnv;
     int accounting_enabled = getConfig().accounting_enabled;
@@ -240,16 +215,14 @@ void accounting_task(int argc, char *argv[])
         base_path[sizeof(base_path) - 1] = '\0'; // Ensure null termination
     }
     snprintf(scripts_path, sizeof(scripts_path), "%s%s", base_path, "/scripts");
-    console(CONSOLE_DEBUG, "scripts_path: %s", scripts_path);    
+    console(CONSOLE_DEBUG, "scripts_path: %s", scripts_path);
 
-    if (state.accounting != 1)
-    {
+    if (state.accounting != 1) {
         console(CONSOLE_DEBUG, "accounting is disabled by access status");
         return;
     }
 
-    if (accounting_enabled == 0)
-    {
+    if (accounting_enabled == 0) {
         console(CONSOLE_DEBUG, "accounting is disabled / This device doesn't run captive portal");
         return;
     }
@@ -257,8 +230,7 @@ void accounting_task(int argc, char *argv[])
     console(CONSOLE_DEBUG, "accounting task");
 
     char *opennds_clients_data = query_opennds();
-    if (opennds_clients_data == NULL)
-    {
+    if (opennds_clients_data == NULL) {
         console(CONSOLE_DEBUG, "failed to query OpenNDS; skipping server sync");
         return;
     }

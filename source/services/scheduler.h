@@ -8,8 +8,7 @@
 // - Renovar llave publica (1 vez al dia) [sin importar el mode]
 // - Enviar updates de accounting (cada 1 minuto) [if mode == 1]
 
-struct ScheduledTask
-{
+struct ScheduledTask {
     time_t nextExecutionTime;
     void (*task)();
     int interval;
@@ -18,8 +17,7 @@ struct ScheduledTask
 
 typedef struct ScheduledTask ScheduledTask;
 
-struct Scheduler
-{
+struct Scheduler {
     ScheduledTask *tasks;
     size_t size;
 };

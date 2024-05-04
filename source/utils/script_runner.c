@@ -1,14 +1,14 @@
+#include "script_runner.h"
+#include "console.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "script_runner.h"
-#include "console.h"
 
 #define MIN_OUTPUT_SIZE 512
 #define MAX_COMMAND_SIZE 256
 
 void run_script_and_save_output(const char *script_path, const char *output_path) {
-    char buffer[1024];  // Buffer for reading script output
+    char buffer[1024]; // Buffer for reading script output
     FILE *script_pipe, *output_file;
 
     // Open the script for execution
@@ -39,7 +39,7 @@ void run_script_and_save_output(const char *script_path, const char *output_path
 }
 
 // Make sure to free the char* returned by this function
-char* run_script(const char* script_path) {
+char *run_script(const char *script_path) {
     char buffer[128];
     size_t result_size = MIN_OUTPUT_SIZE;
     char *result = (char *)malloc(result_size);

@@ -3,15 +3,14 @@
 
 #include "../services/access.h"
 
-typedef struct
-{
+typedef struct {
     // Program modes:
     // 0 - onboarding
     // 1 - operator
     int mode;
 
     // Access key
-    AccessKey* access_key;
+    AccessKey *access_key;
 
     // Access status
     // 0 - initial

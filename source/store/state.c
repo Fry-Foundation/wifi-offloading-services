@@ -1,12 +1,11 @@
-#include <stdlib.h>
 #include "state.h"
-#include <stdio.h>
 #include "../services/access.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 State state;
 
-void initState(int mode, AccessKey *access_key)
-{
+void initState(int mode, AccessKey *access_key) {
     state.mode = mode;
 
     state.access_key = access_key;
@@ -26,10 +25,8 @@ void initState(int mode, AccessKey *access_key)
     state.chain = 1;
 }
 
-void cleanState()
-{
-    if (state.access_key != NULL)
-    {
+void cleanState() {
+    if (state.access_key != NULL) {
         free(state.access_key->key);
         free(state.access_key);
     }

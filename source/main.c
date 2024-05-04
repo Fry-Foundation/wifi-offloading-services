@@ -1,37 +1,18 @@
+#include "services/access.h"
+#include "services/accounting.h"
+#include "services/init.h"
+#include "services/peaq_id.h"
+#include "services/scheduler.h"
+#include "services/setup.h"
+#include "store/config.h"
+#include "store/state.h"
+#include "utils/console.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "services/init.h"
-#include "services/access.h"
-#include "services/peaq_id.h"
-#include "services/scheduler.h"
-#include "services/setup.h"
-#include "services/accounting.h"
-#include "store/config.h"
-#include "store/state.h"
-#include "utils/requests.h"
-#include "utils/console.h"
 
-void testGetRequest()
-{
-    const char TEST_URL[] = "https://catfact.ninja/fact";
-    console(CONSOLE_DEBUG, "Performing test GET request...");
-    char httpTestFile[256];
-    snprintf(httpTestFile, sizeof(httpTestFile), "%s%s%s", getConfig().basePath, "/data", "/test");
-    int resultGet = performHttpGet(TEST_URL, httpTestFile);
-    if (resultGet == 1)
-    {
-        console(CONSOLE_DEBUG, "GET request was a success.");
-    }
-    else
-    {
-        console(CONSOLE_DEBUG, "GET request failed.");
-    }
-}
-
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     init(argc, argv);
     int accounting_interval = getConfig().accounting_interval;
     int access_task_interval = getConfig().access_task_interval;

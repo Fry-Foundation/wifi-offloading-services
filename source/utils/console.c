@@ -1,22 +1,18 @@
 // console.c
 #include "console.h"
-#include <stdio.h>
 #include <stdarg.h>
+#include <stdio.h>
 
 // Global variable to store the current log level
 static ConsoleLevel current_console_level = CONSOLE_INFO;
 
-void set_console_level(ConsoleLevel level)
-{
-  current_console_level = level;
-}
+void set_console_level(ConsoleLevel level) { current_console_level = level; }
 
-void console(ConsoleLevel level, const char *format, ...)
-{
-   if (level <= current_console_level) {
+void console(ConsoleLevel level, const char *format, ...) {
+    if (level <= current_console_level) {
         // Initialize the arguement list variable
         va_list args;
-        va_start(args, format);          
+        va_start(args, format);
 
         // Output the level-specific prefix and the formatted message
         switch (level) {
@@ -34,18 +30,17 @@ void console(ConsoleLevel level, const char *format, ...)
             break;
         default:
             // Clean up the variable argument list before returning
-            va_end(args);              
+            va_end(args);
             // Exit if the level is unknown
-            return;        
+            return;
         }
 
         // Print the formatted string
         vfprintf(stdout, format, args);
-        printf("\n");  
+        printf("\n");
 
         // Clean up and flush data (print)
-        va_end(args); 
-        fflush(stdout); 
+        va_end(args);
+        fflush(stdout);
     }
 }
-

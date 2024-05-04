@@ -79,4 +79,11 @@ Run the `compile` script from the `wayru-os-services` repo:
 bash compile
 ```
 
+### Formatting
+Run the `format-c` script from the `wayru-os-services` repo:
+
+```bash
+bash format-c
+```
+
 The compiled package will be available in a new folder called `./build/{date}`

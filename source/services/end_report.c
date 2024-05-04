@@ -1,7 +1,7 @@
 #include "../store/config.h"
 #include "../store/state.h"
-#include "../utils/requests.h"
 #include "../utils/console.h"
+#include "../utils/requests.h"
 #include <json-c/json.h>
 #include <stdio.h>
 #include <string.h>
@@ -15,26 +15,22 @@
 char data_path[256];
 char end_report_path[256];
 
-json_object *load_end_report(const char *filename)
-{
+json_object *load_end_report(const char *filename) {
     FILE *file = fopen(filename, "r");
-    if (file == NULL)
-    {
+    if (file == NULL) {
         console(CONSOLE_ERROR, "failed to open file with end report");
         return NULL;
     }
 
     json_object *mac_array = json_object_new_array();
-    if (mac_array == NULL)
-    {
+    if (mac_array == NULL) {
         fclose(file);
         console(CONSOLE_ERROR, "failed to create end report JSON array");
         return NULL;
     }
 
     char line[20];
-    while (fgets(line, sizeof(line), file) != NULL)
-    {
+    while (fgets(line, sizeof(line), file) != NULL) {
         // Remove any trailing newline characters
         line[strcspn(line, "\r\n")] = '\0';
 
@@ -46,8 +42,7 @@ json_object *load_end_report(const char *filename)
     return mac_array;
 }
 
-size_t process_end_report_response(char *ptr, size_t size, size_t nmemb, void *userdata)
-{
+size_t process_end_report_response(char *ptr, size_t size, size_t nmemb, void *userdata) {
     // Calculate the number of bytes received
     size_t num_bytes = size * nmemb;
 
@@ -62,13 +57,13 @@ size_t process_end_report_response(char *ptr, size_t size, size_t nmemb, void *u
     return num_bytes;
 }
 
-void post_end_report(json_object *mac_address_array)
-{
+void post_end_report(json_object *mac_address_array) {
     console(CONSOLE_DEBUG, "posting end report");
 
     // Build end report url
     char end_report_url[256];
-    snprintf(end_report_url, sizeof(end_report_url), "%s%s", getConfig().accounting_api, END_REPORT_ENDPOINT);
+    snprintf(end_report_url, sizeof(end_report_url), "%s%s", getConfig().accounting_api,
+             END_REPORT_ENDPOINT);
     console(CONSOLE_DEBUG, "end_report_url: %s", end_report_url);
 
     // Stringify the JSON
@@ -87,8 +82,7 @@ void post_end_report(json_object *mac_address_array)
     performHttpPost(&post_end_report_options);
 }
 
-void end_report_task()
-{
+void end_report_task() {
     int dev_env = getConfig().devEnv;
 
     console(CONSOLE_DEBUG, "dev_env: %d", dev_env);
@@ -106,13 +100,13 @@ void end_report_task()
     console(CONSOLE_DEBUG, "data_path: %s", data_path);
 
     snprintf(end_report_path, sizeof(end_report_path), "%s%s", data_path, END_REPORT_PATH);
-    console(CONSOLE_DEBUG, "end_report_path: %s", end_report_path);    
+    console(CONSOLE_DEBUG, "end_report_path: %s", end_report_path);
 
     json_object *mac_address_array = load_end_report(end_report_path);
 
-    if (mac_address_array != NULL)
-    {
-        console(CONSOLE_DEBUG, "loaded MAC addresses:\n%s", json_object_to_json_string(mac_address_array));
+    if (mac_address_array != NULL) {
+        console(CONSOLE_DEBUG, "loaded MAC addresses:\n%s",
+                json_object_to_json_string(mac_address_array));
 
         // Post to server
         post_end_report(mac_address_array);

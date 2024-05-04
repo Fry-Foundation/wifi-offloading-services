@@ -3,11 +3,11 @@
 
 #include <stdbool.h>
 
-bool generate_key_pair(char* public_key_filename, char* private_key_filename);
+bool generate_key_pair(char *public_key_filename, char *private_key_filename);
 
-char* read_private_key();
+char *read_private_key();
 
-char* read_public_key();
+char *read_public_key();
 
 void peaq_id_task();
 

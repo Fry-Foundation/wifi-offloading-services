@@ -1,20 +1,17 @@
-#include <stdio.h>
-#include <curl/curl.h>
 #include "requests.h"
 #include "console.h"
+#include <curl/curl.h>
+#include <stdio.h>
 
 // HTTP GET request
-int performHttpGet(const char *url, const char *file_path)
-{
+int performHttpGet(const char *url, const char *file_path) {
     CURL *curl;
     CURLcode res = CURLE_OK;
 
     curl = curl_easy_init();
-    if (curl)
-    {
+    if (curl) {
         FILE *file = fopen(file_path, "wb"); // Abrir el archivo en modo de escritura binaria
-        if (!file)
-        {
+        if (!file) {
             console(CONSOLE_ERROR, "failed to open file for writing %s", file_path);
             return -1;
         }
@@ -26,8 +23,7 @@ int performHttpGet(const char *url, const char *file_path)
 
         res = curl_easy_perform(curl);
 
-        if (res != CURLE_OK)
-        {
+        if (res != CURLE_OK) {
             console(CONSOLE_ERROR, "curl GET failed: %s", curl_easy_strerror(res));
             fclose(file);
             return -1;
@@ -35,9 +31,7 @@ int performHttpGet(const char *url, const char *file_path)
 
         curl_easy_cleanup(curl);
         fclose(file);
-    }
-    else
-    {
+    } else {
         console(CONSOLE_ERROR, "curl did not initialize");
         return -1;
     }
@@ -46,14 +40,12 @@ int performHttpGet(const char *url, const char *file_path)
 }
 
 // HTTP POST request
-int performHttpPost(const PostRequestOptions *options)
-{
+int performHttpPost(const PostRequestOptions *options) {
     CURL *curl;
     CURLcode res = CURLE_OK;
 
     curl = curl_easy_init();
-    if (curl)
-    {
+    if (curl) {
         FILE *file;
         struct curl_slist *headers = NULL;
 
@@ -61,30 +53,24 @@ int performHttpPost(const PostRequestOptions *options)
         curl_easy_setopt(curl, CURLOPT_URL, options->url);
         curl_easy_setopt(curl, CURLOPT_POST, 1L);
 
-        if (options->key != NULL)
-        {
+        if (options->key != NULL) {
             char keyHeader[512];
             snprintf(keyHeader, 512, "public_key: %s", options->key);
             headers = curl_slist_append(headers, keyHeader);
         }
 
-        if (options->body != NULL)
-        {
+        if (options->body != NULL) {
             headers = curl_slist_append(headers, "Content-Type: application/json");
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, options->body);
-        }
-        else
-        {
+        } else {
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "");
         }
 
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
-        if (options->filePath != NULL)
-        {
+        if (options->filePath != NULL) {
             file = fopen(options->filePath, "wb");
-            if (!file)
-            {
+            if (!file) {
                 console(CONSOLE_ERROR, "failed to open the file for writing curl POST response");
                 return -1;
             }
@@ -92,13 +78,11 @@ int performHttpPost(const PostRequestOptions *options)
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, file);
         }
 
-        if (options->writeFunction != NULL)
-        {
+        if (options->writeFunction != NULL) {
             curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, options->writeFunction);
         }
 
-        if (options->writeData != NULL)
-        {
+        if (options->writeData != NULL) {
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, options->writeData);
         }
 
@@ -107,21 +91,17 @@ int performHttpPost(const PostRequestOptions *options)
         console(CONSOLE_DEBUG, "response code: %d", res);
 
         // Response
-        if (res != CURLE_OK)
-        {
+        if (res != CURLE_OK) {
             console(CONSOLE_ERROR, "curl POST failed: %s", curl_easy_strerror(res));
         }
 
         // Cleanup
-        if (options->filePath != NULL)
-        {
+        if (options->filePath != NULL) {
             fclose(file);
         }
         curl_slist_free_all(headers); // Free the header list
         curl_easy_cleanup(curl);
-    }
-    else
-    {
+    } else {
         console(CONSOLE_ERROR, "curl did not initialize");
         return -1;
     }

@@ -1,6 +1,8 @@
 #ifndef HTTP_REQUESTS_H
 #define HTTP_REQUESTS_H
 
+#include <stdio.h>
+
 // Realiza una solicitud HTTP GET
 int performHttpGet(const char *url, const char *filePath);
 

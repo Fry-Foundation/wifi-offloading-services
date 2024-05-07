@@ -303,7 +303,7 @@ void configure_with_access_status(int access_status) {
         // disable_default_wireless_network();
         // start_opennds();
 
-        peaq_id_task();
+        // peaq_id_task();
     } else if (access_status == 5) {
         console(CONSOLE_DEBUG, "access status is 'banned'");
         state.setup = 0;

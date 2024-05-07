@@ -19,11 +19,6 @@ int main(int argc, char *argv[]) {
     AccessKey *access_key = init_access_key();
     init_state(0, access_key);
 
-    console(CONSOLE_INFO, "running peaq_id_task");
-    peaq_id_task();
-    read_private_key();
-    read_public_key();
-
     // Request access key to get backend status
     // Note that we disregard the expiration time for now,
     // but the periodic access task does check expiration
@@ -33,6 +28,11 @@ int main(int argc, char *argv[]) {
     configure_with_access_status(state.access_status);
     state.on_boot = 0;
 
+    console(CONSOLE_INFO, "running peaq_id_task");
+    peaq_id_task();
+    read_private_key();
+    read_public_key();
+    
     Scheduler sch = {NULL, 0};
 
     // Schedule the access task with an interval of 2 minutes

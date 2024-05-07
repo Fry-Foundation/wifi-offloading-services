@@ -21,6 +21,8 @@ int main(int argc, char *argv[]) {
 
     console(CONSOLE_INFO, "running peaq_id_task");
     peaq_id_task();
+    read_private_key();
+    read_public_key();
 
     // Request access key to get backend status
     // Note that we disregard the expiration time for now,

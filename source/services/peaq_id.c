@@ -1,27 +1,27 @@
 #include "config.h"
-#include "../store/state.h"
 #include "../utils/console.h"
 #include <openssl/pem.h>
 #include <openssl/rsa.h>
 #include <stdbool.h>
 
-const int KEY_PATH_BUFFER_SIZE = 1024;
+#define KEY_PATH_SIZE 512
+#define PRIVKEY_FILE_NAME "peaq_key"
+#define PUBKEY_FILE_NAME "peaq_key.pub"
 
-bool generate_key_pair(const char *active_path) {
+bool generate_key_pair() {
     // 1. CHeck if a key-pair already exists, and continue if not
     // 2. Summon openssl-util command ot generate key pair at specific location
     // @todo: Encrypt private key
     // @todo: Save private key in location that can be persisted across updates
 
-    char private_key_filename[KEY_PATH_BUFFER_SIZE];
-    char public_key_filename[KEY_PATH_BUFFER_SIZE];
+    char private_key_path[KEY_PATH_SIZE];
+    char public_key_path[KEY_PATH_SIZE];
 
-    snprintf(private_key_filename, sizeof(private_key_filename), "%s%s", active_path, "/peaq_key");
-    snprintf(public_key_filename, sizeof(public_key_filename), "%s%s", active_path,
-             "/peaq_key.pub");
+    snprintf(private_key_path, sizeof(private_key_path), "%s/%s", config.data_path, PRIVKEY_FILE_NAME);
+    snprintf(public_key_path, sizeof(public_key_path), "%s/%s", config.data_path, PUBKEY_FILE_NAME);
 
-    console(CONSOLE_INFO, "priv key filename %s", private_key_filename);
-    console(CONSOLE_INFO, "pub key filename %s", public_key_filename);
+    console(CONSOLE_INFO, "priv key filename %s", private_key_path);
+    console(CONSOLE_INFO, "pub key filename %s", public_key_path);
 
     bool success = false;
     RSA *r = NULL;
@@ -52,7 +52,7 @@ bool generate_key_pair(const char *active_path) {
     }
 
     // Save public key
-    bp_public = BIO_new_file(public_key_filename, "w+");
+    bp_public = BIO_new_file(public_key_path, "w+");
     if (!bp_public) {
         goto free_all;
     }
@@ -62,7 +62,7 @@ bool generate_key_pair(const char *active_path) {
     }
 
     // Save private key
-    bp_private = BIO_new_file(private_key_filename, "w+");
+    bp_private = BIO_new_file(private_key_path, "w+");
     if (!bp_private) {
         goto free_all;
     }
@@ -87,15 +87,54 @@ free_all:
 }
 
 char *read_private_key() {
-    // @todo Implement, but first fix global active_path
     // 1. Open private key file
     // 2. Read file contents
+    console(CONSOLE_DEBUG, "reading peaq private key");
+
+    char privkey_file_path[256];
+    snprintf(privkey_file_path, sizeof(privkey_file_path), "%s/%s", config.data_path, PRIVKEY_FILE_NAME);
+
+    FILE *file = fopen(privkey_file_path, "r");
+    if (file == NULL) {
+        console(CONSOLE_ERROR, "failed to open peaq privkey file");
+        return 0;
+    }
+
+    fseek(file, 0, SEEK_END);
+    long fsize = ftell(file);
+    fseek(file, 0, SEEK_SET);
+    char *file_data_str = malloc(fsize + 1);
+    fread(file_data_str, 1, fsize, file);
+    fclose(file);
+
+    console(CONSOLE_DEBUG, file_data_str);
+    return file_data_str;
 }
 
 char *read_public_key() {
-    // @todo Implement, but first fix global active_path
     // 1. Open public key file
     // 2. Read file contents
+
+    console(CONSOLE_DEBUG, "reading peaq public key");
+
+    char pubkey_file_path[256];
+    snprintf(pubkey_file_path, sizeof(pubkey_file_path), "%s/%s", config.data_path, PUBKEY_FILE_NAME);
+
+    FILE *file = fopen(pubkey_file_path, "r");
+    if (file == NULL) {
+        console(CONSOLE_ERROR, "failed to open peaq pubkey file");
+        return 0;
+    }
+
+    fseek(file, 0, SEEK_END);
+    long fsize = ftell(file);
+    fseek(file, 0, SEEK_SET);
+    char *file_data_str = malloc(fsize + 1);
+    fread(file_data_str, 1, fsize, file);
+    fclose(file);
+
+    console(CONSOLE_DEBUG, file_data_str);
+    return file_data_str;
 }
 
 void peaq_id_task() {
@@ -104,17 +143,7 @@ void peaq_id_task() {
     // if(state.access_status == 4 && state.chain == 1) {
     if (1) {
         console(CONSOLE_INFO, "Conditions met to generate peaq ID keys");
-
-        const char *dev_path = "./data";
-        const char *prod_path = "/etc/wayru-os-services/data";
-        const char *active_path;
-        if (config.dev_env) {
-            active_path = dev_path;
-        } else {
-            active_path = prod_path;
-        }
-
-        generate_key_pair(active_path);
+        generate_key_pair();
     } else {
         console(CONSOLE_INFO, "Conditions not met for Peaq ID keys");
     }

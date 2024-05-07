@@ -1,4 +1,4 @@
-#include "../store/config.h"
+#include "config.h"
 #include "../store/state.h"
 #include "../utils/console.h"
 #include "../utils/requests.h"
@@ -62,7 +62,7 @@ void post_end_report(json_object *mac_address_array) {
 
     // Build end report url
     char end_report_url[256];
-    snprintf(end_report_url, sizeof(end_report_url), "%s%s", getConfig().accounting_api,
+    snprintf(end_report_url, sizeof(end_report_url), "%s%s", config.accounting_api,
              END_REPORT_ENDPOINT);
     console(CONSOLE_DEBUG, "end_report_url: %s", end_report_url);
 
@@ -83,7 +83,7 @@ void post_end_report(json_object *mac_address_array) {
 }
 
 void end_report_task() {
-    int dev_env = getConfig().devEnv;
+    int dev_env = config.dev_env;
 
     console(CONSOLE_DEBUG, "dev_env: %d", dev_env);
 

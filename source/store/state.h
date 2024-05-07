@@ -28,7 +28,7 @@ typedef struct {
     int accounting;
 
     // On boot
-    int onBoot;
+    int on_boot;
 
     // Wireless network
     int already_disabled_wifi;
@@ -42,8 +42,8 @@ typedef struct {
 
 extern State state;
 
-void initState(int mode, AccessKey *access_key);
+void init_state(int mode, AccessKey *access_key);
 
-void cleanState();
+void clean_state();
 
 #endif // STATE_H

@@ -1,11 +1,12 @@
 #include "access.h"
-#include "../store/config.h"
+#include "config.h"
 #include "../store/state.h"
 #include "../utils/console.h"
 #include "../utils/requests.h"
 #include "../utils/script_runner.h"
 #include "peaq_id.h"
 #include "setup.h"
+#include "device_data.h"
 #include <json-c/json.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -42,7 +43,7 @@ int read_access_key(AccessKey *access_key) {
     console(CONSOLE_DEBUG, "reading stored access key");
 
     char key_file_path[KEY_FILE_BUFFER_SIZE];
-    snprintf(key_file_path, sizeof(key_file_path), "%s%s", getConfig().basePath, KEY_FILE);
+    snprintf(key_file_path, sizeof(key_file_path), "%s%s", config.active_path, KEY_FILE);
 
     FILE *file = fopen(key_file_path, "r");
     if (file == NULL) {
@@ -86,7 +87,7 @@ void write_access_key(AccessKey *access_key) {
     console(CONSOLE_DEBUG, "writing new access key");
 
     char keyFile[KEY_FILE_BUFFER_SIZE];
-    snprintf(keyFile, sizeof(keyFile), "%s%s", getConfig().basePath, KEY_FILE);
+    snprintf(keyFile, sizeof(keyFile), "%s%s", config.active_path, KEY_FILE);
 
     FILE *file = fopen(keyFile, "w");
     if (file == NULL) {
@@ -204,25 +205,25 @@ int request_access_key(AccessKey *access_key) {
 
     json_object *json_data = json_object_new_object();
 
-    json_object_object_add(json_data, "device_id", json_object_new_string(getConfig().deviceId));
-    json_object_object_add(json_data, "mac", json_object_new_string(getConfig().mac));
-    json_object_object_add(json_data, "name", json_object_new_string(getConfig().name));
-    json_object_object_add(json_data, "brand", json_object_new_string(getConfig().brand));
-    json_object_object_add(json_data, "model", json_object_new_string(getConfig().model));
-    json_object_object_add(json_data, "public_ip", json_object_new_string(getConfig().public_ip));
-    json_object_object_add(json_data, "os_name", json_object_new_string(getConfig().os_name));
-    json_object_object_add(json_data, "os_version", json_object_new_string(getConfig().osVersion));
+    json_object_object_add(json_data, "device_id", json_object_new_string(device_data.device_id));
+    json_object_object_add(json_data, "mac", json_object_new_string(device_data.mac));
+    json_object_object_add(json_data, "name", json_object_new_string(device_data.name));
+    json_object_object_add(json_data, "brand", json_object_new_string(device_data.brand));
+    json_object_object_add(json_data, "model", json_object_new_string(device_data.model));
+    json_object_object_add(json_data, "public_ip", json_object_new_string(device_data.public_ip));
+    json_object_object_add(json_data, "os_name", json_object_new_string(device_data.os_name));
+    json_object_object_add(json_data, "os_version", json_object_new_string(device_data.os_version));
     json_object_object_add(json_data, "os_services_version",
-                           json_object_new_string(getConfig().servicesVersion));
+                           json_object_new_string(device_data.os_services_version));
     json_object_object_add(json_data, "on_boot",
-                           json_object_new_string(state.onBoot == 1 ? "true" : "false"));
+                           json_object_new_string(state.on_boot == 1 ? "true" : "false"));
 
     const char *json_data_string = json_object_to_json_string(json_data);
     console(CONSOLE_DEBUG, "device data -> %s", json_data_string);
 
     // Build access URL
     char access_url[256];
-    snprintf(access_url, sizeof(access_url), "%s%s", getConfig().main_api, ACCESS_ENDPOINT);
+    snprintf(access_url, sizeof(access_url), "%s%s", config.main_api, ACCESS_ENDPOINT);
     console(CONSOLE_DEBUG, "access_url: %s", access_url);
 
     // Request options
@@ -246,7 +247,7 @@ int request_access_key(AccessKey *access_key) {
 };
 
 void disable_default_wireless_network() {
-    if (getConfig().devEnv == 1) {
+    if (config.dev_env) {
         console(CONSOLE_DEBUG, "not disabling default wireless network in dev environment");
         return;
     }

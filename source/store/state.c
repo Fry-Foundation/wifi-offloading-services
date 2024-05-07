@@ -5,7 +5,7 @@
 
 State state;
 
-void initState(int mode, AccessKey *access_key) {
+void init_state(int mode, AccessKey *access_key) {
     state.mode = mode;
 
     state.access_key = access_key;
@@ -16,7 +16,7 @@ void initState(int mode, AccessKey *access_key) {
 
     state.accounting = 0;
 
-    state.onBoot = 1;
+    state.on_boot = 1;
 
     state.already_disabled_wifi = 0;
 
@@ -25,7 +25,7 @@ void initState(int mode, AccessKey *access_key) {
     state.chain = 1;
 }
 
-void cleanState() {
+void clean_state() {
     if (state.access_key != NULL) {
         free(state.access_key->key);
         free(state.access_key);

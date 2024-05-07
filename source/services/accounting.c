@@ -1,5 +1,5 @@
 #include "accounting.h"
-#include "../store/config.h"
+#include "config.h"
 #include "../store/state.h"
 #include "../utils/console.h"
 #include "../utils/requests.h"
@@ -100,7 +100,7 @@ size_t process_accounting_response(char *ptr, size_t size, size_t nmemb, void *u
 void post_accounting_update(char *opennds_clients_data) {
     // Build accounting URL
     char accounting_url[256];
-    snprintf(accounting_url, sizeof(accounting_url), "%s%s", getConfig().accounting_api,
+    snprintf(accounting_url, sizeof(accounting_url), "%s%s", config.accounting_api,
              ACCOUNTING_ENDPOINT);
 
     console(CONSOLE_DEBUG, "accounting_url: %s", accounting_url);
@@ -201,8 +201,8 @@ int start_opennds() {
 
 void accounting_task(int argc, char *argv[]) {
     // Set up paths
-    int dev_env = getConfig().devEnv;
-    int accounting_enabled = getConfig().accounting_enabled;
+    int dev_env = config.dev_env;
+    int accounting_enabled = config.accounting_enabled;
     console(CONSOLE_DEBUG, "dev_env: %d", dev_env);
 
     // Set up paths

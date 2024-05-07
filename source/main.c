@@ -1,10 +1,11 @@
 #include "services/access.h"
+#include "services/config.h"
 #include "services/accounting.h"
-#include "services/init.h"
 #include "services/peaq_id.h"
 #include "services/scheduler.h"
 #include "services/setup.h"
-#include "store/config.h"
+#include "services/device_data.h"
+#include "services/config.h"
 #include "store/state.h"
 #include "utils/console.h"
 #include <stdio.h>
@@ -13,9 +14,10 @@
 #include <unistd.h>
 
 int main(int argc, char *argv[]) {
-    init(argc, argv);
-    int accounting_interval = getConfig().accounting_interval;
-    int access_task_interval = getConfig().access_task_interval;
+    init_config(argc, argv);
+    init_device_data();
+    AccessKey *access_key = init_access_key();
+    init_state(0, access_key);
 
     console(CONSOLE_INFO, "running peaq_id_task");
     peaq_id_task();
@@ -27,12 +29,12 @@ int main(int argc, char *argv[]) {
     request_access_key(state.access_key);
     write_access_key(state.access_key);
     configure_with_access_status(state.access_status);
-    state.onBoot = 0;
+    state.on_boot = 0;
 
     Scheduler sch = {NULL, 0};
 
     // Schedule the access task with an interval of 2 minutes
-    scheduleEvery(&sch, access_task_interval, access_task);
+    scheduleEvery(&sch, config.access_task_interval, access_task);
 
     // Schedule the setup task for now, and then with an interval of 1 minute
     scheduleAt(&sch, time(NULL), setupTask);
@@ -40,12 +42,12 @@ int main(int argc, char *argv[]) {
 
     // Schedule the accounting task with an interval of 1 minute
     scheduleAt(&sch, time(NULL), accounting_task);
-    scheduleEvery(&sch, accounting_interval, accounting_task);
+    scheduleEvery(&sch, config.accounting_interval, accounting_task);
 
     run(&sch);
 
-    cleanState();
-    cleanConfig();
+    clean_device_data();
+    clean_state();
 
     return 0;
 }

@@ -1,5 +1,5 @@
 #include "setup.h"
-#include "../store/config.h"
+#include "config.h"
 #include "../store/state.h"
 #include "../utils/console.h"
 #include "../utils/requests.h"
@@ -18,7 +18,7 @@ void requestSetup() {
 
     // Build setup URL
     char setup_url[256];
-    snprintf(setup_url, sizeof(setup_url), "%s%s", getConfig().main_api, SETUP_ENDPOINT);
+    snprintf(setup_url, sizeof(setup_url), "%s%s", config.main_api, SETUP_ENDPOINT);
     console(CONSOLE_DEBUG, "setup_url: %s", setup_url);
 
     // Request options
@@ -52,7 +52,7 @@ void completeSetup() {
 
     // Build setup complete URL
     char setup_complete_url[256];
-    snprintf(setup_complete_url, sizeof(setup_complete_url), "%s%s", getConfig().main_api,
+    snprintf(setup_complete_url, sizeof(setup_complete_url), "%s%s", config.main_api,
              SETUP_COMPLETE_ENDPOINT);
     console(CONSOLE_DEBUG, "setup_complete_url: %s", setup_complete_url);
 

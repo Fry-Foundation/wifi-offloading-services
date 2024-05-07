@@ -1,4 +1,4 @@
-#include "../store/config.h"
+#include "config.h"
 #include "../store/state.h"
 #include "../utils/console.h"
 #include <openssl/pem.h>
@@ -108,7 +108,7 @@ void peaq_id_task() {
         const char *dev_path = "./data";
         const char *prod_path = "/etc/wayru-os-services/data";
         const char *active_path;
-        if (getConfig().devEnv == 1) {
+        if (config.dev_env) {
             active_path = dev_path;
         } else {
             active_path = prod_path;

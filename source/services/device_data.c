@@ -14,9 +14,9 @@
 #define MAX_RETRIES 50
 #define DEVICE_INFO_FILE "/etc/wayru-os/device.json"
 
-DeviceData device_data;
+DeviceData device_data = {0};
 
-char *init_os_version() {
+char *get_os_version() {
     if (config.dev_env) {
         return strdup("2.0.0");
     }
@@ -67,7 +67,7 @@ char *init_os_version() {
     return os_version;
 }
 
-char *init_os_services_version() {
+char *get_os_services_version() {
     if (config.dev_env == 1) {
         return strdup("1.0.0");
     }
@@ -108,7 +108,7 @@ char *init_os_services_version() {
     return os_services_version;
 }
 
-char *init_mac() {
+char *get_mac() {
     char script_file[256];
     snprintf(script_file, sizeof(script_file), "%s%s", config.scripts_path, "/get-mac.sh");
     char *mac = run_script(script_file);
@@ -121,7 +121,7 @@ char *init_mac() {
     return mac;
 }
 
-DeviceInfo init_device_info() {
+DeviceInfo get_device_info() {
     DeviceInfo device_info = {0};
 
     if (config.dev_env) {
@@ -173,7 +173,7 @@ DeviceInfo init_device_info() {
     return device_info;
 }
 
-char *init_id() {
+char *get_id() {
     char script_file[256];
     snprintf(script_file, sizeof(script_file), "%s%s", config.scripts_path, "/get-uuid.sh");
     char *id = NULL;
@@ -205,7 +205,7 @@ char *init_id() {
     return id;
 }
 
-char *public_ip() {
+char *get_public_ip() {
     char script_file[256];
     snprintf(script_file, sizeof(script_file), "%s%s", config.scripts_path, "/get-public-ip.sh");
     char *public_ip = run_script(script_file);
@@ -218,7 +218,7 @@ char *public_ip() {
     return public_ip;
 }
 
-char *init_os_name() {
+char *get_os_name() {
     char script_file[256];
     snprintf(script_file, sizeof(script_file), "%s%s", config.scripts_path, "/get-osname.sh");
     char *os_name = run_script(script_file);
@@ -231,20 +231,18 @@ char *init_os_name() {
 
 
 void init_device_data() {
-    device_data.os_version = init_os_version();
-    device_data.os_services_version = init_os_services_version();
-    device_data.mac = init_mac();
+    device_data.os_version = get_os_version();
+    device_data.os_services_version = get_os_services_version();
+    device_data.mac = get_mac();
     
-    DeviceInfo device_info = init_device_info();
+    DeviceInfo device_info = get_device_info();
     device_data.name = device_info.name;
     device_data.model = device_info.model;
     device_data.brand = device_info.brand;
 
-    device_data.device_id = init_id();
-
-    device_data.public_ip = public_ip();
-
-    device_data.os_name = init_os_name();
+    device_data.device_id = get_id();
+    device_data.public_ip = get_public_ip();
+    device_data.os_name = get_os_name();
 }
 
 void clean_device_data() {

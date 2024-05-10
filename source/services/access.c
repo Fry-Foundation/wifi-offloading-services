@@ -4,7 +4,7 @@
 #include "../utils/console.h"
 #include "../utils/requests.h"
 #include "../utils/script_runner.h"
-#include "peaq_id.h"
+#include "peaq_did.h"
 #include "setup.h"
 #include "device_data.h"
 #include <json-c/json.h>

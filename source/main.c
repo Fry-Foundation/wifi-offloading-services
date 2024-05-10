@@ -1,7 +1,7 @@
 #include "services/access.h"
 #include "services/config.h"
 #include "services/accounting.h"
-#include "services/peaq_id.h"
+#include "services/peaq_did.h"
 #include "services/scheduler.h"
 #include "services/setup.h"
 #include "services/device_data.h"
@@ -28,10 +28,7 @@ int main(int argc, char *argv[]) {
     configure_with_access_status(state.access_status);
     state.on_boot = 0;
 
-    console(CONSOLE_INFO, "running peaq_id_task");
-    peaq_id_task();
-    read_private_key();
-    read_public_key();
+    peaq_did_create_task();
     
     Scheduler sch = {NULL, 0};
 

@@ -41,13 +41,14 @@ define Build/Compile
 		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/services/setup.o -c $(PKG_BUILD_DIR)/services/setup.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/services/accounting.o -c $(PKG_BUILD_DIR)/services/accounting.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/services/end_report.o -c $(PKG_BUILD_DIR)/services/end_report.c
-		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/services/peaq_id.o -c $(PKG_BUILD_DIR)/services/peaq_id.c
+		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/services/peaq_did.o -c $(PKG_BUILD_DIR)/services/peaq_did.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/services/config.o -c $(PKG_BUILD_DIR)/services/config.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/services/device_data.o -c $(PKG_BUILD_DIR)/services/device_data.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/store/state.o -c $(PKG_BUILD_DIR)/store/state.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/utils/requests.o -c $(PKG_BUILD_DIR)/utils/requests.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/utils/script_runner.o -c $(PKG_BUILD_DIR)/utils/script_runner.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/utils/console.o -c $(PKG_BUILD_DIR)/utils/console.c
+		$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/utils/key_pair.o -c $(PKG_BUILD_DIR)/utils/key_pair.c
 
 		$(TARGET_CC) $(TARGET_LDFLAGS) \
 			$(PKG_BUILD_DIR)/main.o \
@@ -56,13 +57,14 @@ define Build/Compile
 			$(PKG_BUILD_DIR)/services/setup.o \
 			$(PKG_BUILD_DIR)/services/accounting.o \
 			$(PKG_BUILD_DIR)/services/end_report.o \
-			$(PKG_BUILD_DIR)/services/peaq_id.o \
+			$(PKG_BUILD_DIR)/services/peaq_did.o \
 			$(PKG_BUILD_DIR)/services/config.o \
 			$(PKG_BUILD_DIR)/services/device_data.o \
 			$(PKG_BUILD_DIR)/store/state.o \
 			$(PKG_BUILD_DIR)/utils/requests.o \
 			$(PKG_BUILD_DIR)/utils/script_runner.o \
 			$(PKG_BUILD_DIR)/utils/console.o \
+			$(PKG_BUILD_DIR)/utils/key_pair.o \
 			-o $(PKG_BUILD_DIR)/wayru-os-services \
 			-lcurl -ljson-c -lssl -lcrypto
 endef

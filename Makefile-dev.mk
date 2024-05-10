@@ -1,6 +1,6 @@
 # Define development configuration
 CONFIG_ENABLED = 1
-CONFIG_MAIN_API = https://api.internal.wayru.tech
+CONFIG_MAIN_API = http://localhost:1337
 CONFIG_ACCOUNTING_ENABLED = 1
 CONFIG_ACCOUNTING_INTERVAL = 300
 CONFIG_ACCOUNTING_API = https://wifi.api.internal.wayru.tech
@@ -29,13 +29,14 @@ compile:
 	$(SOURCE_PATH)/services/setup.c \
 	$(SOURCE_PATH)/services/accounting.c \
 	$(SOURCE_PATH)/services/end_report.c \
-	$(SOURCE_PATH)/services/peaq_id.c \
+	$(SOURCE_PATH)/services/peaq_did.c \
 	$(SOURCE_PATH)/services/config.c \
 	$(SOURCE_PATH)/services/device_data.c \
 	$(SOURCE_PATH)/store/state.c \
 	$(SOURCE_PATH)/utils/requests.c \
 	$(SOURCE_PATH)/utils/script_runner.c \
 	$(SOURCE_PATH)/utils/console.c \
+	$(SOURCE_PATH)/utils/key_pair.c \
 	-lcurl -ljson-c -lssl -lcrypto
 
 # Copy scripts and data files

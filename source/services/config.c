@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "config.h"
-#include "../utils/console.h"
+#include "utils/console.h"
 
 Config config = {0};
 

@@ -1,7 +1,7 @@
 #include "device_data.h"
 #include "config.h"
-#include "../utils/console.h"
-#include "../utils/script_runner.h"
+#include "utils/console.h"
+#include "utils/script_runner.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>

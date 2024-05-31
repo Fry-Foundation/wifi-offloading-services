@@ -1,8 +1,8 @@
 #include "peaq_did.h"
-#include "../store/state.h"
-#include "../utils/console.h"
-#include "../utils/requests.h"
-#include "../utils/key_pair.h"
+#include "store/state.h"
+#include "utils/console.h"
+#include "utils/requests.h"
+#include "utils/key_pair.h"
 #include "config.h"
 #include <json-c/json.h>
 #include <stdbool.h>

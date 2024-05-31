@@ -1,9 +1,9 @@
 #include "peaq_did.h"
-#include "state.h"
-#include "lib/console.h"
-#include "lib/requests.h"
-#include "lib/key_pair.h"
 #include "config.h"
+#include "lib/console.h"
+#include "lib/key_pair.h"
+#include "lib/requests.h"
+#include "state.h"
 #include <json-c/json.h>
 #include <stdbool.h>
 
@@ -88,7 +88,7 @@ size_t process_peaq_did_create_response(char *ptr, size_t size, size_t nmemb, vo
         if (json_object_is_type(message_value, json_type_string)) {
             const char *message_str = json_object_get_string(message_value);
             console(CONSOLE_DEBUG, "message: %s", message_str);
-            
+
             // Handle the 'message' value
             // If success, consider saving a flag that the DID has already been created in a file
             // If failure, consider scheduling a second attempt
@@ -146,7 +146,8 @@ size_t process_peaq_did_read_response(char *ptr, size_t size, size_t nmemb, void
 void post_peaq_did_create_request(char *public_key) {
     // Build peaq ID URL
     char create_request_url[256];
-    snprintf(create_request_url, sizeof(create_request_url), "%s%s", config.main_api, PEAQ_DID_CREATE_ENDPOINT);
+    snprintf(create_request_url, sizeof(create_request_url), "%s%s", config.main_api,
+             PEAQ_DID_CREATE_ENDPOINT);
 
     // Build body
     char body[512];
@@ -177,7 +178,8 @@ void post_peaq_did_create_request(char *public_key) {
 void post_peaq_did_read_request(char *public_key) {
     // Build request URL
     char read_request_url[256];
-    snprintf(read_request_url, sizeof(read_request_url), "%s%s", config.main_api, PEAQ_DID_READ_ENDPOINT);
+    snprintf(read_request_url, sizeof(read_request_url), "%s%s", config.main_api,
+             PEAQ_DID_READ_ENDPOINT);
 
     // Build body
     char body[512];

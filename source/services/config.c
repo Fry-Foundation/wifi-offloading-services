@@ -1,8 +1,8 @@
+#include "config.h"
+#include "lib/console.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "config.h"
-#include "lib/console.h"
 
 Config config = {0};
 
@@ -69,7 +69,7 @@ void init_config(int argc, char *argv[]) {
             config.access_task_interval = atoi(argv[i + 1]);
             continue;
         }
-        
+
         // Log level (note that the log level is not part of the config struct)
         if (strcmp(argv[i], "--config-console-log-level") == 0) {
             int console_log_level = atoi(argv[i + 1]);
@@ -103,4 +103,3 @@ void init_config(int argc, char *argv[]) {
 
     // Fin
 }
-

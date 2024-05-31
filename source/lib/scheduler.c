@@ -1,14 +1,19 @@
 #include "scheduler.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
+#include <unistd.h>
 
 #define SLEEP_SECONDS 1
 
-Task* create_task(time_t execute_at, task_func task_function, void *params, bool periodic, time_t interval, const char* detail) {
+Task *create_task(time_t execute_at,
+                  task_func task_function,
+                  void *params,
+                  bool periodic,
+                  time_t interval,
+                  const char *detail) {
     Task *new_task = (Task *)malloc(sizeof(Task));
-    
+
     // Handle memory allocation failure
     if (!new_task) {
         return NULL;
@@ -26,15 +31,16 @@ Task* create_task(time_t execute_at, task_func task_function, void *params, bool
 
     // Next node
     new_task->next = NULL;
-    
+
     return new_task;
 }
 
-void schedule_task(Scheduler* scheduler, Task* new_task) {
+void schedule_task(Scheduler *scheduler, Task *new_task) {
     // Insert task at the beginning of the list if:
     // - Task list is empty
     // - Execution time is earlier than the first task's execution time
-    if (!scheduler->task_list || difftime(scheduler->task_list->execute_at, new_task->execute_at) > 0) {
+    if (!scheduler->task_list ||
+        difftime(scheduler->task_list->execute_at, new_task->execute_at) > 0) {
         new_task->next = scheduler->task_list;
         scheduler->task_list = new_task;
         return;
@@ -56,8 +62,8 @@ void schedule_task(Scheduler* scheduler, Task* new_task) {
     current->next = new_task;
 }
 
-void execute_tasks(Scheduler* scheduler) {
-    time_t now = time(NULL); 
+void execute_tasks(Scheduler *scheduler) {
+    time_t now = time(NULL);
     printf("Current time is %ld\n", (long)now);
 
     // Loop to execute all tasks that are due
@@ -88,7 +94,7 @@ void execute_tasks(Scheduler* scheduler) {
     }
 }
 
-void print_tasks(Scheduler* scheduler) {
+void print_tasks(Scheduler *scheduler) {
     Task *current = scheduler->task_list;
     while (current) {
         printf("Task scheduled at %ld: %s\n", current->execute_at, current->detail);
@@ -96,10 +102,9 @@ void print_tasks(Scheduler* scheduler) {
     }
 }
 
-void run (Scheduler* scheduler) {
+void run(Scheduler *scheduler) {
     while (1) {
         execute_tasks(scheduler);
         sleep(SLEEP_SECONDS);
     }
 }
-

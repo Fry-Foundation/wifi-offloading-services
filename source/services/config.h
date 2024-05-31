@@ -15,7 +15,7 @@ typedef struct {
     char accounting_api[API_SIZE];
     bool accounting_enabled;
     int accounting_interval;
-    
+
     int access_task_interval;
 
     char active_path[PATH_SIZE];
@@ -25,7 +25,7 @@ typedef struct {
 
 extern Config config;
 
-void init_config(int argc, char *argv[]); 
+void init_config(int argc, char *argv[]);
 
 void clean_config();
 

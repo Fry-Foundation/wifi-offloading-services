@@ -2,10 +2,10 @@
 #include "config.h"
 #include "lib/console.h"
 #include "lib/script_runner.h"
+#include <json-c/json.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
-#include <json-c/json.h>
 #include <unistd.h>
 
 #define OS_VERSION_FILE "/etc/openwrt_release"
@@ -229,12 +229,11 @@ char *get_os_name() {
     return os_name;
 }
 
-
 void init_device_data() {
     device_data.os_version = get_os_version();
     device_data.os_services_version = get_os_services_version();
     device_data.mac = get_mac();
-    
+
     DeviceInfo device_info = get_device_info();
     device_data.name = device_info.name;
     device_data.model = device_info.model;
@@ -246,13 +245,13 @@ void init_device_data() {
 }
 
 void clean_device_data() {
-     free(device_data.mac);
-     free(device_data.name);
-     free(device_data.brand);
-     free(device_data.model);
-     free(device_data.os_name);
-     free(device_data.os_version);
-     free(device_data.os_services_version);
-     free(device_data.device_id);
-     free(device_data.public_ip);
+    free(device_data.mac);
+    free(device_data.name);
+    free(device_data.brand);
+    free(device_data.model);
+    free(device_data.os_name);
+    free(device_data.os_version);
+    free(device_data.os_services_version);
+    free(device_data.device_id);
+    free(device_data.public_ip);
 }

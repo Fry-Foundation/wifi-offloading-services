@@ -1,13 +1,12 @@
+#include "lib/console.h"
+#include "lib/scheduler.h"
 #include "services/access.h"
-#include "services/config.h"
 #include "services/accounting.h"
+#include "services/config.h"
+#include "services/device_data.h"
 #include "services/peaq_did.h"
 #include "services/setup.h"
-#include "services/device_data.h"
-#include "services/config.h"
 #include "services/state.h"
-#include "lib/scheduler.h"
-#include "lib/console.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,11 +23,12 @@ int main(int argc, char *argv[]) {
     // Sent on the first status request
     // @todo: should probably just initialize it with this value
     state.on_boot = 0;
-    
+
     Scheduler scheduler = {NULL};
 
     // Schedule an access key request for now and with the configured interval in the Config struct
-    Task *get_access_key = create_task(time(NULL), access_task, NULL, true, config.access_task_interval, "access task");
+    Task *get_access_key = create_task(time(NULL), access_task, NULL, true,
+                                       config.access_task_interval, "access task");
     schedule_task(&scheduler, get_access_key);
 
     // Schedule the setup task for now and with a periodic interval
@@ -36,7 +36,8 @@ int main(int argc, char *argv[]) {
     schedule_task(&scheduler, setup_task_task);
 
     // Schedule the accountnig task for now and with the configured interval in the Config struct
-    Task *accounting_task_task = create_task(time(NULL), accounting_task, NULL, true, config.accounting_interval, "accounting task");
+    Task *accounting_task_task = create_task(time(NULL), accounting_task, NULL, true,
+                                             config.accounting_interval, "accounting task");
     schedule_task(&scheduler, accounting_task_task);
 
     // Print the list of tasks

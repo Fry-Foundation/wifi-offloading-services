@@ -1,12 +1,12 @@
 #include "access.h"
 #include "config.h"
-#include "state.h"
+#include "device_data.h"
 #include "lib/console.h"
 #include "lib/requests.h"
 #include "lib/script_runner.h"
 #include "peaq_did.h"
 #include "setup.h"
-#include "device_data.h"
+#include "state.h"
 #include <json-c/json.h>
 #include <stdbool.h>
 #include <stdio.h>

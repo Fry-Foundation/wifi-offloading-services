@@ -1,6 +1,6 @@
 #include "key_pair.h"
-#include "console.h"
 #include "../services/config.h"
+#include "console.h"
 #include <openssl/pem.h>
 #include <openssl/rsa.h>
 #include <stdbool.h>

@@ -1,7 +1,7 @@
 #include "config.h"
-#include "state.h"
 #include "lib/console.h"
 #include "lib/requests.h"
+#include "state.h"
 #include <json-c/json.h>
 #include <stdio.h>
 #include <string.h>

@@ -1,9 +1,9 @@
 #include "accounting.h"
 #include "config.h"
-#include "state.h"
 #include "lib/console.h"
 #include "lib/requests.h"
 #include "lib/script_runner.h"
+#include "state.h"
 #include <json-c/json.h>
 #include <stdio.h>
 #include <stdlib.h>

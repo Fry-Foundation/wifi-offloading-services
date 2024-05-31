@@ -2,12 +2,12 @@
 #include "services/config.h"
 #include "services/accounting.h"
 #include "services/peaq_did.h"
-#include "services/scheduler.h"
 #include "services/setup.h"
 #include "services/device_data.h"
 #include "services/config.h"
-#include "store/state.h"
-#include "utils/console.h"
+#include "services/state.h"
+#include "lib/scheduler.h"
+#include "lib/console.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

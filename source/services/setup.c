@@ -1,8 +1,8 @@
 #include "setup.h"
 #include "config.h"
-#include "store/state.h"
-#include "utils/console.h"
-#include "utils/requests.h"
+#include "state.h"
+#include "lib/console.h"
+#include "lib/requests.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

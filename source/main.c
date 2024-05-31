@@ -14,36 +14,35 @@
 #include <unistd.h>
 
 int main(int argc, char *argv[]) {
+    // Init
     init_config(argc, argv);
     init_device_data();
     AccessKey *access_key = init_access_key();
     init_state(0, access_key);
 
-    // Request access key to get backend status
-    // Note that we disregard the expiration time for now,
-    // but the periodic access task does check expiration
-    // @TODO: This should probably be part of the access key initialization
-    request_access_key(state.access_key);
-    write_access_key(state.access_key);
-    configure_with_access_status(state.access_status);
+    // We use this to tell the backend the device has just booted up
+    // Sent on the first status request
+    // @todo: should probably just initialize it with this value
     state.on_boot = 0;
-
-    peaq_did_create_task();
     
-    Scheduler sch = {NULL, 0};
+    Scheduler scheduler = {NULL};
 
-    // Schedule the access task with an interval of 2 minutes
-    scheduleEvery(&sch, config.access_task_interval, access_task);
+    // Schedule an access key request for now and with the configured interval in the Config struct
+    Task *get_access_key = create_task(time(NULL), access_task, NULL, true, config.access_task_interval, "access task");
+    schedule_task(&scheduler, get_access_key);
 
-    // Schedule the setup task for now, and then with an interval of 1 minute
-    scheduleAt(&sch, time(NULL), setupTask);
-    scheduleEvery(&sch, 60, setupTask);
+    // Schedule the setup task for now and with a periodic interval
+    Task *setup_task_task = create_task(time(NULL), setupTask, NULL, true, 60, "setup task");
+    schedule_task(&scheduler, setup_task_task);
 
-    // Schedule the accounting task with an interval of 1 minute
-    scheduleAt(&sch, time(NULL), accounting_task);
-    scheduleEvery(&sch, config.accounting_interval, accounting_task);
+    // Schedule the accountnig task for now and with the configured interval in the Config struct
+    Task *accounting_task_task = create_task(time(NULL), accounting_task, NULL, true, config.accounting_interval, "accounting task");
+    schedule_task(&scheduler, accounting_task_task);
 
-    run(&sch);
+    // Print the list of tasks
+    print_tasks(&scheduler);
+
+    run(&scheduler);
 
     clean_device_data();
     clean_state();

@@ -199,7 +199,7 @@ int start_opennds() {
     }
 }
 
-void accounting_task(int argc, char *argv[]) {
+void accounting_task() {
     // Set up paths
     int dev_env = config.dev_env;
     int accounting_enabled = config.accounting_enabled;

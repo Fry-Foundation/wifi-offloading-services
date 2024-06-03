@@ -16,12 +16,6 @@ typedef struct Task {
     // Parameters for the task function
     void *params;
 
-    // Flag for periodic tasks
-    bool periodic;
-
-    // Interval for periodic tasks
-    time_t interval;
-
     // Detail string for identifying the task
     char detail[64];
 
@@ -34,14 +28,10 @@ typedef struct Scheduler {
     Task *task_list;
 } Scheduler;
 
-Task *create_task(time_t execute_at,
-                  task_func task_function,
-                  void *params,
-                  bool periodic,
-                  time_t interval,
-                  const char *detail);
-void schedule_task(Scheduler *scheduler, Task *new_task);
-void print_tasks(Scheduler *scheduler);
-void run(Scheduler *scheduler);
+extern Scheduler scheduler;
+
+void schedule_task(time_t execute_at, task_func task_function, void *params, const char *detail);
+void print_tasks();
+void run();
 
 #endif /* SCHEDULER_H */

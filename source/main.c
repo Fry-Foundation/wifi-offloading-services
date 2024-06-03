@@ -24,26 +24,19 @@ int main(int argc, char *argv[]) {
     // @todo: should probably just initialize it with this value
     state.on_boot = 0;
 
-    Scheduler scheduler = {NULL};
-
     // Schedule an access key request for now and with the configured interval in the Config struct
-    Task *get_access_key = create_task(time(NULL), access_task, NULL, true,
-                                       config.access_task_interval, "access task");
-    schedule_task(&scheduler, get_access_key);
+    schedule_task(time(NULL), access_task, NULL, "access task");
 
     // Schedule the setup task for now and with a periodic interval
-    Task *setup_task_task = create_task(time(NULL), setupTask, NULL, true, 60, "setup task");
-    schedule_task(&scheduler, setup_task_task);
+    schedule_task(time(NULL), setupTask, NULL, "setup task");
 
     // Schedule the accountnig task for now and with the configured interval in the Config struct
-    Task *accounting_task_task = create_task(time(NULL), accounting_task, NULL, true,
-                                             config.accounting_interval, "accounting task");
-    schedule_task(&scheduler, accounting_task_task);
+    schedule_task(time(NULL), accounting_task, NULL, "accounting task");
 
     // Print the list of tasks
-    print_tasks(&scheduler);
+    print_tasks();
 
-    run(&scheduler);
+    run();
 
     clean_device_data();
     clean_state();

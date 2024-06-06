@@ -1,6 +1,6 @@
 # Define development configuration
 CONFIG_ENABLED = 1
-CONFIG_MAIN_API = http://api.wayru.tech
+CONFIG_MAIN_API = http://localhost:1337
 CONFIG_ACCOUNTING_ENABLED = 1
 CONFIG_ACCOUNTING_INTERVAL = 300
 CONFIG_ACCOUNTING_API = https://wifi.api.wayru.tech
@@ -26,7 +26,7 @@ $(info OBJECTS: $(OBJECTS))
 
 # Compiler and flags
 CC = gcc
-CFLAGS = -Wall -Wextra -std=c11 -I$(SOURCE_PATH) 
+CFLAGS = -Wall -Wextra -std=gnu11 -I$(SOURCE_PATH) 
 
 # Libraries
 LIBS = -lcurl -ljson-c -lssl -lcrypto

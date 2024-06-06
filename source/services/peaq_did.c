@@ -162,7 +162,7 @@ void post_peaq_did_create_request(char *public_key) {
     // Build request options
     PostRequestOptions post_peaq_did_options = {
         .url = create_request_url,
-        .key = access_key.key,
+        .key = access_key.public_key,
         .body = request_body,
         .filePath = NULL,
         .writeFunction = process_peaq_did_create_response,
@@ -193,7 +193,7 @@ void post_peaq_did_read_request(char *public_key) {
     // Build request options
     PostRequestOptions post_peaq_did_read_options = {
         .url = read_request_url,
-        .key = access_key.key,
+        .key = access_key.public_key,
         .body = request_body,
         .filePath = NULL,
         .writeFunction = process_peaq_did_read_response,

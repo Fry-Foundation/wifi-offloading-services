@@ -4,9 +4,9 @@
 #include <time.h>
 
 typedef struct {
-    char *key;
-    time_t created_at;
-    time_t expires_at;
+    char *public_key;
+    time_t issued_at_seconds;
+    time_t expires_at_seconds;
 } AccessKey;
 
 extern AccessKey access_key;

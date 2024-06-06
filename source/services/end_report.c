@@ -73,7 +73,7 @@ void post_end_report(json_object *mac_address_array) {
     // Request options
     PostRequestOptions post_end_report_options = {
         .url = end_report_url,
-        .key = access_key.key,
+        .key = access_key.public_key,
         .body = mac_address_json,
         .filePath = NULL,
         .writeFunction = process_end_report_response,

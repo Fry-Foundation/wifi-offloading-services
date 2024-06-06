@@ -36,8 +36,7 @@ bool read_access_key() {
     console(CONSOLE_DEBUG, "reading stored access key");
 
     char access_file_path[KEY_FILE_BUFFER_SIZE];
-    snprintf(access_file_path, sizeof(access_file_path), "%s/%s", config.data_path,
-             KEY_FILE);
+    snprintf(access_file_path, sizeof(access_file_path), "%s/%s", config.data_path, KEY_FILE);
 
     FILE *file = fopen(access_file_path, "r");
     if (file == NULL) {
@@ -47,33 +46,33 @@ bool read_access_key() {
 
     char line[512];
     char public_key[MAX_KEY_SIZE];
-    char created_at[MAX_TIMESTAMP_SIZE];
-    char expires_at[MAX_TIMESTAMP_SIZE];
+    char issued_at_seconds[MAX_TIMESTAMP_SIZE];
+    char expires_at_seconds[MAX_TIMESTAMP_SIZE];
 
     while (fgets(line, sizeof(line), file)) {
         if (strncmp(line, "public_key", 10) == 0) {
             // Subtract the length of "public_key" from the total length
             size_t key_length = strlen(line) - 11;
-            access_key.key = malloc(key_length + 1);
-            if (access_key.key == NULL) {
+            access_key.public_key = malloc(key_length + 1);
+            if (access_key.public_key == NULL) {
                 console(CONSOLE_ERROR, "failed to allocate memory for key");
                 fclose(file);
                 return false;
             }
 
-            strcpy(access_key.key, line + 11);
-            access_key.key[key_length] = '\0';
-        } else if (strncmp(line, "created_at", 10) == 0) {
-            sscanf(line, "created_at %s", created_at);
-        } else if (strncmp(line, "expires_at", 10) == 0) {
-            sscanf(line, "expires_at %s", expires_at);
+            strcpy(access_key.public_key, line + 11);
+            access_key.public_key[key_length] = '\0';
+        } else if (strncmp(line, "issued_at_seconds", 10) == 0) {
+            sscanf(line, "issued_at_seconds %s", issued_at_seconds);
+        } else if (strncmp(line, "expires_at_seconds", 10) == 0) {
+            sscanf(line, "expires_at_seconds %s", expires_at_seconds);
         }
     }
 
     fclose(file);
 
-    access_key.created_at = convert_to_time_t(created_at);
-    access_key.expires_at = convert_to_time_t(expires_at);
+    access_key.issued_at_seconds = convert_to_time_t(issued_at_seconds);
+    access_key.expires_at_seconds = convert_to_time_t(expires_at_seconds);
 
     return true;
 }
@@ -82,8 +81,7 @@ void write_access_key() {
     console(CONSOLE_DEBUG, "writing new access key");
 
     char access_file_path[KEY_FILE_BUFFER_SIZE];
-    snprintf(access_file_path, sizeof(access_file_path), "%s/%s", config.data_path,
-             KEY_FILE);
+    snprintf(access_file_path, sizeof(access_file_path), "%s/%s", config.data_path, KEY_FILE);
 
     FILE *file = fopen(access_file_path, "w");
     if (file == NULL) {
@@ -91,9 +89,9 @@ void write_access_key() {
         return;
     }
 
-    fprintf(file, "public_key %s\n", access_key.key);
-    fprintf(file, "created_at %ld\n", access_key.created_at);
-    fprintf(file, "expires_at %ld\n", access_key.expires_at);
+    fprintf(file, "public_key %s\n", access_key.public_key);
+    fprintf(file, "issued_at_seconds %ld\n", access_key.issued_at_seconds);
+    fprintf(file, "expires_at_seconds %ld\n", access_key.expires_at_seconds);
 
     fclose(file);
 }
@@ -119,17 +117,14 @@ void write_access_key() {
 
 size_t process_access_key_response(char *ptr, size_t size, size_t nmemb, void *userdata) {
     size_t realsize = size * nmemb;
-    AccessKey *access_key = (AccessKey *)userdata;
 
     console(CONSOLE_DEBUG, "received access key JSON data");
 
     // Parse JSON
     struct json_object *parsed_response;
     struct json_object *public_key;
-    struct json_object *status;
-    struct json_object *payload;
-    struct json_object *iat;
-    struct json_object *exp;
+    struct json_object *issued_at_seconds;
+    struct json_object *expires_at_seconds;
 
     parsed_response = json_tokener_parse(ptr);
     if (parsed_response == NULL) {
@@ -145,20 +140,14 @@ size_t process_access_key_response(char *ptr, size_t size, size_t nmemb, void *u
         console(CONSOLE_ERROR, "publicKey field missing or invalid");
         error_occurred = true;
     }
-    if (!json_object_object_get_ex(parsed_response, "status", &status)) {
-        console(CONSOLE_ERROR, "status field missing or invalid");
+
+    if (!json_object_object_get_ex(parsed_response, "issuedAtSeconds", &issued_at_seconds)) {
+        console(CONSOLE_ERROR, "issuedAtSeconds field missing or invalid in payload");
         error_occurred = true;
     }
-    if (!json_object_object_get_ex(parsed_response, "payload", &payload)) {
-        console(CONSOLE_ERROR, "payload field missing or invalid");
-        error_occurred = true;
-    }
-    if (payload && !json_object_object_get_ex(payload, "iat", &iat)) {
-        console(CONSOLE_ERROR, "iat field missing or invalid in payload");
-        error_occurred = true;
-    }
-    if (payload && !json_object_object_get_ex(payload, "exp", &exp)) {
-        console(CONSOLE_ERROR, "exp field missing or invalid in payload");
+
+    if (!json_object_object_get_ex(parsed_response, "expiresAtSeconds", &expires_at_seconds)) {
+        console(CONSOLE_ERROR, "expiresAtSeconds field missing or invalid in payload");
         error_occurred = true;
     }
 
@@ -167,16 +156,11 @@ size_t process_access_key_response(char *ptr, size_t size, size_t nmemb, void *u
         return realsize;
     }
 
-    access_key->key =
+    access_key.public_key =
         malloc(strlen(json_object_get_string(public_key)) + 1); // +1 for null-terminator
-    strcpy(access_key->key, json_object_get_string(public_key));
-    access_key->created_at = json_object_get_int64(iat);
-    access_key->expires_at = json_object_get_int64(exp);
-
-    char *status_value = malloc(strlen(json_object_get_string(status)) + 1);
-    strcpy(status_value, json_object_get_string(status));
-    console(CONSOLE_DEBUG, "status: %s", status_value);
-    // process_access_status(status_value);
+    strcpy(access_key.public_key, json_object_get_string(public_key));
+    access_key.issued_at_seconds = json_object_get_int64(issued_at_seconds);
+    access_key.expires_at_seconds = json_object_get_int64(expires_at_seconds);
 
     json_object_put(parsed_response);
     return realsize;
@@ -187,7 +171,7 @@ bool check_access_key_near_expiration() {
     time_t now;
     time(&now);
 
-    if (difftime(access_key.expires_at, now) <= 600) {
+    if (difftime(access_key.expires_at_seconds, now) <= 600) {
         console(CONSOLE_DEBUG, "key is near expiration");
         return true;
     } else {
@@ -228,7 +212,7 @@ int request_access_key() {
                                   .filePath = NULL,
                                   .key = NULL,
                                   .writeFunction = process_access_key_response,
-                                  .writeData = access_key.key};
+                                  .writeData = access_key.public_key};
 
     int result_post = performHttpPost(&options);
     json_object_put(json_data);
@@ -323,9 +307,9 @@ void access_task() {
 }
 
 void init_access_service() {
-    access_key.key = NULL;
-    access_key.created_at = 0;
-    access_key.expires_at = 0;
+    access_key.public_key = NULL;
+    access_key.issued_at_seconds = 0;
+    access_key.expires_at_seconds = 0;
 
     if (read_access_key()) {
         if (check_access_key_near_expiration()) {
@@ -342,8 +326,8 @@ void init_access_service() {
 }
 
 void clean_access_service() {
-    if (access_key.key != NULL) {
-        free(access_key.key);
-        access_key.key = NULL;
+    if (access_key.public_key != NULL) {
+        free(access_key.public_key);
+        access_key.public_key = NULL;
     }
 }

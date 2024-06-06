@@ -63,8 +63,7 @@ void post_end_report(json_object *mac_address_array) {
 
     // Build end report url
     char end_report_url[256];
-    snprintf(end_report_url, sizeof(end_report_url), "%s%s", config.accounting_api,
-             END_REPORT_ENDPOINT);
+    snprintf(end_report_url, sizeof(end_report_url), "%s%s", config.accounting_api, END_REPORT_ENDPOINT);
     console(CONSOLE_DEBUG, "end_report_url: %s", end_report_url);
 
     // Stringify the JSON
@@ -106,8 +105,7 @@ void end_report_task() {
     json_object *mac_address_array = load_end_report(end_report_path);
 
     if (mac_address_array != NULL) {
-        console(CONSOLE_DEBUG, "loaded MAC addresses:\n%s",
-                json_object_to_json_string(mac_address_array));
+        console(CONSOLE_DEBUG, "loaded MAC addresses:\n%s", json_object_to_json_string(mac_address_array));
 
         // Post to server
         post_end_report(mac_address_array);

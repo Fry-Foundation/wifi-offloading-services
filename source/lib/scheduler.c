@@ -36,8 +36,7 @@ void schedule_task(time_t execute_at, task_func task_function, void *params, con
     // Insert task at the beginning of the list if:
     // - Task list is empty
     // - Execution time is earlier than the first task's execution time
-    if (!scheduler.task_list ||
-        difftime(scheduler.task_list->execute_at, new_task->execute_at) > 0) {
+    if (!scheduler.task_list || difftime(scheduler.task_list->execute_at, new_task->execute_at) > 0) {
         new_task->next = scheduler.task_list;
         scheduler.task_list = new_task;
         return;

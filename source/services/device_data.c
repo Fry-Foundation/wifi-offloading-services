@@ -167,8 +167,8 @@ DeviceInfo get_device_info() {
     // Free the JSON object
     json_object_put(parsed_json);
 
-    console(CONSOLE_DEBUG, "device identifiers are: %s, %s, %s", device_info.name,
-            device_info.brand, device_info.model);
+    console(CONSOLE_DEBUG, "device identifiers are: %s, %s, %s", device_info.name, device_info.brand,
+            device_info.model);
 
     return device_info;
 }

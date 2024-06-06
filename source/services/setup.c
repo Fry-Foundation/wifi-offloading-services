@@ -53,8 +53,7 @@ void completeSetup() {
 
     // Build setup complete URL
     char setup_complete_url[256];
-    snprintf(setup_complete_url, sizeof(setup_complete_url), "%s%s", config.main_api,
-             SETUP_COMPLETE_ENDPOINT);
+    snprintf(setup_complete_url, sizeof(setup_complete_url), "%s%s", config.main_api, SETUP_COMPLETE_ENDPOINT);
     console(CONSOLE_DEBUG, "setup_complete_url: %s", setup_complete_url);
 
     PostRequestOptions completeSetupOptions = {

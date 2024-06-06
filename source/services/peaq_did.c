@@ -19,8 +19,7 @@ char *read_private_key() {
     console(CONSOLE_DEBUG, "reading peaq private key");
 
     char privkey_file_path[256];
-    snprintf(privkey_file_path, sizeof(privkey_file_path), "%s/%s", config.data_path,
-             PRIVKEY_FILE_NAME);
+    snprintf(privkey_file_path, sizeof(privkey_file_path), "%s/%s", config.data_path, PRIVKEY_FILE_NAME);
 
     FILE *file = fopen(privkey_file_path, "r");
     if (file == NULL) {
@@ -46,8 +45,7 @@ char *read_public_key() {
     console(CONSOLE_DEBUG, "reading peaq public key");
 
     char pubkey_file_path[256];
-    snprintf(pubkey_file_path, sizeof(pubkey_file_path), "%s/%s", config.data_path,
-             PUBKEY_FILE_NAME);
+    snprintf(pubkey_file_path, sizeof(pubkey_file_path), "%s/%s", config.data_path, PUBKEY_FILE_NAME);
 
     FILE *file = fopen(pubkey_file_path, "r");
     if (file == NULL) {
@@ -147,8 +145,7 @@ size_t process_peaq_did_read_response(char *ptr, size_t size, size_t nmemb, void
 void post_peaq_did_create_request(char *public_key) {
     // Build peaq ID URL
     char create_request_url[256];
-    snprintf(create_request_url, sizeof(create_request_url), "%s%s", config.main_api,
-             PEAQ_DID_CREATE_ENDPOINT);
+    snprintf(create_request_url, sizeof(create_request_url), "%s%s", config.main_api, PEAQ_DID_CREATE_ENDPOINT);
 
     // Build body
     char body[512];
@@ -179,8 +176,7 @@ void post_peaq_did_create_request(char *public_key) {
 void post_peaq_did_read_request(char *public_key) {
     // Build request URL
     char read_request_url[256];
-    snprintf(read_request_url, sizeof(read_request_url), "%s%s", config.main_api,
-             PEAQ_DID_READ_ENDPOINT);
+    snprintf(read_request_url, sizeof(read_request_url), "%s%s", config.main_api, PEAQ_DID_READ_ENDPOINT);
 
     // Build body
     char body[512];

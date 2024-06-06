@@ -46,8 +46,7 @@ void deauthenticate_session(const char *client_mac_address) {
     console(CONSOLE_DEBUG, "deauthenticating session %s", client_mac_address);
 
     char script_file[256];
-    snprintf(script_file, sizeof(script_file), "%s%s %s", scripts_path, "/nds-deauth.sh",
-             client_mac_address);
+    snprintf(script_file, sizeof(script_file), "%s%s %s", scripts_path, "/nds-deauth.sh", client_mac_address);
 
     char *deauthenticate_output = run_script(script_file);
     console(CONSOLE_DEBUG, "deauthenticate result -> %s", deauthenticate_output);
@@ -101,8 +100,7 @@ size_t process_accounting_response(char *ptr, size_t size, size_t nmemb, void *u
 void post_accounting_update(char *opennds_clients_data) {
     // Build accounting URL
     char accounting_url[256];
-    snprintf(accounting_url, sizeof(accounting_url), "%s%s", config.accounting_api,
-             ACCOUNTING_ENDPOINT);
+    snprintf(accounting_url, sizeof(accounting_url), "%s%s", config.accounting_api, ACCOUNTING_ENDPOINT);
 
     console(CONSOLE_DEBUG, "accounting_url: %s", accounting_url);
     console(CONSOLE_DEBUG, "posting accounting update");
@@ -152,8 +150,7 @@ int stop_opennds() {
 
     int status = pclose(fp);
     if (status == -1) {
-        console(CONSOLE_ERROR,
-                "failed to close opennds stop command; we could have a memory issue!");
+        console(CONSOLE_ERROR, "failed to close opennds stop command; we could have a memory issue!");
         return -1;
     } else if (WIFEXITED(status)) {
         int exit_status = WEXITSTATUS(status);
@@ -161,8 +158,7 @@ int stop_opennds() {
             console(CONSOLE_DEBUG, "openNDS stop command executed successfully");
             return 0;
         } else {
-            console(CONSOLE_ERROR, "error executing the opennds stop command; exit code: %d",
-                    exit_status);
+            console(CONSOLE_ERROR, "error executing the opennds stop command; exit code: %d", exit_status);
             return exit_status;
         }
     } else {
@@ -190,8 +186,7 @@ int start_opennds() {
             console(CONSOLE_DEBUG, "Opennds start command executed successfully.");
             return 0;
         } else {
-            console(CONSOLE_DEBUG, "Error executing the opennds start command. Exit code: %d",
-                    exit_status);
+            console(CONSOLE_DEBUG, "Error executing the opennds start command. Exit code: %d", exit_status);
             return exit_status;
         }
     } else {

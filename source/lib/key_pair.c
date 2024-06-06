@@ -16,11 +16,9 @@ bool generate_key_pair(char *public_key_filename, char *private_key_filename) {
     char private_key_path[KEY_PATH_SIZE];
     char public_key_path[KEY_PATH_SIZE];
 
-    snprintf(private_key_path, sizeof(private_key_path), "%s/%s", config.data_path,
-             private_key_filename);
+    snprintf(private_key_path, sizeof(private_key_path), "%s/%s", config.data_path, private_key_filename);
 
-    snprintf(public_key_path, sizeof(public_key_path), "%s/%s", config.data_path,
-             public_key_filename);
+    snprintf(public_key_path, sizeof(public_key_path), "%s/%s", config.data_path, public_key_filename);
 
     console(CONSOLE_INFO, "priv key filename %s", private_key_path);
     console(CONSOLE_INFO, "pub key filename %s", public_key_path);

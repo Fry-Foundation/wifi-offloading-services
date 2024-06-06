@@ -16,16 +16,13 @@ int main(int argc, char *argv[]) {
     // Init
     init_config(argc, argv);
     init_device_data();
-    AccessKey *access_key = init_access_key();
-    init_state(0, access_key);
+    init_state(0);
+    init_access_service();
 
     // We use this to tell the backend the device has just booted up
     // Sent on the first status request
     // @todo: should probably just initialize it with this value
     state.on_boot = 0;
-
-    // Schedule an access key request for now and with the configured interval in the Config struct
-    schedule_task(time(NULL), access_task, NULL, "access task");
 
     // Schedule the setup task for now and with a periodic interval
     schedule_task(time(NULL), setupTask, NULL, "setup task");
@@ -39,7 +36,7 @@ int main(int argc, char *argv[]) {
     run();
 
     clean_device_data();
-    clean_state();
+    clean_access_service();
 
     return 0;
 }

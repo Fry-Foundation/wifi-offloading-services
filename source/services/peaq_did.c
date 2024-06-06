@@ -1,9 +1,10 @@
 #include "peaq_did.h"
-#include "config.h"
 #include "lib/console.h"
 #include "lib/key_pair.h"
 #include "lib/requests.h"
-#include "state.h"
+#include "services/access.h"
+#include "services/config.h"
+#include "services/state.h"
 #include <json-c/json.h>
 #include <stdbool.h>
 
@@ -161,7 +162,7 @@ void post_peaq_did_create_request(char *public_key) {
     // Build request options
     PostRequestOptions post_peaq_did_options = {
         .url = create_request_url,
-        .key = state.access_key->key,
+        .key = access_key.key,
         .body = request_body,
         .filePath = NULL,
         .writeFunction = process_peaq_did_create_response,
@@ -192,7 +193,7 @@ void post_peaq_did_read_request(char *public_key) {
     // Build request options
     PostRequestOptions post_peaq_did_read_options = {
         .url = read_request_url,
-        .key = state.access_key->key,
+        .key = access_key.key,
         .body = request_body,
         .filePath = NULL,
         .writeFunction = process_peaq_did_read_response,

@@ -5,10 +5,8 @@
 
 State state;
 
-void init_state(int mode, AccessKey *access_key) {
+void init_state(int mode) {
     state.mode = mode;
-
-    state.access_key = access_key;
 
     state.access_status = 0;
 
@@ -23,11 +21,4 @@ void init_state(int mode, AccessKey *access_key) {
     // @todo: set this based on what the backend knows about the setup request
     // we are setting it to peaq for DID experiments (for now)
     state.chain = 1;
-}
-
-void clean_state() {
-    if (state.access_key != NULL) {
-        free(state.access_key->key);
-        free(state.access_key);
-    }
 }

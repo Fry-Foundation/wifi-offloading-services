@@ -9,9 +9,6 @@ typedef struct {
     // 1 - operator
     int mode;
 
-    // Access key
-    AccessKey *access_key;
-
     // Access status
     // 0 - initial
     // 1 - setup-pending
@@ -42,7 +39,7 @@ typedef struct {
 
 extern State state;
 
-void init_state(int mode, AccessKey *access_key);
+void init_state(int mode);
 
 void clean_state();
 

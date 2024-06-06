@@ -1,8 +1,9 @@
 #include "setup.h"
-#include "config.h"
 #include "lib/console.h"
 #include "lib/requests.h"
-#include "state.h"
+#include "services/access.h"
+#include "services/config.h"
+#include "services/state.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,7 +15,7 @@
 // If no setup request exists, create one
 void requestSetup() {
     console(CONSOLE_DEBUG, "Request setup");
-    console(CONSOLE_DEBUG, "Access key: %s", state.access_key->key);
+    console(CONSOLE_DEBUG, "Access key: %s", access_key.key);
 
     // Build setup URL
     char setup_url[256];
@@ -24,7 +25,7 @@ void requestSetup() {
     // Request options
     PostRequestOptions requestSetup = {
         .url = setup_url,
-        .key = state.access_key->key,
+        .key = access_key.key,
         .body = NULL,
         .filePath = NULL,
         .writeFunction = NULL,
@@ -43,12 +44,12 @@ void requestSetup() {
 // void checkApprovedSetup()
 // {
 //     console(CONSOLE_DEBUG, "Not yet implemented - Check if the setup has been approved");
-//     console(CONSOLE_DEBUG, "Not yet implemented - Access key: %s", state.access_key->key);
+//     console(CONSOLE_DEBUG, "Not yet implemented - Access key: %s", access_key.key);
 // }
 
 void completeSetup() {
     console(CONSOLE_DEBUG, "complete setup");
-    console(CONSOLE_DEBUG, "access key: %s", state.access_key->key);
+    console(CONSOLE_DEBUG, "access key: %s", access_key.key);
 
     // Build setup complete URL
     char setup_complete_url[256];
@@ -58,7 +59,7 @@ void completeSetup() {
 
     PostRequestOptions completeSetupOptions = {
         .url = setup_complete_url,
-        .key = state.access_key->key,
+        .key = access_key.key,
         .body = NULL,
         .filePath = NULL,
         .writeFunction = NULL,

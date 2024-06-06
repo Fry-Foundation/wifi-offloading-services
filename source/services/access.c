@@ -1,12 +1,12 @@
 #include "access.h"
-#include "config.h"
-#include "device_data.h"
 #include "lib/console.h"
 #include "lib/requests.h"
+#include "lib/scheduler.h"
 #include "lib/script_runner.h"
-#include "peaq_did.h"
-#include "setup.h"
-#include "state.h"
+#include "services/config.h"
+#include "services/device_data.h"
+#include "services/setup.h"
+#include "services/state.h"
 #include <json-c/json.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -15,40 +15,34 @@
 #include <time.h>
 #include <unistd.h>
 
-#define KEY_FILE "/data/access-key"
+#define KEY_FILE "access-key"
 #define KEY_FILE_BUFFER_SIZE 768
 #define REQUEST_BODY_BUFFER_SIZE 256
 #define MAX_KEY_SIZE 512
 #define MAX_TIMESTAMP_SIZE 256
-#define ACCESS_ENDPOINT "/api/nfnode/access"
+#define ACCESS_ENDPOINT "/api/nfnode/access-v2"
 #define SCRIPTS_PATH "/etc/wayru-os-services/scripts"
+
+AccessKey access_key = {NULL};
 
 time_t convert_to_time_t(char *timestamp_str) {
     long long int epoch = strtoll(timestamp_str, NULL, 10);
     return (time_t)epoch;
 }
 
-AccessKey *init_access_key() {
-    AccessKey *access_key = malloc(sizeof(AccessKey));
-    access_key->key = NULL;
-    access_key->created_at = 0;
-    access_key->expires_at = 0;
-
-    read_access_key(access_key);
-
-    return access_key;
-}
-
-int read_access_key(AccessKey *access_key) {
+// @todo When opening fails, check if the file exists and create it
+// @todo When memory allocation fails, try allocating memory at a different time or panic?
+bool read_access_key() {
     console(CONSOLE_DEBUG, "reading stored access key");
 
-    char key_file_path[KEY_FILE_BUFFER_SIZE];
-    snprintf(key_file_path, sizeof(key_file_path), "%s%s", config.active_path, KEY_FILE);
+    char access_file_path[KEY_FILE_BUFFER_SIZE];
+    snprintf(access_file_path, sizeof(access_file_path), "%s/%s", config.data_path,
+             KEY_FILE);
 
-    FILE *file = fopen(key_file_path, "r");
+    FILE *file = fopen(access_file_path, "r");
     if (file == NULL) {
         console(CONSOLE_ERROR, "failed to open key file");
-        return 0;
+        return false;
     }
 
     char line[512];
@@ -60,14 +54,15 @@ int read_access_key(AccessKey *access_key) {
         if (strncmp(line, "public_key", 10) == 0) {
             // Subtract the length of "public_key" from the total length
             size_t key_length = strlen(line) - 11;
-            access_key->key = malloc(key_length + 1);
-            if (access_key->key == NULL) {
+            access_key.key = malloc(key_length + 1);
+            if (access_key.key == NULL) {
                 console(CONSOLE_ERROR, "failed to allocate memory for key");
                 fclose(file);
-                return 0;
+                return false;
             }
-            strcpy(access_key->key, line + 11);
-            access_key->key[key_length] = '\0';
+
+            strcpy(access_key.key, line + 11);
+            access_key.key[key_length] = '\0';
         } else if (strncmp(line, "created_at", 10) == 0) {
             sscanf(line, "created_at %s", created_at);
         } else if (strncmp(line, "expires_at", 10) == 0) {
@@ -77,49 +72,50 @@ int read_access_key(AccessKey *access_key) {
 
     fclose(file);
 
-    access_key->created_at = convert_to_time_t(created_at);
-    access_key->expires_at = convert_to_time_t(expires_at);
+    access_key.created_at = convert_to_time_t(created_at);
+    access_key.expires_at = convert_to_time_t(expires_at);
 
-    return 1;
+    return true;
 }
 
-void write_access_key(AccessKey *access_key) {
+void write_access_key() {
     console(CONSOLE_DEBUG, "writing new access key");
 
-    char keyFile[KEY_FILE_BUFFER_SIZE];
-    snprintf(keyFile, sizeof(keyFile), "%s%s", config.active_path, KEY_FILE);
+    char access_file_path[KEY_FILE_BUFFER_SIZE];
+    snprintf(access_file_path, sizeof(access_file_path), "%s/%s", config.data_path,
+             KEY_FILE);
 
-    FILE *file = fopen(keyFile, "w");
+    FILE *file = fopen(access_file_path, "w");
     if (file == NULL) {
         console(CONSOLE_DEBUG, "Unable to open file for writing");
         return;
     }
 
-    fprintf(file, "public_key %s\n", access_key->key);
-    fprintf(file, "created_at %ld\n", access_key->created_at);
-    fprintf(file, "expires_at %ld\n", access_key->expires_at);
+    fprintf(file, "public_key %s\n", access_key.key);
+    fprintf(file, "created_at %ld\n", access_key.created_at);
+    fprintf(file, "expires_at %ld\n", access_key.expires_at);
 
     fclose(file);
 }
 
-void process_access_status(char *status) {
-    console(CONSOLE_DEBUG, "Processing access status");
-    if (strcmp(status, "initial") == 0) {
-        state.access_status = 0;
-    } else if (strcmp(status, "setup-pending") == 0) {
-        state.access_status = 1;
-    } else if (strcmp(status, "setup-approved") == 0) {
-        state.access_status = 2;
-    } else if (strcmp(status, "mint-pending") == 0) {
-        state.access_status = 3;
-    } else if (strcmp(status, "ready") == 0) {
-        state.access_status = 4;
-    } else if (strcmp(status, "banned") == 0) {
-        state.access_status = 5;
-    } else {
-        console(CONSOLE_DEBUG, "Unknown access status: %s", status);
-    }
-}
+// void process_access_status(char *status) {
+//     console(CONSOLE_DEBUG, "Processing access status");
+//     if (strcmp(status, "initial") == 0) {
+//         state.access_status = 0;
+//     } else if (strcmp(status, "setup-pending") == 0) {
+//         state.access_status = 1;
+//     } else if (strcmp(status, "setup-approved") == 0) {
+//         state.access_status = 2;
+//     } else if (strcmp(status, "mint-pending") == 0) {
+//         state.access_status = 3;
+//     } else if (strcmp(status, "ready") == 0) {
+//         state.access_status = 4;
+//     } else if (strcmp(status, "banned") == 0) {
+//         state.access_status = 5;
+//     } else {
+//         console(CONSOLE_DEBUG, "Unknown access status: %s", status);
+//     }
+// }
 
 size_t process_access_key_response(char *ptr, size_t size, size_t nmemb, void *userdata) {
     size_t realsize = size * nmemb;
@@ -180,27 +176,27 @@ size_t process_access_key_response(char *ptr, size_t size, size_t nmemb, void *u
     char *status_value = malloc(strlen(json_object_get_string(status)) + 1);
     strcpy(status_value, json_object_get_string(status));
     console(CONSOLE_DEBUG, "status: %s", status_value);
-    process_access_status(status_value);
+    // process_access_status(status_value);
 
     json_object_put(parsed_response);
     return realsize;
 }
 
-int check_access_key_near_expiration(AccessKey *access_key) {
+bool check_access_key_near_expiration() {
     console(CONSOLE_DEBUG, "checking if key is near expiration");
     time_t now;
     time(&now);
 
-    if (difftime(access_key->expires_at, now) <= 600) {
+    if (difftime(access_key.expires_at, now) <= 600) {
         console(CONSOLE_DEBUG, "key is near expiration");
-        return 1;
+        return true;
     } else {
         console(CONSOLE_DEBUG, "key is not near expiration");
-        return 0;
+        return false;
     }
 }
 
-int request_access_key(AccessKey *access_key) {
+int request_access_key() {
     console(CONSOLE_DEBUG, "request access key");
 
     json_object *json_data = json_object_new_object();
@@ -232,7 +228,7 @@ int request_access_key(AccessKey *access_key) {
                                   .filePath = NULL,
                                   .key = NULL,
                                   .writeFunction = process_access_key_response,
-                                  .writeData = access_key};
+                                  .writeData = access_key.key};
 
     int result_post = performHttpPost(&options);
     json_object_put(json_data);
@@ -246,81 +242,108 @@ int request_access_key(AccessKey *access_key) {
     }
 };
 
-void disable_default_wireless_network() {
-    if (config.dev_env) {
-        console(CONSOLE_DEBUG, "not disabling default wireless network in dev environment");
-        return;
-    }
+// void disable_default_wireless_network() {
+//     if (config.dev_env) {
+//         console(CONSOLE_DEBUG, "not disabling default wireless network in dev environment");
+//         return;
+//     }
+//
+//     if (state.already_disabled_wifi == 1) {
+//         console(CONSOLE_DEBUG, "default wireless network already disabled");
+//         return;
+//     }
+//
+//     console(CONSOLE_DEBUG, "disabling default wireless network");
+//
+//     char script_file[256];
+//     snprintf(script_file, sizeof(script_file), "%s%s", SCRIPTS_PATH,
+//              "/disable-default-wireless.sh");
+//
+//     char *disable_output = run_script(script_file);
+//     console(CONSOLE_DEBUG, "disable_output: %s", disable_output);
+//
+//     state.already_disabled_wifi = 1;
+//
+//     free(disable_output);
+//     sleep(10); // Wait for the network to be disabled
+// }
 
-    if (state.already_disabled_wifi == 1) {
-        console(CONSOLE_DEBUG, "default wireless network already disabled");
-        return;
-    }
-
-    console(CONSOLE_DEBUG, "disabling default wireless network");
-
-    char script_file[256];
-    snprintf(script_file, sizeof(script_file), "%s%s", SCRIPTS_PATH,
-             "/disable-default-wireless.sh");
-
-    char *disable_output = run_script(script_file);
-    console(CONSOLE_DEBUG, "disable_output: %s", disable_output);
-
-    state.already_disabled_wifi = 1;
-
-    free(disable_output);
-    sleep(10); // Wait for the network to be disabled
-}
-
-void configure_with_access_status(int access_status) {
-    console(CONSOLE_DEBUG, "configuring with access status");
-    if (access_status == 0) {
-        console(CONSOLE_DEBUG, "access status is 'initial'");
-        state.setup = 1;
-        state.accounting = 0;
-        // stop_opennds();
-    } else if (access_status == 1) {
-        console(CONSOLE_DEBUG, "access status is 'setup-pending'");
-        state.setup = 0;
-        state.accounting = 0;
-        // stop_opennds();
-    } else if (access_status == 2) {
-        console(CONSOLE_DEBUG, "access status is 'setup-approved'");
-        state.setup = 0;
-        state.accounting = 0;
-        completeSetup();
-        // stop_opennds();
-    } else if (access_status == 3) {
-        console(CONSOLE_DEBUG, "access status is 'mint-pending'");
-        state.setup = 0;
-        state.accounting = 0;
-        // stop_opennds();
-    } else if (access_status == 4) {
-        console(CONSOLE_DEBUG, "access status is 'ready'");
-        state.setup = 0;
-        state.accounting = 1;
-
-        // disable_default_wireless_network();
-        // start_opennds();
-
-        // peaq_id_task();
-    } else if (access_status == 5) {
-        console(CONSOLE_DEBUG, "access status is 'banned'");
-        state.setup = 0;
-        state.accounting = 1;
-        // stop_opennds();
-    }
-}
+// void configure_with_access_status(int access_status) {
+//     console(CONSOLE_DEBUG, "configuring with access status");
+//     if (access_status == 0) {
+//         console(CONSOLE_DEBUG, "access status is 'initial'");
+//         state.setup = 1;
+//         state.accounting = 0;
+//         // stop_opennds();
+//     } else if (access_status == 1) {
+//         console(CONSOLE_DEBUG, "access status is 'setup-pending'");
+//         state.setup = 0;
+//         state.accounting = 0;
+//         // stop_opennds();
+//     } else if (access_status == 2) {
+//         console(CONSOLE_DEBUG, "access status is 'setup-approved'");
+//         state.setup = 0;
+//         state.accounting = 0;
+//         completeSetup();
+//         // stop_opennds();
+//     } else if (access_status == 3) {
+//         console(CONSOLE_DEBUG, "access status is 'mint-pending'");
+//         state.setup = 0;
+//         state.accounting = 0;
+//         // stop_opennds();
+//     } else if (access_status == 4) {
+//         console(CONSOLE_DEBUG, "access status is 'ready'");
+//         state.setup = 0;
+//         state.accounting = 1;
+//
+//         // disable_default_wireless_network();
+//         // start_opennds();
+//
+//         // peaq_id_task();
+//     } else if (access_status == 5) {
+//         console(CONSOLE_DEBUG, "access status is 'banned'");
+//         state.setup = 0;
+//         state.accounting = 1;
+//         // stop_opennds();
+//     }
+// }
 
 void access_task() {
     console(CONSOLE_DEBUG, "access task");
 
-    int is_expired = check_access_key_near_expiration(state.access_key);
-    if (is_expired == 1 || state.access_key->key == NULL) {
-        request_access_key(state.access_key);
-        write_access_key(state.access_key);
-        configure_with_access_status(state.access_status);
+    if (check_access_key_near_expiration()) {
+        request_access_key();
+        write_access_key();
     } else {
         console(CONSOLE_DEBUG, "key is still valid");
+    }
+
+    // Schedule the next key request
+    schedule_task(time(NULL) + config.access_task_interval, access_task, NULL, "access task");
+}
+
+void init_access_service() {
+    access_key.key = NULL;
+    access_key.created_at = 0;
+    access_key.expires_at = 0;
+
+    if (read_access_key()) {
+        if (check_access_key_near_expiration()) {
+            request_access_key();
+            write_access_key();
+        }
+    } else {
+        request_access_key();
+        write_access_key();
+    }
+
+    // Schedule the next key request
+    schedule_task(time(NULL) + config.access_task_interval, access_task, NULL, "access task");
+}
+
+void clean_access_service() {
+    if (access_key.key != NULL) {
+        free(access_key.key);
+        access_key.key = NULL;
     }
 }

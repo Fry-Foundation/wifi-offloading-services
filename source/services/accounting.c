@@ -1,8 +1,9 @@
 #include "accounting.h"
-#include "config.h"
 #include "lib/console.h"
 #include "lib/requests.h"
 #include "lib/script_runner.h"
+#include "services/access.h"
+#include "services/config.h"
 #include "state.h"
 #include <json-c/json.h>
 #include <stdio.h>
@@ -109,7 +110,7 @@ void post_accounting_update(char *opennds_clients_data) {
     // Request options
     PostRequestOptions post_accounting_options = {
         .url = accounting_url,
-        .key = state.access_key->key,
+        .key = access_key.key,
         .body = opennds_clients_data,
         .filePath = NULL,
         .writeFunction = process_accounting_response,

@@ -9,18 +9,10 @@ typedef struct {
     time_t expires_at;
 } AccessKey;
 
-AccessKey *init_access_key();
+extern AccessKey access_key;
 
-int read_access_key(AccessKey *access_key);
+void init_access_service();
 
-void write_access_key(AccessKey *access_key);
-
-int request_access_key(AccessKey *access_key);
-
-int check_access_key_near_expiration(AccessKey *access_key);
-
-void configure_with_access_status(int access_status);
-
-void access_task();
+void clean_access_service();
 
 #endif /* ACCESS_H */

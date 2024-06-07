@@ -208,7 +208,7 @@ void accounting_task(Scheduler *sch) {
     }
 
     if (device_status != Ready) {
-        console(CONSOLE_DEBUG, "accounting is disabled by device status");
+        console(CONSOLE_DEBUG, "accounting is disabled because device is not ready");
         return;
     }
 

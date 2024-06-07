@@ -19,7 +19,7 @@ char *read_did_private_key() {
     FILE *file = fopen(privkey_file_path, "r");
     if (file == NULL) {
         console(CONSOLE_ERROR, "failed to open did privkey file");
-        return 0;
+        return NULL;
     }
 
     fseek(file, 0, SEEK_END);

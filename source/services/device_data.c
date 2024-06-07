@@ -231,12 +231,15 @@ char *get_os_name() {
 }
 
 char *get_did_public_key() {
-    // check if key is stored in key file path
-    // create key if it does not exist
-    // load public key in memory
+    // Check if key is stored in key file path
+    char *did_public_key = read_did_public_key();
+    if(did_public_key != NULL) {
+        return did_public_key;
+    }
 
-    char *did_public_key = "placeholder-key";
-    return did_public_key;
+    console(CONSOLE_DEBUG, "no did public key, generating one");
+    create_did_key_pair();
+    return read_did_public_key();
 }
 
 void init_device_data() {

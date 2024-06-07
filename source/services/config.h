@@ -16,7 +16,11 @@ typedef struct {
     bool accounting_enabled;
     int accounting_interval;
 
-    int access_task_interval;
+    int access_interval;
+
+    int device_status_interval;
+
+    int setup_interval;
 
     char active_path[PATH_SIZE];
     char scripts_path[PATH_SIZE];

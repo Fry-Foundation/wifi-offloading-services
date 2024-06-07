@@ -16,28 +16,43 @@ start_service() {
 	local accounting_enabled
 	local accounting_interval
 	local accounting_api
-	local access_task_interval
+	local access_interval
+	local device_status_interval
+	local setup_interval
 	local console_log_level
 
 	config_get enabled wayru_os_services1 enabled
-    config_get main_api wayru_os_services1 main_api
+	config_get main_api wayru_os_services1 main_api
 	config_get accounting_enabled wayru_os_services1 accounting_enabled
-    config_get accounting_interval wayru_os_services1 accounting_interval
+	config_get accounting_interval wayru_os_services1 accounting_interval
 	config_get accounting_api wayru_os_services1 accounting_api
-	config_get access_task_interval wayru_os_services1 access_task_interval
+	config_get access_interval wayru_os_services1 access_interval
+	config_get device_status_interval wayru_os_services1 device_status_interval
+	config_get setup_interval wayru_os_services1 setup_interval
 	config_get console_log_level wayru_os_services1 console_log_level
 
-	logger -t "wayru-os-services" "$enabled"
-	logger -t "wayru-os-services" "$main_api"
-	logger -t "wayru-os-services" "$accounting_enabled"
-	logger -t "wayru-os-services" "$accounting_interval"
-	logger -t "wayru-os-services" "$accounting_api"
-	logger -t "wayru-os-services" "$access_task_interval"
-	logger -t "wayru-os-services" "$console_log_level"
+	logger -t "wayru-os-services" "Enabled: $enabled"
+	logger -t "wayru-os-services" "Main API: $main_api"
+	logger -t "wayru-os-services" "Accounting Enabled: $accounting_enabled"
+	logger -t "wayru-os-services" "Accounting Interval: $accounting_interval"
+	logger -t "wayru-os-services" "Accounting API: $accounting_api"
+	logger -t "wayru-os-services" "Access Interval: $access_interval"
+	logger -t "wayru-os-services" "Device Status Interval: $device_status_interval"
+	logger -t "wayru-os-services" "Setup Interval: $setup_interval"
+	logger -t "wayru-os-services" "Console Log Level: $console_log_level"
 
 	procd_open_instance
 
-	procd_set_param command /usr/bin/wayru-os-services --config-enabled "$enabled" --config-main-api "$main_api" --config-accounting-enabled "$accounting_enabled" --config-accounting-interval "$accounting_interval" --config-accounting-api "$accounting_api" --config-access-task-interval "$access_task_interval" --config-console-log-level "$console_log_level"
+	procd_set_param command /usr/bin/wayru-os-services \
+		--config-enabled "$enabled" \
+		--config-main-api "$main_api" \
+		--config-accounting-enabled "$accounting_enabled" \
+		--config-accounting-interval "$accounting_interval" \
+		--config-accounting-api "$accounting_api" \
+		--config-access-interval "$access_interval" \
+		--config-device-status-interval "$device_status_interval" \
+		--config-setup-interval "$setup_interval" \
+		--config-console-log-level "$console_log_level"
 	procd_set_param file /etc/config/wayru-os-services
 	procd_set_param respawn 150 10 10
 	procd_set_param term_timeout 60

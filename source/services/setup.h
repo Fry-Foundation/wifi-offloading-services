@@ -1,8 +1,8 @@
 #ifndef SETUP_H
 #define SETUP_H
 
-void setupTask();
+#include "lib/scheduler.h"
 
-void completeSetup();
+void init_setup_service(Scheduler *sch);
 
 #endif // SETUP_H

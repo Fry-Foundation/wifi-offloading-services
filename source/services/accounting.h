@@ -1,9 +1,8 @@
 #ifndef ACCOUNTING_H
 #define ACCOUNTING_H
 
-void accounting_task();
-char *status_opennds();
-int stop_opennds();
-int start_opennds();
+#include "lib/scheduler.h"
+
+void init_accounting_service(Scheduler *sch);
 
 #endif // ACCOUNTING_H

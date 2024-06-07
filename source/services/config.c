@@ -14,9 +14,9 @@ void init_config(int argc, char *argv[]) {
     strcpy(config.accounting_api, "https://wifi.api.wayru.tech");
     config.accounting_enabled = true;
     config.accounting_interval = 300;
-    config.access_task_interval = 120;
-
-    printf("hi");
+    config.access_interval = 10800;
+    config.device_status_interval = 120;
+    config.setup_interval = 120;
 
     // Loop  through available daemon config parameters
     for (int i = 1; i < argc; i++) {
@@ -65,8 +65,20 @@ void init_config(int argc, char *argv[]) {
         }
 
         // Access interval
-        if (strcmp(argv[i], "--config-access-task-interval") == 0) {
-            config.access_task_interval = atoi(argv[i + 1]);
+        if (strcmp(argv[i], "--config-access-interval") == 0) {
+            config.access_interval = atoi(argv[i + 1]);
+            continue;
+        }
+
+        // Device status interval
+        if (strcmp(argv[i], "--config-device-status-interval") == 0) {
+            config.device_status_interval = atoi(argv[i + 1]);
+            continue;
+        }
+
+        // Setup interval
+        if (strcmp(argv[i], "--config-setup-interval") == 0) {
+            config.setup_interval = atoi(argv[i + 1]);
             continue;
         }
 
@@ -96,7 +108,9 @@ void init_config(int argc, char *argv[]) {
     console(CONSOLE_DEBUG, "config.accounting_api: %s", config.accounting_api);
     console(CONSOLE_DEBUG, "config.accounting_enabled: %d", config.accounting_enabled);
     console(CONSOLE_DEBUG, "config.accounting_interval: %d", config.accounting_interval);
-    console(CONSOLE_DEBUG, "config.access_task_interval: %d", config.access_task_interval);
+    console(CONSOLE_DEBUG, "config.access_interval: %d", config.access_interval);
+    console(CONSOLE_DEBUG, "config.device_status_interval: %d", config.device_status_interval);
+    console(CONSOLE_DEBUG, "config.setup_interval: %d", config.setup_interval);
     console(CONSOLE_DEBUG, "config.active_path: %s", config.active_path);
     console(CONSOLE_DEBUG, "config.scripts_path: %s", config.scripts_path);
     console(CONSOLE_DEBUG, "config.data_path: %s", config.data_path);

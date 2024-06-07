@@ -1,9 +1,11 @@
 #include "accounting.h"
+#include "lib/scheduler.h"
 #include "lib/console.h"
 #include "lib/requests.h"
 #include "lib/script_runner.h"
 #include "services/access.h"
 #include "services/config.h"
+#include "services/device_status.h"
 #include "state.h"
 #include <json-c/json.h>
 #include <stdio.h>
@@ -195,11 +197,20 @@ int start_opennds() {
     }
 }
 
-void accounting_task() {
+void accounting_task(Scheduler *sch) {
     // Set up paths
     int dev_env = config.dev_env;
     int accounting_enabled = config.accounting_enabled;
-    console(CONSOLE_DEBUG, "dev_env: %d", dev_env);
+    
+    if (accounting_enabled == 0) {
+        console(CONSOLE_DEBUG, "accounting is disabled by config params (maybe this device doesn't run the captive portal)");
+        return;
+    }
+
+    if (device_status != Ready) {
+        console(CONSOLE_DEBUG, "accounting is disabled by device status");
+        return;
+    }
 
     // Set up paths
     char base_path[256];
@@ -210,20 +221,6 @@ void accounting_task() {
         strncpy(base_path, OPENWRT_PATH, sizeof(base_path));
         base_path[sizeof(base_path) - 1] = '\0'; // Ensure null termination
     }
-    snprintf(scripts_path, sizeof(scripts_path), "%s%s", base_path, "/scripts");
-    console(CONSOLE_DEBUG, "scripts_path: %s", scripts_path);
-
-    if (state.accounting != 1) {
-        console(CONSOLE_DEBUG, "accounting is disabled by access status");
-        return;
-    }
-
-    if (accounting_enabled == 0) {
-        console(CONSOLE_DEBUG, "accounting is disabled / This device doesn't run captive portal");
-        return;
-    }
-
-    console(CONSOLE_DEBUG, "accounting task");
 
     char *opennds_clients_data = query_opennds();
     if (opennds_clients_data == NULL) {
@@ -234,4 +231,10 @@ void accounting_task() {
     post_accounting_update(opennds_clients_data);
 
     free(opennds_clients_data);
+
+    schedule_task(&sch, time(NULL) + config.accounting_interval, accounting_task, "accounting");
+}
+
+void init_accounting_service(Scheduler *sch) {
+    accounting_task(&sch);
 }

@@ -1,5 +1,6 @@
 #include "device_data.h"
 #include "config.h"
+#include "services/did-key.h"
 #include "lib/console.h"
 #include "lib/script_runner.h"
 #include <json-c/json.h>
@@ -229,6 +230,15 @@ char *get_os_name() {
     return os_name;
 }
 
+char *get_did_public_key() {
+    // check if key is stored in key file path
+    // create key if it does not exist
+    // load public key in memory
+
+    char *did_public_key = "placeholder-key";
+    return did_public_key;
+}
+
 void init_device_data() {
     device_data.os_version = get_os_version();
     device_data.os_services_version = get_os_services_version();
@@ -242,6 +252,8 @@ void init_device_data() {
     device_data.device_id = get_id();
     device_data.public_ip = get_public_ip();
     device_data.os_name = get_os_name();
+
+    device_data.did_public_key = get_did_public_key();
 }
 
 void clean_device_data() {
@@ -254,4 +266,5 @@ void clean_device_data() {
     free(device_data.os_services_version);
     free(device_data.device_id);
     free(device_data.public_ip);
+    free(device_data.did_public_key);
 }

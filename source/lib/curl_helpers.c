@@ -1,8 +1,8 @@
+#include "lib/console.h"
 #include <curl/curl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "lib/console.h"
 
 char *init_response_buffer() {
     char *response = malloc(1);

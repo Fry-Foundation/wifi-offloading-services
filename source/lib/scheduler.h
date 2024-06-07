@@ -4,17 +4,19 @@
 #include <stdbool.h>
 #include <time.h>
 
-typedef void (*task_func)(void *);
+typedef struct Scheduler Scheduler;
+
+typedef void (*TaskFunction)(Scheduler *);
 
 typedef struct Task {
     // Time when the task should be executed
     time_t execute_at;
 
     // Pointer to the task function
-    task_func task_function;
+    TaskFunction task_function;
 
-    // Parameters for the task function
-    void *params;
+    // Scheduler for the task function
+    Scheduler *sch;
 
     // Detail string for identifying the task
     char detail[64];
@@ -25,13 +27,11 @@ typedef struct Task {
 
 typedef struct Scheduler {
     // Head of the task linked list
-    Task *task_list;
+    Task *head;
 } Scheduler;
 
-extern Scheduler scheduler;
-
-void schedule_task(time_t execute_at, task_func task_function, void *params, const char *detail);
-void print_tasks();
-void run();
+void schedule_task(Scheduler *sch, time_t execute_at, TaskFunction task_function, const char *detail);
+void print_tasks(Scheduler *sch);
+void run(Scheduler *sch);
 
 #endif /* SCHEDULER_H */

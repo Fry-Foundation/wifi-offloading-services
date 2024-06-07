@@ -6,9 +6,7 @@
 
 #define SLEEP_SECONDS 1
 
-Scheduler scheduler = {NULL};
-
-Task *create_task(time_t execute_at, task_func task_function, void *params, const char *detail) {
+Task *create_task(time_t execute_at, TaskFunction task_function, const char *detail) {
     Task *new_task = (Task *)malloc(sizeof(Task));
 
     // Handle memory allocation failure
@@ -18,7 +16,6 @@ Task *create_task(time_t execute_at, task_func task_function, void *params, cons
 
     new_task->execute_at = execute_at;
     new_task->task_function = task_function;
-    new_task->params = params;
 
     // Char array for detail
     strncpy(new_task->detail, detail, sizeof(new_task->detail) - 1);
@@ -30,20 +27,20 @@ Task *create_task(time_t execute_at, task_func task_function, void *params, cons
     return new_task;
 }
 
-void schedule_task(time_t execute_at, task_func task_function, void *params, const char *detail) {
-    Task *new_task = create_task(execute_at, task_function, params, detail);
+void schedule_task(Scheduler *sch, time_t execute_at, TaskFunction task_function, const char *detail) {
+    Task *new_task = create_task(execute_at, task_function, detail);
 
     // Insert task at the beginning of the list if:
     // - Task list is empty
     // - Execution time is earlier than the first task's execution time
-    if (!scheduler.task_list || difftime(scheduler.task_list->execute_at, new_task->execute_at) > 0) {
-        new_task->next = scheduler.task_list;
-        scheduler.task_list = new_task;
+    if (!sch->head || difftime(sch->head->execute_at, new_task->execute_at) > 0) {
+        new_task->next = sch->head;
+        sch->head = new_task;
         return;
     }
 
     // Initiliaze a pointer to traverse the task list
-    Task *current = scheduler.task_list;
+    Task *current = sch->head;
 
     // Traverse the task list to find the correct position for the new task
     // - The list should be sorted by execution time
@@ -58,40 +55,40 @@ void schedule_task(time_t execute_at, task_func task_function, void *params, con
     current->next = new_task;
 }
 
-void execute_tasks() {
+void execute_tasks(Scheduler *sch) {
     time_t now = time(NULL);
     printf("Current time is %ld\n", (long)now);
 
     // Loop to execute all tasks that are due
-    while (scheduler.task_list && difftime(scheduler.task_list->execute_at, now) <= 0) {
+    while (sch->head && difftime(sch->head->execute_at, now) <= 0) {
         // Get the task at the head of the list
-        Task *task = scheduler.task_list;
+        Task *task = sch->head;
 
         printf("Task is %s\n", task->detail);
         printf("Task execute_at is %ld\n", (long)task->execute_at);
 
         // Move the head of the list to the next task
-        scheduler.task_list = scheduler.task_list->next;
+        sch->head = sch->head->next;
 
         // Execute the task's function
-        task->task_function(task->params);
+        task->task_function(&sch);
 
         // Free the task memory if it is not periodic
         free(task);
     }
 }
 
-void print_tasks() {
-    Task *current = scheduler.task_list;
+void print_tasks(Scheduler *sch) {
+    Task *current = sch->head;
     while (current) {
         printf("Task scheduled at %ld: %s\n", current->execute_at, current->detail);
         current = current->next;
     }
 }
 
-void run() {
+void run(Scheduler *sch) {
     while (1) {
-        execute_tasks();
+        execute_tasks(sch);
         sleep(SLEEP_SECONDS);
     }
 }

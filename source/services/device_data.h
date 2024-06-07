@@ -17,6 +17,7 @@ typedef struct {
     char *os_name;
     char *os_version;
     char *os_services_version;
+    char *did_public_key;
 } DeviceData;
 
 extern DeviceData device_data;

@@ -4,6 +4,7 @@
 #include "services/access.h"
 #include "services/config.h"
 #include "services/state.h"
+#include "services/device_status.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,7 +14,7 @@
 
 // Backend should handle setup requests that have already been created for this access key
 // If no setup request exists, create one
-void requestSetup() {
+void request_setup() {
     console(CONSOLE_DEBUG, "Request setup");
     console(CONSOLE_DEBUG, "Access key: %s", access_key.public_key);
 
@@ -40,44 +41,19 @@ void requestSetup() {
     }
 }
 
-// @TODO: Pending backend implementation
-// void checkApprovedSetup()
-// {
-//     console(CONSOLE_DEBUG, "Not yet implemented - Check if the setup has been approved");
-//     console(CONSOLE_DEBUG, "Not yet implemented - Access key: %s", access_key.public_key);
-// }
+void setup_task(Scheduler *sch) {
+    if (device_status == Unknown) {
+        // Schedule setup_task to rerun later
+        // The device's status has to be defined beforehand
+        schedule_task(&sch,  time(NULL) + config.setup_interval, setup_task, "setup");
+    }
 
-void completeSetup() {
-    console(CONSOLE_DEBUG, "complete setup");
-    console(CONSOLE_DEBUG, "access key: %s", access_key.public_key);
-
-    // Build setup complete URL
-    char setup_complete_url[256];
-    snprintf(setup_complete_url, sizeof(setup_complete_url), "%s%s", config.main_api, SETUP_COMPLETE_ENDPOINT);
-    console(CONSOLE_DEBUG, "setup_complete_url: %s", setup_complete_url);
-
-    PostRequestOptions completeSetupOptions = {
-        .url = setup_complete_url,
-        .key = access_key.public_key,
-        .body = NULL,
-        .filePath = NULL,
-        .writeFunction = NULL,
-        .writeData = NULL,
-    };
-
-    performHttpPost(&completeSetupOptions);
+    if (device_status == Initial) {
+        console(CONSOLE_DEBUG, "requesting setup");
+        request_setup();
+    }
 }
 
-void setupTask() {
-    if (state.setup != 1) {
-        console(CONSOLE_DEBUG, "setup is disabled");
-        return;
-    }
-
-    console(CONSOLE_DEBUG, "setup task");
-
-    if (state.access_status == 0) {
-        console(CONSOLE_DEBUG, "requesting setup");
-        requestSetup();
-    }
+void init_setup_service(Scheduler *sch) {
+    setup_task(&sch);
 }

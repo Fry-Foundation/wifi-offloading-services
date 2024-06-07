@@ -149,7 +149,6 @@ bool request_access_key() {
     json_object_object_add(json_body, "os_name", json_object_new_string(device_data.os_name));
     json_object_object_add(json_body, "os_version", json_object_new_string(device_data.os_version));
     json_object_object_add(json_body, "os_services_version", json_object_new_string(device_data.os_services_version));
-    json_object_object_add(json_body, "on_boot", json_object_new_string(state.on_boot == 1 ? "true" : "false"));
     const char *body = json_object_to_json_string(json_body);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body);
 
@@ -218,47 +217,7 @@ bool request_access_key() {
     return true;
 };
 
-// void configure_with_access_status(int access_status) {
-//     console(CONSOLE_DEBUG, "configuring with access status");
-//     if (access_status == 0) {
-//         console(CONSOLE_DEBUG, "access status is 'initial'");
-//         state.setup = 1;
-//         state.accounting = 0;
-//         // stop_opennds();
-//     } else if (access_status == 1) {
-//         console(CONSOLE_DEBUG, "access status is 'setup-pending'");
-//         state.setup = 0;
-//         state.accounting = 0;
-//         // stop_opennds();
-//     } else if (access_status == 2) {
-//         console(CONSOLE_DEBUG, "access status is 'setup-approved'");
-//         state.setup = 0;
-//         state.accounting = 0;
-//         completeSetup();
-//         // stop_opennds();
-//     } else if (access_status == 3) {
-//         console(CONSOLE_DEBUG, "access status is 'mint-pending'");
-//         state.setup = 0;
-//         state.accounting = 0;
-//         // stop_opennds();
-//     } else if (access_status == 4) {
-//         console(CONSOLE_DEBUG, "access status is 'ready'");
-//         state.setup = 0;
-//         state.accounting = 1;
-//
-//         // disable_default_wireless_network();
-//         // start_opennds();
-//
-//         // peaq_id_task();
-//     } else if (access_status == 5) {
-//         console(CONSOLE_DEBUG, "access status is 'banned'");
-//         state.setup = 0;
-//         state.accounting = 1;
-//         // stop_opennds();
-//     }
-// }
-
-void access_task() {
+void access_task(Scheduler *sch) {
     console(CONSOLE_DEBUG, "access task");
 
     if (check_access_key_near_expiration()) {
@@ -269,10 +228,10 @@ void access_task() {
     }
 
     // Schedule the next key request
-    schedule_task(time(NULL) + config.access_task_interval, access_task, NULL, "access task");
+    schedule_task(&sch, time(NULL) + config.access_interval, access_task, "access");
 }
 
-void init_access_service() {
+void init_access_service(Scheduler *sch) {
     access_key.public_key = NULL;
     access_key.issued_at_seconds = 0;
     access_key.expires_at_seconds = 0;
@@ -286,9 +245,8 @@ void init_access_service() {
         request_access_key();
         write_access_key();
     }
-
-    // Schedule the next key request
-    schedule_task(time(NULL) + config.access_task_interval, access_task, NULL, "access task");
+    
+    schedule_task(&sch, time(NULL) + config.access_interval, access_task, "access");
 }
 
 void clean_access_service() {

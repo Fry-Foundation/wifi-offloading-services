@@ -4,7 +4,9 @@ CONFIG_MAIN_API = http://localhost:1337
 CONFIG_ACCOUNTING_ENABLED = 1
 CONFIG_ACCOUNTING_INTERVAL = 300
 CONFIG_ACCOUNTING_API = https://wifi.api.wayru.tech
-CONFIG_ACCESS_TASK_INTERVAL = 120
+CONFIG_ACCESS_INTERVAL = 10800
+CONFIG_DEVICE_STATUS_INTERVAL = 120
+CONFIG_SETUP_INTERVAL = 120
 CONFIG_LOG_LEVEL = 4
 
 # Define paths
@@ -63,7 +65,9 @@ run:
 	--config-accounting-enabled "$(CONFIG_ACCOUNTING_ENABLED)" \
 	--config-accounting-interval "$(CONFIG_ACCOUNTING_INTERVAL)" \
 	--config-accounting-api "$(CONFIG_ACCOUNTING_API)" \
-	--config-access-task-interval "$(CONFIG_ACCESS_TASK_INTERVAL)" \
+	--config-access-interval "$(CONFIG_ACCESS_INTERVAL)" \
+	--config-device-status-interval "$(CONFIG_DEVICE_STATUS_INTERVAL)" \
+	--config-setup-interval "$(CONFIG_SETUP_INTERVAL)" \
 	--config-console-log-level "$(CONFIG_LOG_LEVEL)"
 
 # Clean the build

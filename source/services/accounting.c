@@ -1,7 +1,7 @@
 #include "accounting.h"
-#include "lib/scheduler.h"
 #include "lib/console.h"
 #include "lib/requests.h"
+#include "lib/scheduler.h"
 #include "lib/script_runner.h"
 #include "services/access.h"
 #include "services/config.h"
@@ -201,9 +201,10 @@ void accounting_task(Scheduler *sch) {
     // Set up paths
     int dev_env = config.dev_env;
     int accounting_enabled = config.accounting_enabled;
-    
+
     if (accounting_enabled == 0) {
-        console(CONSOLE_DEBUG, "accounting is disabled by config params (maybe this device doesn't run the captive portal)");
+        console(CONSOLE_DEBUG,
+                "accounting is disabled by config params (maybe this device doesn't run the captive portal)");
         return;
     }
 
@@ -235,6 +236,4 @@ void accounting_task(Scheduler *sch) {
     schedule_task(&sch, time(NULL) + config.accounting_interval, accounting_task, "accounting");
 }
 
-void init_accounting_service(Scheduler *sch) {
-    accounting_task(&sch);
-}
+void init_accounting_service(Scheduler *sch) { accounting_task(&sch); }

@@ -59,6 +59,4 @@ char *read_did_public_key() {
     return file_data_str;
 }
 
-void create_did_key_pair() {
-    generate_key_pair(PUBKEY_FILE_NAME, PRIVKEY_FILE_NAME);
-}
+void create_did_key_pair() { generate_key_pair(PUBKEY_FILE_NAME, PRIVKEY_FILE_NAME); }

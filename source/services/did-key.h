@@ -5,7 +5,7 @@
 
 void create_did_key_pair();
 
-char* read_did_public_key();
+char *read_did_public_key();
 
 // @todo
 // void verify_did_key_pair();

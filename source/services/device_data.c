@@ -1,8 +1,8 @@
 #include "device_data.h"
 #include "config.h"
-#include "services/did-key.h"
 #include "lib/console.h"
 #include "lib/script_runner.h"
+#include "services/did-key.h"
 #include <json-c/json.h>
 #include <stdio.h>
 #include <stdlib.h>

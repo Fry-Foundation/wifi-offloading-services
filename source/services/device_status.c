@@ -1,8 +1,8 @@
 #include "device_status.h"
 #include "lib/scheduler.h"
 #include "services/config.h"
-#include <stdlib.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 DeviceStatus device_status = Unknown;
 

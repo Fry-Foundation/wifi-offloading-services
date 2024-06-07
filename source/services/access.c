@@ -245,7 +245,7 @@ void init_access_service(Scheduler *sch) {
         request_access_key();
         write_access_key();
     }
-    
+
     schedule_task(&sch, time(NULL) + config.access_interval, access_task, "access");
 }
 

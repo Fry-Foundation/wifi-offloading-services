@@ -6,7 +6,6 @@
 #include "services/access.h"
 #include "services/config.h"
 #include "services/device_status.h"
-#include "state.h"
 #include <json-c/json.h>
 #include <stdio.h>
 #include <stdlib.h>

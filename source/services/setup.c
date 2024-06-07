@@ -4,7 +4,6 @@
 #include "services/access.h"
 #include "services/config.h"
 #include "services/device_status.h"
-#include "services/state.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

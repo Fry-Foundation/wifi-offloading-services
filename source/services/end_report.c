@@ -2,7 +2,6 @@
 #include "lib/requests.h"
 #include "services/access.h"
 #include "services/config.h"
-#include "state.h"
 #include <json-c/json.h>
 #include <stdio.h>
 #include <string.h>

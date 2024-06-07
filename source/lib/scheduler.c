@@ -86,7 +86,7 @@ void print_tasks(Scheduler *sch) {
     }
 }
 
-void run(Scheduler *sch) {
+void run_tasks(Scheduler *sch) {
     while (1) {
         execute_tasks(sch);
         sleep(SLEEP_SECONDS);

@@ -32,6 +32,6 @@ typedef struct Scheduler {
 
 void schedule_task(Scheduler *sch, time_t execute_at, TaskFunction task_function, const char *detail);
 void print_tasks(Scheduler *sch);
-void run(Scheduler *sch);
+void run_tasks(Scheduler *sch);
 
 #endif /* SCHEDULER_H */

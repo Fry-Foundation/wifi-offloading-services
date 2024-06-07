@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
     // Print the list of tasks
     print_tasks(&sch);
 
-    run(&sch);
+    run_tasks(&sch);
 
     clean_device_data();
     clean_access_service();

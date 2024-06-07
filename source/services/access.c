@@ -230,7 +230,7 @@ void access_task(Scheduler *sch) {
     schedule_task(&sch, time(NULL) + config.access_interval, access_task, "access");
 }
 
-void init_access_service(Scheduler *sch) {
+void access_service(Scheduler *sch) {
     access_key.public_key = NULL;
     access_key.issued_at_seconds = 0;
     access_key.expires_at_seconds = 0;

@@ -53,4 +53,4 @@ void setup_task(Scheduler *sch) {
     }
 }
 
-void init_setup_service(Scheduler *sch) { setup_task(&sch); }
+void setup_service(Scheduler *sch) { setup_task(&sch); }

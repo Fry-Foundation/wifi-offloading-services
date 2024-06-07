@@ -3,6 +3,6 @@
 
 #include "lib/scheduler.h"
 
-void init_setup_service(Scheduler *sch);
+void setup_service(Scheduler *sch);
 
 #endif // SETUP_H

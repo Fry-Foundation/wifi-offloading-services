@@ -12,7 +12,7 @@ typedef struct {
 
 extern AccessKey access_key;
 
-void init_access_service(Scheduler *sch);
+void access_service(Scheduler *sch);
 
 void clean_access_service();
 

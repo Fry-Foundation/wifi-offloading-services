@@ -15,7 +15,7 @@ void device_status_task(Scheduler *sch) {
     schedule_task(&sch, time(NULL) + config.device_status_interval, device_status_task, "device status");
 }
 
-void init_device_status_service(Scheduler *sch) {
+void device_status_service(Scheduler *sch) {
     device_status_task(&sch);
 
     // Side effects

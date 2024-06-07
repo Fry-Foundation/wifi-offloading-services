@@ -24,6 +24,6 @@ extern DeviceData device_data;
 
 void init_device_data();
 
-void clean_device_data();
+void clean_device_data_service();
 
 #endif // DEVICE_DATA_H

@@ -256,7 +256,7 @@ void init_device_data() {
     device_data.did_public_key = get_did_public_key();
 }
 
-void clean_device_data() {
+void clean_device_data_service() {
     free(device_data.mac);
     free(device_data.name);
     free(device_data.brand);

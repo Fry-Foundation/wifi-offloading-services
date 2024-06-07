@@ -3,6 +3,6 @@
 
 #include "lib/scheduler.h"
 
-void init_accounting_service(Scheduler *sch);
+void accounting_service(Scheduler *sch);
 
 #endif // ACCOUNTING_H

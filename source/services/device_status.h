@@ -18,6 +18,6 @@ bool on_boot;
 
 extern DeviceStatus device_status;
 
-void init_device_status_service(Scheduler *sch);
+void device_status_service(Scheduler *sch);
 
 #endif /* DEVICE_STATUS_H */

@@ -18,18 +18,16 @@ int main(int argc, char *argv[]) {
     init_config(argc, argv);
     init_device_data();
 
-    // Init service and schedule future tasks on each
-    init_access_service(&sch);
-    init_device_status_service(&sch);
-    init_setup_service(&sch);
-    init_accounting_service(&sch);
+    // Start services and schedule future tasks on each
+    access_service(&sch);
+    device_status_service(&sch);
+    setup_service(&sch);
+    accounting_service(&sch);
 
-    // Print the list of tasks
     print_tasks(&sch);
-
     run_tasks(&sch);
 
-    clean_device_data();
+    clean_device_data_service();
     clean_access_service();
 
     return 0;

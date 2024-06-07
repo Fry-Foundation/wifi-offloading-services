@@ -235,4 +235,4 @@ void accounting_task(Scheduler *sch) {
     schedule_task(&sch, time(NULL) + config.accounting_interval, accounting_task, "accounting");
 }
 
-void init_accounting_service(Scheduler *sch) { accounting_task(&sch); }
+void accounting_service(Scheduler *sch) { accounting_task(&sch); }

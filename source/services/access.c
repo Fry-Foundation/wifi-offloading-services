@@ -227,7 +227,7 @@ void access_task(Scheduler *sch) {
     }
 
     // Schedule the next key request
-    schedule_task(&sch, time(NULL) + config.access_interval, access_task, "access");
+    schedule_task(sch, time(NULL) + config.access_interval, access_task, "access");
 }
 
 void access_service(Scheduler *sch) {
@@ -245,7 +245,7 @@ void access_service(Scheduler *sch) {
         write_access_key();
     }
 
-    schedule_task(&sch, time(NULL) + config.access_interval, access_task, "access");
+    schedule_task(sch, time(NULL) + config.access_interval, access_task, "access");
 }
 
 void clean_access_service() {

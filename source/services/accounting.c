@@ -232,7 +232,7 @@ void accounting_task(Scheduler *sch) {
 
     free(opennds_clients_data);
 
-    schedule_task(&sch, time(NULL) + config.accounting_interval, accounting_task, "accounting");
+    schedule_task(sch, time(NULL) + config.accounting_interval, accounting_task, "accounting");
 }
 
-void accounting_service(Scheduler *sch) { accounting_task(&sch); }
+void accounting_service(Scheduler *sch) { accounting_task(sch); }

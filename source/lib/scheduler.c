@@ -71,7 +71,7 @@ void execute_tasks(Scheduler *sch) {
         sch->head = sch->head->next;
 
         // Execute the task's function
-        task->task_function(&sch);
+        task->task_function(sch);
 
         // Free the task memory if it is not periodic
         free(task);

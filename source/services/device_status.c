@@ -12,11 +12,11 @@ DeviceStatus request_device_status() { return Unknown; }
 
 void device_status_task(Scheduler *sch) {
     device_status = request_device_status();
-    schedule_task(&sch, time(NULL) + config.device_status_interval, device_status_task, "device status");
+    schedule_task(sch, time(NULL) + config.device_status_interval, device_status_task, "device status");
 }
 
 void device_status_service(Scheduler *sch) {
-    device_status_task(&sch);
+    device_status_task(sch);
 
     // Side effects
     // Make sure wayru operator is running (all status codes but 6)

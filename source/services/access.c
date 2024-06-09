@@ -23,7 +23,11 @@
 #define ACCESS_ENDPOINT "/api/nfnode/access-v2"
 #define SCRIPTS_PATH "/etc/wayru-os-services/scripts"
 
-AccessKey access_key = {NULL};
+AccessKey access_key = {
+    .public_key = NULL,
+    .issued_at_seconds = 0,
+    .expires_at_seconds = 0
+};
 
 time_t convert_to_time_t(char *timestamp_str) {
     long long int epoch = strtoll(timestamp_str, NULL, 10);
@@ -45,7 +49,6 @@ bool read_access_key() {
     }
 
     char line[512];
-    char public_key[MAX_KEY_SIZE];
     char issued_at_seconds[MAX_TIMESTAMP_SIZE];
     char expires_at_seconds[MAX_TIMESTAMP_SIZE];
 
@@ -177,7 +180,7 @@ bool request_access_key() {
     if (parsed_response == NULL) {
         // JSON parsing failed
         console(CONSOLE_ERROR, "failed to parse access key JSON data");
-        json_object_put(response_buffer);
+        json_object_put(parsed_response);
         free(response_buffer);
         return false;
     }
@@ -231,10 +234,6 @@ void access_task(Scheduler *sch) {
 }
 
 void access_service(Scheduler *sch) {
-    access_key.public_key = NULL;
-    access_key.issued_at_seconds = 0;
-    access_key.expires_at_seconds = 0;
-
     if (read_access_key()) {
         if (check_access_key_near_expiration()) {
             request_access_key();

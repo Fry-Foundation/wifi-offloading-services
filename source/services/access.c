@@ -147,6 +147,7 @@ bool request_access_key() {
     json_object_object_add(json_body, "os_name", json_object_new_string(device_data.os_name));
     json_object_object_add(json_body, "os_version", json_object_new_string(device_data.os_version));
     json_object_object_add(json_body, "os_services_version", json_object_new_string(device_data.os_services_version));
+    json_object_object_add(json_body, "did_public_key", json_object_new_string(device_data.did_public_key));
     const char *body = json_object_to_json_string(json_body);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body);
 

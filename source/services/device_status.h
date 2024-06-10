@@ -14,8 +14,6 @@ typedef enum {
     Banned = 7,
 } DeviceStatus;
 
-bool on_boot;
-
 extern DeviceStatus device_status;
 
 void device_status_service(Scheduler *sch);

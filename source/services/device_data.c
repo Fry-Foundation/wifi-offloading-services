@@ -233,7 +233,7 @@ char *get_os_name() {
 char *get_did_public_key() {
     // Check if key is stored in key file path
     char *did_public_key = read_did_public_key();
-    if(did_public_key != NULL) {
+    if (did_public_key != NULL) {
         return did_public_key;
     }
 

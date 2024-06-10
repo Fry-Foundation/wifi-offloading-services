@@ -23,11 +23,7 @@
 #define ACCESS_ENDPOINT "/api/nfnode/access-v2"
 #define SCRIPTS_PATH "/etc/wayru-os-services/scripts"
 
-AccessKey access_key = {
-    .public_key = NULL,
-    .issued_at_seconds = 0,
-    .expires_at_seconds = 0
-};
+AccessKey access_key = {.public_key = NULL, .issued_at_seconds = 0, .expires_at_seconds = 0};
 
 time_t convert_to_time_t(char *timestamp_str) {
     long long int epoch = strtoll(timestamp_str, NULL, 10);

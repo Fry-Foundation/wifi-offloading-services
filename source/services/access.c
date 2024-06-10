@@ -18,7 +18,7 @@
 #define KEY_FILE "access-key"
 #define KEY_FILE_BUFFER_SIZE 768
 #define REQUEST_BODY_BUFFER_SIZE 256
-#define MAX_KEY_SIZE 512
+#define MAX_KEY_SIZE 1024
 #define MAX_TIMESTAMP_SIZE 256
 #define ACCESS_ENDPOINT "/api/nfnode/access-v2"
 #define SCRIPTS_PATH "/etc/wayru-os-services/scripts"
@@ -44,7 +44,7 @@ bool read_access_key() {
         return false;
     }
 
-    char line[512];
+    char line[MAX_KEY_SIZE];
     char issued_at_seconds[MAX_TIMESTAMP_SIZE];
     char expires_at_seconds[MAX_TIMESTAMP_SIZE];
 

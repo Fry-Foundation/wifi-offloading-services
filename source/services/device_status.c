@@ -24,10 +24,13 @@ DeviceStatus request_device_status() {
     curl = curl_easy_init();
 
     if (!curl) {
-        console(CONSOLE_ERROR, "device status curl coould not be initialized");
+        console(CONSOLE_ERROR, "device status curl could not be initialized");
         free(response_buffer);
         return Unknown;
     }
+
+    // Set up as POST request
+    curl_easy_setopt(curl, CURLOPT_POST, 1L);
 
     // Url
     char device_status_url[256];
@@ -35,12 +38,23 @@ DeviceStatus request_device_status() {
     curl_easy_setopt(curl, CURLOPT_URL, device_status_url);
 
     // Request headers
-    char public_key_header[512];
+    struct curl_slist *headers = NULL;
+
+    char public_key_header[1024];
     snprintf(public_key_header, sizeof(public_key_header), "public_key: %s", access_key.public_key);
 
-    struct curl_slist *headers = NULL;
     headers = curl_slist_append(headers, public_key_header);
+    headers = curl_slist_append(headers, "Content-Type: application/json");
+
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+
+    // Request body
+    json_object *json_body = json_object_new_object();
+    json_object_object_add(json_body, "on_boot", json_object_new_boolean(on_boot));
+    const char *body = json_object_to_json_string(json_body);
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body);
+
+    console(CONSOLE_DEBUG, "device status request body %s", body);
 
     // Response callback and buffer
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, save_to_buffer_callback);
@@ -80,6 +94,8 @@ DeviceStatus request_device_status() {
     free(response_buffer);
 
     console(CONSOLE_DEBUG, "device status response: %d", response_device_status);
+
+    on_boot = false;
 
     return response_device_status; 
 }

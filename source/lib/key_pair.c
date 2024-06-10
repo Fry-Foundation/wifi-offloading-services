@@ -1,17 +1,18 @@
 #include "key_pair.h"
 #include "../services/config.h"
 #include "console.h"
+#include <openssl/err.h>
+#include <openssl/evp.h>
 #include <openssl/pem.h>
-#include <openssl/rsa.h>
 #include <stdbool.h>
 
 #define KEY_PATH_SIZE 512
 
 bool generate_key_pair(char *public_key_filename, char *private_key_filename) {
-    // 1. Check if a key-pair already exists, and continue if not
-    // 2. Summon openssl-util command ot generate key pair at specific location
-    // @todo: Encrypt private key
-    // @todo: Save private key in location that can be persisted across updates
+    // Initialize OpenSSL
+    OpenSSL_add_all_algorithms();
+    ERR_load_BIO_strings();
+    ERR_load_crypto_strings();
 
     char private_key_path[KEY_PATH_SIZE];
     char public_key_path[KEY_PATH_SIZE];
@@ -23,65 +24,75 @@ bool generate_key_pair(char *public_key_filename, char *private_key_filename) {
     console(CONSOLE_INFO, "priv key filename %s", private_key_path);
     console(CONSOLE_INFO, "pub key filename %s", public_key_path);
 
-    bool success = false;
-    RSA *r = NULL;
-    BIGNUM *bne = NULL;
-    BIO *bp_public = NULL, *bp_private = NULL;
-
-    int bits = 2048;
-    unsigned long e = RSA_F4;
-
-    // Create the BIGNUM object for the exponent
-    bne = BN_new();
-    if (!bne) {
-        goto free_all;
+    // Create eypair context
+    EVP_PKEY_CTX *pkey_ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_ED25519, NULL);
+    if (!pkey_ctx) {
+        fprintf(stderr, "Error creating context\n");
+        ERR_print_errors_fp(stderr);
+        return false;
     }
 
-    if (BN_set_word(bne, e) != 1) {
-        goto free_all;
+    // Generate the keypair
+    if (EVP_PKEY_keygen_init(pkey_ctx) <= 0) {
+        fprintf(stderr, "Error initializing keygen\n");
+        ERR_print_errors_fp(stderr);
+        EVP_PKEY_CTX_free(pkey_ctx);
+        return false;
     }
 
-    // Generate RSA key pair
-    r = RSA_new();
-    if (!r) {
-        goto free_all;
+    EVP_PKEY *pkey = NULL;
+    if (EVP_PKEY_keygen(pkey_ctx, &pkey) <= 0) {
+        fprintf(stderr, "Error generating key\n");
+        ERR_print_errors_fp(stderr);
+        EVP_PKEY_CTX_free(pkey_ctx);
+        return false;
     }
 
-    if (RSA_generate_key_ex(r, bits, bne, NULL) != 1) {
-        goto free_all;
+    // Write the private key to a file
+    FILE *private_key_file = fopen(private_key_path, "wb");
+    if (!private_key_file) {
+        fprintf(stderr, "Error opening private key file for writing\n");
+        EVP_PKEY_free(pkey);
+        EVP_PKEY_CTX_free(pkey_ctx);
+        return false;
     }
 
-    // Save public key
-    bp_public = BIO_new_file(public_key_path, "w+");
-    if (!bp_public) {
-        goto free_all;
+    if (PEM_write_PrivateKey(private_key_file, pkey, NULL, NULL, 0, NULL, NULL) != 1) {
+        fprintf(stderr, "Error writing private key to file\n");
+        ERR_print_errors_fp(stderr);
+        fclose(private_key_file);
+        EVP_PKEY_free(pkey);
+        EVP_PKEY_CTX_free(pkey_ctx);
+        return false;
+    }
+    fclose(private_key_file);
+
+    // Write the public key to a file
+    FILE *public_key_file = fopen(public_key_path, "wb");
+    if (!public_key_file) {
+        fprintf(stderr, "Error opening public key file for writing\n");
+        EVP_PKEY_free(pkey);
+        EVP_PKEY_CTX_free(pkey_ctx);
+        return false;
     }
 
-    if (PEM_write_bio_RSAPublicKey(bp_public, r) != 1) {
-        goto free_all;
+    if (PEM_write_PUBKEY(public_key_file, pkey) != 1) {
+        fprintf(stderr, "Error writing public key to file\n");
+        ERR_print_errors_fp(stderr);
+        fclose(public_key_file);
+        EVP_PKEY_free(pkey);
+        EVP_PKEY_CTX_free(pkey_ctx);
+        return false;
     }
 
-    // Save private key
-    bp_private = BIO_new_file(private_key_path, "w+");
-    if (!bp_private) {
-        goto free_all;
-    }
+    fclose(public_key_file);
 
-    if (PEM_write_bio_RSAPrivateKey(bp_private, r, NULL, NULL, 0, NULL, NULL) != 1) {
-        goto free_all;
-    }
+    // Cleanup
+    EVP_PKEY_free(pkey);
+    EVP_PKEY_CTX_free(pkey_ctx);
+    EVP_cleanup();
+    ERR_free_strings();
 
-    success = true; // Set success to true if all operations succeeded
-
-free_all:
-    if (bp_public)
-        BIO_free_all(bp_public);
-    if (bp_private)
-        BIO_free_all(bp_private);
-    if (r)
-        RSA_free(r);
-    if (bne)
-        BN_free(bne);
-
-    return success;
+    console(CONSOLE_INFO, "Keys generated and written to %s and %s", public_key_filename, private_key_filename);
+    return true;
 }

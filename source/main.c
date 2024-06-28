@@ -23,7 +23,8 @@ int main(int argc, char *argv[]) {
     setup_service(&sch);
     accounting_service(&sch);
 
-    print_tasks(&sch);
+    // print_tasks(&sch);
+
     run_tasks(&sch);
 
     clean_device_data_service();

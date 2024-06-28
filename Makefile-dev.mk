@@ -1,9 +1,9 @@
 # Define development configuration
 CONFIG_ENABLED = 1
-CONFIG_MAIN_API = http://localhost:1337
+CONFIG_MAIN_API = https://api.internal.wayru.tech
 CONFIG_ACCOUNTING_ENABLED = 1
 CONFIG_ACCOUNTING_INTERVAL = 300
-CONFIG_ACCOUNTING_API = https://wifi.api.wayru.tech
+CONFIG_ACCOUNTING_API = https://wifi.api.internal.wayru.tech
 CONFIG_ACCESS_INTERVAL = 10800
 CONFIG_DEVICE_STATUS_INTERVAL = 120
 CONFIG_SETUP_INTERVAL = 120
@@ -29,6 +29,7 @@ $(info OBJECTS: $(OBJECTS))
 # Compiler and flags
 CC = gcc
 CFLAGS = -Wall -Wextra -std=gnu11 -I$(SOURCE_PATH) 
+# CFLAGS = -g -Wall -Wextra -std=gnu11 -I$(SOURCE_PATH) 
 
 # Libraries
 LIBS = -lcurl -ljson-c -lssl -lcrypto
@@ -59,7 +60,7 @@ copy-scripts:
 
 # Run the program
 run:
-	cd "$(DIST_PATH)" && ./$(EXECUTABLE) --dev \
+	cd "$(DIST_PATH)" && valgrind -s --leak-check=full --track-origins=yes --log-file=valgrind_report.txt ./$(EXECUTABLE) --dev \
 	--config-enabled "$(CONFIG_ENABLED)" \
 	--config-main-api "$(CONFIG_MAIN_API)" \
 	--config-accounting-enabled "$(CONFIG_ACCOUNTING_ENABLED)" \

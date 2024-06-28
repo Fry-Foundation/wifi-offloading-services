@@ -7,6 +7,8 @@ Services for wayru-os:
 ## Dependencies
 > Work in progress. Dependencies should be version controlled for testing and production builds.
 
+> OpenSSL / libssl is also needed. Check Makefile. @todo document that dependency here too.
+
 ### Install the `libcurl` and `json-c` dependencies
 
 **Debian-based linux**

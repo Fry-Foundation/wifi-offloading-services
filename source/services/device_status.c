@@ -102,6 +102,9 @@ DeviceStatus request_device_status() {
 
 void device_status_task(Scheduler *sch) {
     device_status = request_device_status();
+    console(CONSOLE_DEBUG, "device status: %d", device_status);
+    console(CONSOLE_DEBUG, "device status interval: %d", config.device_status_interval);
+    console(CONSOLE_DEBUG, "device status interval time: %ld", time(NULL) + config.device_status_interval);
     schedule_task(sch, time(NULL) + config.device_status_interval, device_status_task, "device status");
 }
 

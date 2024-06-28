@@ -44,6 +44,7 @@ void setup_task(Scheduler *sch) {
     if (device_status == Unknown) {
         // Schedule setup_task to rerun later
         // The device's status has to be defined beforehand
+        console(CONSOLE_DEBUG, "device status is Unknown, rescheduling setup task");
         schedule_task(sch, time(NULL) + config.setup_interval, setup_task, "setup");
     }
 
@@ -51,6 +52,8 @@ void setup_task(Scheduler *sch) {
         console(CONSOLE_DEBUG, "requesting setup");
         request_setup();
     }
+
+    console(CONSOLE_DEBUG, "setup task complete; will not reschedule");
 }
 
 void setup_service(Scheduler *sch) { setup_task(sch); }

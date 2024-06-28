@@ -202,13 +202,15 @@ void accounting_task(Scheduler *sch) {
     int accounting_enabled = config.accounting_enabled;
 
     if (accounting_enabled == 0) {
-        console(CONSOLE_DEBUG,
-                "accounting is disabled by config params (maybe this device doesn't run the captive portal)");
+        console(CONSOLE_DEBUG, "accounting is disabled by config params");
+        console(CONSOLE_DEBUG, "maybe this device doesn't run the captive portal");
+        console(CONSOLE_DEBUG, "will not reschedule accounting task");
         return;
     }
 
     if (device_status != Ready) {
-        console(CONSOLE_DEBUG, "accounting is disabled because device is not ready");
+        console(CONSOLE_DEBUG, "accounting is disabled because device is not ready; will try again later");
+        schedule_task(sch, time(NULL) + config.accounting_interval, accounting_task, "accounting");
         return;
     }
 
@@ -224,7 +226,8 @@ void accounting_task(Scheduler *sch) {
 
     char *opennds_clients_data = query_opennds();
     if (opennds_clients_data == NULL) {
-        console(CONSOLE_DEBUG, "failed to query OpenNDS; skipping server sync");
+        console(CONSOLE_DEBUG, "failed to query OpenNDS; skipping server sync, will try again later");
+        schedule_task(sch, time(NULL) + config.accounting_interval, accounting_task, "accounting");
         return;
     }
 

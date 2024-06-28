@@ -241,6 +241,7 @@ void access_service(Scheduler *sch) {
         write_access_key();
     }
 
+    console(CONSOLE_DEBUG, "access service");
     schedule_task(sch, time(NULL) + config.access_interval, access_task, "access");
 }
 

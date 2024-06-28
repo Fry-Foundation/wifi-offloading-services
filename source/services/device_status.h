@@ -10,8 +10,8 @@ typedef enum {
     SetupPending = 2,
     SetupApproved = 3,
     MintPending = 4,
-    Ready = 6,
-    Banned = 7,
+    Ready = 5,
+    Banned = 6,
 } DeviceStatus;
 
 extern DeviceStatus device_status;

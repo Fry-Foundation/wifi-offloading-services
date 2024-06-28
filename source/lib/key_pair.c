@@ -1,6 +1,6 @@
 #include "key_pair.h"
-#include "../services/config.h"
-#include "console.h"
+#include "lib/console.h"
+#include "services/config.h"
 #include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/pem.h>

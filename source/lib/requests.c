@@ -1,5 +1,5 @@
 #include "requests.h"
-#include "console.h"
+#include "lib/console.h"
 #include <curl/curl.h>
 #include <stdio.h>
 

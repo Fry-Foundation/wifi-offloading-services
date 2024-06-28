@@ -104,7 +104,7 @@ char *get_os_services_version() {
         return NULL;
     }
 
-    console(CONSOLE_ERROR, "services version is: %s", os_services_version);
+    console(CONSOLE_INFO, "services version is: %s", os_services_version);
 
     return os_services_version;
 }

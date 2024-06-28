@@ -1,6 +1,7 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
+#include <stdalign.h>
 #include <stdbool.h>
 #include <time.h>
 
@@ -8,15 +9,12 @@ typedef struct Scheduler Scheduler;
 
 typedef void (*TaskFunction)(Scheduler *);
 
-typedef struct Task {
+typedef struct __attribute__((aligned(8))) Task {
     // Time when the task should be executed
     time_t execute_at;
 
     // Pointer to the task function
     TaskFunction task_function;
-
-    // Scheduler for the task function
-    Scheduler *sch;
 
     // Detail string for identifying the task
     char detail[64];

@@ -7,11 +7,11 @@
 typedef enum {
     Unknown = -1,
     Initial = 0,
-    SetupPending = 2,
-    SetupApproved = 3,
-    MintPending = 4,
-    Ready = 5,
-    Banned = 6,
+    SetupPending = 1,
+    SetupApproved = 2,
+    MintPending = 3,
+    Ready = 4,
+    Banned = 5,
 } DeviceStatus;
 
 extern DeviceStatus device_status;

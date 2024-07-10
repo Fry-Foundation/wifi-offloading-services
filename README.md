@@ -147,3 +147,7 @@ Run the `format-c` script from the `wayru-os-services` repo:
 bash format-c
 ```
 
+### LSP
+The langauge server protocol (LSP) for C should work out of the box with VSCode.
+
+On other editors you can use clangd. But make sure to run `generate_compile_commands.sh` so that clangd correctly recognizes the include paths.

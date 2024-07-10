@@ -52,7 +52,7 @@ echo "Compile target is '$COMPILE_TARGET'"
 echo -e "\nSetting up the build environment... 🛠️"
 echo "---------------------------------------"
 make clean
-rm -rf feeds
+# rm -rf feeds
 
 # Configure custom feed
 echo -e "\nUpdating and installing feeds... 🔄"
@@ -74,6 +74,7 @@ make defconfig
 echo -e "\nBuilding... 🏗️"
 echo "---------------------------------------"
 make -j"$(nproc)" package/wayru-os-services/compile || exit 1
+# make -j1 V=sc package/wayru-os-services/compile || exit 1
 
 # Move the compiled package to the build directory
 echo -e "\nMoving compiled package... 📦"

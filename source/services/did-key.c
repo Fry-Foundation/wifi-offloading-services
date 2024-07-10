@@ -7,88 +7,76 @@
 #include <json-c/json.h>
 #include <stdbool.h>
 #include <string.h>
+#include <openssl/evp.h>
 
-#define PRIVKEY_FILE_NAME "did_key"
-#define PUBKEY_FILE_NAME "did_key.pub"
-#define HEADER "-----BEGIN PUBLIC KEY-----"
-#define FOOTER "-----END PUBLIC KEY-----"
+#define DID_KEY_DIR "did_key"
+#define PRIVKEY_FILE_NAME "key"
+#define PUBKEY_FILE_NAME "key.pub"
+#define KEY_PATH_SIZE 512
+#define KEY_GENERATION_RETRIES 5
 
-char *read_did_private_key() {
-    console(CONSOLE_DEBUG, "reading did private key");
+// Get the public key, and if does not exist, generate a new one
+char *get_did_public_key() {
+    // Init the OpenSSL provider
+    // OSSL_PROVIDER *provider = init_openssl();
 
-    char privkey_file_path[256];
-    snprintf(privkey_file_path, sizeof(privkey_file_path), "%s/%s", config.data_path, PRIVKEY_FILE_NAME);
+    // Load the private key
+    char private_key_filepath[KEY_PATH_SIZE];
+    snprintf(private_key_filepath, sizeof(private_key_filepath), "%s/%s/%s", config.data_path, DID_KEY_DIR,
+             PRIVKEY_FILE_NAME);
 
-    FILE *file = fopen(privkey_file_path, "r");
-    if (file == NULL) {
-        console(CONSOLE_ERROR, "failed to open did privkey file");
-        return NULL;
+    console(CONSOLE_INFO, "Loading private key from %s", private_key_filepath);
+
+    EVP_PKEY *pkey = load_private_key_from_pem(PRIVKEY_FILE_NAME);
+
+    // If the private key does not exist, generate a new key pair
+    if (pkey == NULL) {
+        pkey = generate_ed25519_key_pair();
+
+        // Save the private key
+        save_private_key_in_pem(pkey, private_key_filepath);
+
+        // Save the public key
+        char public_key_filepath[KEY_PATH_SIZE];
+        snprintf(public_key_filepath, sizeof(public_key_filepath), "%s/%s/%s", config.data_path, DID_KEY_DIR,
+                 PUBKEY_FILE_NAME);
+        save_public_key_in_pem(pkey, public_key_filepath);
     }
 
-    fseek(file, 0, SEEK_END);
-    long fsize = ftell(file);
-    fseek(file, 0, SEEK_SET);
-    char *file_data_str = malloc(fsize + 1);
-    fread(file_data_str, 1, fsize, file);
-    fclose(file);
+    // Get the public key in PEM format
+    char *public_key_pem = get_public_key_pem_string(pkey);
 
-    console(CONSOLE_DEBUG, file_data_str);
-    return file_data_str;
+    // Trim the PEM headers and footers
+    public_key_pem = strip_pem_headers_and_footers(public_key_pem);
+
+    // Remove whitespace and newlines
+    remove_whitespace_and_newline_characters(public_key_pem);
+
+    // Validate the public key
+    bool result = is_valid_base64(public_key_pem, strlen(public_key_pem));
+    if (!result) {
+        console(CONSOLE_ERROR, "Public key validation failed");
+        EVP_PKEY_free(pkey);
+        exit(1);
+    }
+
+    // Cleanup
+    // cleanup_openssl(provider, pkey);
+
+    return public_key_pem;
 }
 
-char *read_did_public_key() {
-    console(CONSOLE_DEBUG, "reading did public key");
-
-    char pubkey_file_path[256];
-    snprintf(pubkey_file_path, sizeof(pubkey_file_path), "%s/%s", config.data_path, PUBKEY_FILE_NAME);
-
-    FILE *file = fopen(pubkey_file_path, "r");
-    if (file == NULL) {
-        console(CONSOLE_ERROR, "failed to open did public key file");
-        return 0;
+char *get_did_key_or_generate() {
+    int attempts = 0;
+    char *public_key = NULL;
+    while (attempts < KEY_GENERATION_RETRIES) {
+        public_key = get_did_public_key();
+        if (public_key != NULL) {
+            return public_key;
+        }
+        attempts++;
     }
 
-    fseek(file, 0, SEEK_END);
-    long fsize = ftell(file);
-    fseek(file, 0, SEEK_SET);
-    char *file_data_str = malloc(fsize + 1);
-    fread(file_data_str, 1, fsize, file);
-    fclose(file);
-
-    file_data_str[fsize] = '\0';
-
-    // Find the key file headers to remove them later
-    char *header_pos = strstr(file_data_str, HEADER);
-    char *footer_pos = strstr(file_data_str, FOOTER);
-
-    if (header_pos == NULL || footer_pos == NULL) {
-        console(CONSOLE_ERROR, "Invalid key file format");
-        free(file_data_str);
-        return 0;
-    }
-
-    // Move past the header and newlines
-    char *key_start = header_pos + strlen(HEADER);
-    while (*key_start == '\n' || *key_start == '\r') {
-        key_start++;
-    }
-
-    // Move to the position of the footer and backup to remove newlines
-    char *key_end = footer_pos;
-    while (key_end > key_start && (*(key_end - 1) == '\n' || *(key_end - 1) == '\r')) {
-        key_end--;
-    }
-
-    size_t key_length = key_end - key_start;
-
-    char *key_content = malloc(key_length + 1);
-    strncpy(key_content, key_start, key_length);
-    key_content[key_length] = '\0';
-
-    free(file_data_str);
-
-    console(CONSOLE_DEBUG, key_content);
-    return key_content;
+    console(CONSOLE_ERROR, "Failed to generate public key after %d attempts", KEY_GENERATION_RETRIES);
+    exit(1);
 }
-
-void create_did_key_pair() { generate_key_pair(PUBKEY_FILE_NAME, PRIVKEY_FILE_NAME); }

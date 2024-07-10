@@ -14,6 +14,7 @@ SOURCE_PATH := source
 DIST_PATH := dist
 DIST_SCRIPTS_PATH := $(DIST_PATH)/scripts
 DIST_DATA_PATH := $(DIST_PATH)/data
+DIST_DID_KEY_PATH := $(DIST_DATA_PATH)/did_key
 
 # Define executable
 EXECUTABLE := wayru-os-services
@@ -56,6 +57,7 @@ copy-scripts:
 	chmod +x $(DIST_SCRIPTS_PATH)/*
 
 	mkdir -p $(DIST_DATA_PATH)
+	mkdir -p $(DIST_DID_KEY_PATH)
 
 	cp VERSION $(DIST_PATH)/VERSION
 

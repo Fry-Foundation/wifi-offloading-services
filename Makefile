@@ -120,6 +120,7 @@ define Package/wayru-os-services/install
 		$(INSTALL_DIR) $(1)/etc/wayru-os-services
 		$(INSTALL_DIR) $(1)/etc/wayru-os-services/scripts
 		$(INSTALL_DIR) $(1)/etc/wayru-os-services/data
+		$(INSTALL_DIR) $(1)/etc/wayru-os-services/data/did_key
 
 		$(INSTALL_BIN) $(PKG_BUILD_DIR)/wayru-os-services $(1)/usr/bin/
 

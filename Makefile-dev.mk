@@ -32,7 +32,7 @@ CFLAGS = -Wall -Wextra -std=gnu11 -I$(SOURCE_PATH)
 # CFLAGS = -g -Wall -Wextra -std=gnu11 -I$(SOURCE_PATH) 
 
 # Libraries
-LIBS = -lcurl -ljson-c -lssl -lcrypto
+LIBS = -lcurl -ljson-c -lssl -lcrypto -lmosquitto
 
 .PHONY: all compile run copy-scripts clean
 all: clean compile copy-scripts run

@@ -1,82 +1,145 @@
 #include "did-key.h"
 #include "lib/console.h"
 #include "lib/key_pair.h"
-#include "lib/requests.h"
-#include "services/access.h"
 #include "services/config.h"
-#include <json-c/json.h>
+#include <openssl/evp.h>
 #include <stdbool.h>
 #include <string.h>
-#include <openssl/evp.h>
+#include <ctype.h>
 
-#define DID_KEY_DIR "did_key"
+#define DID_KEY_DIR "did-key"
 #define PRIVKEY_FILE_NAME "key"
 #define PUBKEY_FILE_NAME "key.pub"
 #define KEY_PATH_SIZE 512
 #define KEY_GENERATION_RETRIES 5
 
-// Get the public key, and if does not exist, generate a new one
-char *get_did_public_key() {
-    // Init the OpenSSL provider
-    // OSSL_PROVIDER *provider = init_openssl();
+// Remove whitespace and newline characters from a string
+void remove_whitespace_and_newline_characters(char *str) {
+    char *src = str;
+    char *dst = str;
+    while (*src) {
+        if (*src != ' ' && *src != '\n' && *src != '\r') {
+            *dst++ = *src;
+        }
+        src++;
+    }
+    *dst = '\0';
+}
 
+// Strip the PEM headers and footers from a public key PEM string
+char *strip_pem_headers_and_footers(char *public_key_pem_string) {
+    const char *begin = "-----BEGIN PUBLIC KEY-----";
+    const char *end = "-----END PUBLIC KEY-----";
+
+    char *begin_pos = strstr(public_key_pem_string, begin);
+    if (begin_pos == NULL) {
+        console(CONSOLE_ERROR, "Invalid public key PEM format");
+        return NULL;
+    }
+
+    char *end_pos = strstr(public_key_pem_string, end);
+    if (end_pos == NULL) {
+        console(CONSOLE_ERROR, "Invalid public key PEM format");
+        return NULL;
+    }
+
+    begin_pos += strlen(begin);
+    size_t stripped_pem_len = end_pos - begin_pos;
+
+    char *stripped_pem = malloc(stripped_pem_len + 1);
+    if (!stripped_pem) {
+        console(CONSOLE_ERROR, "Error allocating memory for stripped PEM");
+        return NULL;
+    }
+
+    strncpy(stripped_pem, begin_pos, stripped_pem_len);
+    stripped_pem[stripped_pem_len] = '\0';
+
+    return stripped_pem;
+}
+
+// Validate a base64 string
+bool is_valid_base64(const char *str, size_t length) {
+    if (length % 4 != 0) {
+        return false;
+    }
+
+    for (size_t i = 0; i < length; i++) {
+        if (!isalnum(str[i]) && str[i] != '+' && str[i] != '/' && str[i] != '=') {
+            return false;
+        }
+    }
+
+    // Check for correct padding
+    if (length > 0 && str[length - 1] == '=') {
+        if (length > 1 && str[length - 2] == '=') {
+            // Last two characters can be '='
+            return true;
+        }
+        // Only the last character can be '='
+        return str[length - 2] != '=';
+    }
+
+    return true;
+}
+
+// Get the public key, and if it does not exist, generate a new one
+char *get_did_public_key_or_generate_keypair() {
     // Load the private key
     char private_key_filepath[KEY_PATH_SIZE];
-    snprintf(private_key_filepath, sizeof(private_key_filepath), "%s/%s/%s", config.data_path, DID_KEY_DIR,
-             PRIVKEY_FILE_NAME);
+    snprintf(private_key_filepath, sizeof(private_key_filepath), "%s/%s/%s", config.data_path, DID_KEY_DIR, PRIVKEY_FILE_NAME);
 
-    console(CONSOLE_INFO, "Loading private key from %s", private_key_filepath);
+    console(CONSOLE_DEBUG, "Attempting to load private key from %s", private_key_filepath);
+    EVP_PKEY *pkey = load_private_key_from_pem(private_key_filepath);
 
-    EVP_PKEY *pkey = load_private_key_from_pem(PRIVKEY_FILE_NAME);
-
-    // If the private key does not exist, generate a new key pair
-    if (pkey == NULL) {
-        pkey = generate_ed25519_key_pair();
-
-        // Save the private key
-        save_private_key_in_pem(pkey, private_key_filepath);
-
-        // Save the public key
-        char public_key_filepath[KEY_PATH_SIZE];
-        snprintf(public_key_filepath, sizeof(public_key_filepath), "%s/%s/%s", config.data_path, DID_KEY_DIR,
-                 PUBKEY_FILE_NAME);
-        save_public_key_in_pem(pkey, public_key_filepath);
-    }
-
-    // Get the public key in PEM format
-    char *public_key_pem = get_public_key_pem_string(pkey);
-
-    // Trim the PEM headers and footers
-    public_key_pem = strip_pem_headers_and_footers(public_key_pem);
-
-    // Remove whitespace and newlines
-    remove_whitespace_and_newline_characters(public_key_pem);
-
-    // Validate the public key
-    bool result = is_valid_base64(public_key_pem, strlen(public_key_pem));
-    if (!result) {
-        console(CONSOLE_ERROR, "Public key validation failed");
+    if (pkey != NULL) {
+        console(CONSOLE_DEBUG, "Private key loaded successfully");
+        char *public_key_pem = get_public_key_pem_string(pkey);
         EVP_PKEY_free(pkey);
+        public_key_pem = strip_pem_headers_and_footers(public_key_pem);
+        remove_whitespace_and_newline_characters(public_key_pem);
+        return public_key_pem;
+    } else {
+        console(CONSOLE_DEBUG, "Private key not found, generating new key pair");
+        int attempts = 0;
+        while (attempts < KEY_GENERATION_RETRIES) {
+            pkey = generate_key_pair(Ed25519);
+            if (pkey != NULL) {
+                // Extract and format public key content in backend storage format (without headers nor footers)
+                char *public_key_pem = get_public_key_pem_string(pkey);
+                public_key_pem = strip_pem_headers_and_footers(public_key_pem);
+                remove_whitespace_and_newline_characters(public_key_pem);
+
+                // Validate the public key content
+                bool result = is_valid_base64(public_key_pem, strlen(public_key_pem));
+                if (result) {
+                    // Save the private key
+                    bool save_private_result = save_private_key_in_pem(pkey, private_key_filepath);
+                    if (!save_private_result) {
+                        console(CONSOLE_ERROR, "Failed to save private key");
+                        exit(1);
+                    }
+
+                    // Save the public key
+                    char public_key_filepath[KEY_PATH_SIZE];
+                    snprintf(public_key_filepath, sizeof(public_key_filepath), "%s/%s/%s", config.data_path, DID_KEY_DIR, PUBKEY_FILE_NAME);
+
+                    bool save_public_result = save_public_key_in_pem(pkey, public_key_filepath);
+                    if (!save_public_result) {
+                        console(CONSOLE_ERROR, "Failed to save public key");
+                        exit(1);
+                    }
+
+                    EVP_PKEY_free(pkey);
+                    return public_key_pem;
+                }            
+            }
+
+            attempts++;
+        }
+
+        console(CONSOLE_ERROR, "Failed to generate key pair after %d attempts", KEY_GENERATION_RETRIES);
         exit(1);
     }
-
-    // Cleanup
-    // cleanup_openssl(provider, pkey);
-
-    return public_key_pem;
 }
 
-char *get_did_key_or_generate() {
-    int attempts = 0;
-    char *public_key = NULL;
-    while (attempts < KEY_GENERATION_RETRIES) {
-        public_key = get_did_public_key();
-        if (public_key != NULL) {
-            return public_key;
-        }
-        attempts++;
-    }
-
-    console(CONSOLE_ERROR, "Failed to generate public key after %d attempts", KEY_GENERATION_RETRIES);
-    exit(1);
-}

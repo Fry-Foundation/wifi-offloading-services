@@ -3,6 +3,6 @@
 
 #include <stdbool.h>
 
-char *get_did_key_or_generate();
+char *get_did_public_key_or_generate_keypair();
 
 #endif /* DID_KEY_H  */

@@ -14,6 +14,7 @@ SOURCE_PATH := source
 DIST_PATH := dist
 DIST_SCRIPTS_PATH := $(DIST_PATH)/scripts
 DIST_DATA_PATH := $(DIST_PATH)/data
+DIST_DID_KEY_PATH := $(DIST_DATA_PATH)/did-key
 
 # Define executable
 EXECUTABLE := wayru-os-services
@@ -34,8 +35,9 @@ CFLAGS = -Wall -Wextra -std=gnu11 -I$(SOURCE_PATH)
 # Libraries
 LIBS = -lcurl -ljson-c -lssl -lcrypto
 
-.PHONY: all compile run copy-scripts clean
+.PHONY: all compile-only compile run copy-scripts clean
 all: clean compile copy-scripts run
+compile-only: clean compile copy-scripts
 
 # Compile the program
 compile: $(DIST_PATH)/$(EXECUTABLE)
@@ -55,12 +57,13 @@ copy-scripts:
 	chmod +x $(DIST_SCRIPTS_PATH)/*
 
 	mkdir -p $(DIST_DATA_PATH)
+	mkdir -p $(DIST_DID_KEY_PATH)
 
 	cp VERSION $(DIST_PATH)/VERSION
 
 # Run the program
 run:
-	cd "$(DIST_PATH)" && valgrind -s --leak-check=full --track-origins=yes --log-file=valgrind_report.txt ./$(EXECUTABLE) --dev \
+	cd "$(DIST_PATH)" && ./$(EXECUTABLE) --dev \
 	--config-enabled "$(CONFIG_ENABLED)" \
 	--config-main-api "$(CONFIG_MAIN_API)" \
 	--config-accounting-enabled "$(CONFIG_ACCOUNTING_ENABLED)" \

@@ -230,18 +230,6 @@ char *get_os_name() {
     return os_name;
 }
 
-char *get_did_public_key() {
-    // Check if key is stored in key file path
-    char *did_public_key = read_did_public_key();
-    if (did_public_key != NULL) {
-        return did_public_key;
-    }
-
-    console(CONSOLE_DEBUG, "no did public key, generating one");
-    create_did_key_pair();
-    return read_did_public_key();
-}
-
 void init_device_data() {
     device_data.os_version = get_os_version();
     device_data.os_services_version = get_os_services_version();
@@ -256,7 +244,7 @@ void init_device_data() {
     device_data.public_ip = get_public_ip();
     device_data.os_name = get_os_name();
 
-    device_data.did_public_key = get_did_public_key();
+    device_data.did_public_key = get_did_public_key_or_generate_keypair();
 }
 
 void clean_device_data_service() {

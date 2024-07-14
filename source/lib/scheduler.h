@@ -28,6 +28,8 @@ typedef struct Scheduler {
     Task *head;
 } Scheduler;
 
+Scheduler* init_scheduler();
+void clean_scheduler(Scheduler *sch);
 void schedule_task(Scheduler *sch, time_t execute_at, TaskFunction task_function, const char *detail);
 void print_tasks(Scheduler *sch);
 void run_tasks(Scheduler *sch);

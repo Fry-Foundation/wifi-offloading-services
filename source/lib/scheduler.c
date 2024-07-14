@@ -8,6 +8,30 @@
 
 #define SLEEP_SECONDS 1
 
+Scheduler* init_scheduler() {
+    Scheduler *sch = (Scheduler*)malloc(sizeof(Scheduler));
+    if (sch != NULL) {
+        sch->head = NULL;
+    }
+
+    return sch;
+}
+
+void clean_scheduler(Scheduler *sch) {
+    if (sch == NULL) {
+        return;
+    }
+
+    Task *current = sch->head;
+    while (current != NULL) {
+        Task *temp = current;
+        current = current->next;
+        free(temp);
+    }
+
+    free(sch);
+}
+
 Task *create_task(time_t execute_at, TaskFunction task_function, const char *detail) {
     console(CONSOLE_DEBUG, "Creating task");
     console(CONSOLE_DEBUG, "With detail: %s", detail);
@@ -51,8 +75,12 @@ void schedule_task(Scheduler *sch, time_t execute_at, TaskFunction task_function
     // - Execution time is earlier than the first task's execution time
     if (!sch->head || difftime(sch->head->execute_at, new_task->execute_at) > 0) {
         console(CONSOLE_DEBUG, "Inserting task at the beginning of the list");
+        console(CONSOLE_DEBUG, "Scheduler head is at address: %p", (void *)sch->head);
         new_task->next = sch->head;
+        console(CONSOLE_DEBUG, "New task next is at address: %p", (void *)new_task->next);
         sch->head = new_task;
+        console(CONSOLE_DEBUG, "Scheduler head is now at address: %p", (void *)sch->head);
+        exit(0);
         return;
     }
 
@@ -77,6 +105,9 @@ void schedule_task(Scheduler *sch, time_t execute_at, TaskFunction task_function
 }
 
 void execute_tasks(Scheduler *sch) {
+    console(CONSOLE_DEBUG, "-------------------------------------------------");
+    console(CONSOLE_DEBUG, "Executing tasks, time is now: %ld", time(NULL));
+
     time_t now = time(NULL);
 
     // Loop to execute all tasks that are due
@@ -93,7 +124,8 @@ void execute_tasks(Scheduler *sch) {
         // Execute the task's function
         task->task_function(sch);
 
-        // Free the task memory if it is not periodic
+        // Free the task memory
+        console(CONSOLE_DEBUG, "Freeing task memory for task with memory address: %p", (void *)task);
         free(task);
     }
 }

@@ -12,21 +12,19 @@
 
 int main(int argc, char *argv[]) {
     // Init
-    Scheduler sch = {NULL};
-
+    Scheduler *sch = init_scheduler();
     init_config(argc, argv);
     init_device_data();
 
     // Start services and schedule future tasks on each
-    access_service(&sch);
-    device_status_service(&sch);
-    setup_service(&sch);
-    accounting_service(&sch);
+    access_service(sch);
+    device_status_service(sch);
+    setup_service(sch);
+    accounting_service(sch);
 
-    // print_tasks(&sch);
+    run_tasks(sch);
 
-    run_tasks(&sch);
-
+    clean_scheduler(sch);
     clean_device_data_service();
     clean_access_service();
 

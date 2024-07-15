@@ -52,8 +52,6 @@ void setup_task(Scheduler *sch) {
         console(CONSOLE_DEBUG, "requesting setup");
         request_setup();
     }
-
-    console(CONSOLE_DEBUG, "setup task complete; will not reschedule");
 }
 
 void setup_service(Scheduler *sch) { setup_task(sch); }

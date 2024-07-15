@@ -39,13 +39,10 @@ DeviceStatus request_device_status() {
 
     // Request headers
     struct curl_slist *headers = NULL;
-
     char public_key_header[1024];
     snprintf(public_key_header, sizeof(public_key_header), "public_key: %s", access_key.public_key);
-
     headers = curl_slist_append(headers, public_key_header);
     headers = curl_slist_append(headers, "Content-Type: application/json");
-
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
     // Request body
@@ -62,8 +59,12 @@ DeviceStatus request_device_status() {
 
     res = curl_easy_perform(curl);
 
+    json_object_put(json_body);
+
     if (res != CURLE_OK) {
         console(CONSOLE_ERROR, "access key curl request failed:", curl_easy_strerror(res));
+        curl_easy_cleanup(curl);
+        curl_slist_free_all(headers);
         free(response_buffer);
         return Unknown;
     }
@@ -76,6 +77,8 @@ DeviceStatus request_device_status() {
     if (parsed_response == NULL) {
         // JSON parsing failed
         console(CONSOLE_ERROR, "failed to parse device status JSON data");
+        curl_easy_cleanup(curl);
+        curl_slist_free_all(headers);
         json_object_put(parsed_response);
         free(response_buffer);
         return Unknown;
@@ -84,6 +87,8 @@ DeviceStatus request_device_status() {
     if (!json_object_object_get_ex(parsed_response, "deviceStatus", &device_status)) {
         console(CONSOLE_ERROR, "publicKey field missing or invalid");
         json_object_put(parsed_response);
+        curl_easy_cleanup(curl);
+        curl_slist_free_all(headers);
         free(response_buffer);
         return Unknown;
     }
@@ -91,6 +96,8 @@ DeviceStatus request_device_status() {
     int response_device_status = json_object_get_int64(device_status);
 
     json_object_put(parsed_response);
+    curl_easy_cleanup(curl);
+    curl_slist_free_all(headers);
     free(response_buffer);
 
     console(CONSOLE_DEBUG, "device status response: %d", response_device_status);

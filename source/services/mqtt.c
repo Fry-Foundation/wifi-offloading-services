@@ -1,10 +1,16 @@
 #include <stdio.h>
 #include "mqtt.h"
+#include "env.h"
 #include <mosquitto.h>
 
 void on_connect(struct mosquitto *mosq, void *obj, int reason_code)
 {
-    printf("Connected to the broker.\n");
+    if(reason_code){
+        printf("connection error: %d (%s)\n", reason_code, mosquitto_connack_string(reason_code));
+        //exit (1);
+    }else {
+        printf("Connected to the broker.\n");
+    }
 
     int rc = mosquitto_subscribe(mosq, NULL, "test/topic", 0);
     if (rc != MOSQ_ERR_SUCCESS) {
@@ -20,7 +26,7 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
 }
 
 
-void on_publish(struct mosquitto *mosq, void *obj, int mid)
+void on_publish(struct mosquitto *mosq, void *obj, int mid, int reason_code)
 {
     printf("Message has been published.\n");
 }
@@ -33,7 +39,10 @@ void publish_mqtt(struct mosquitto *mosq, char *topic, char *message) {
 }
 
 struct mosquitto * init_mosquitto() {
+    load_env("../env.txt");
     struct mosquitto *mosq;
+    const char *mqtt_user = env("MQTT_USER");
+    const char *mqtt_password = env("MQTT_PASS");
     int rc;
     int pw_set;
     int tls_set;
@@ -49,7 +58,7 @@ struct mosquitto * init_mosquitto() {
         return 1;
     }
 
-    pw_set = mosquitto_username_pw_set(mosq, "monitoring", "uAqAnL8L");
+    pw_set = mosquitto_username_pw_set(mosq, mqtt_user, mqtt_password);
     if(pw_set != MOSQ_ERR_SUCCESS){
         fprintf(stderr, "Error: Unable to set username and password. %s\n", mosquitto_strerror(pw_set));
         mosquitto_destroy(mosq);
@@ -86,13 +95,9 @@ struct mosquitto * init_mosquitto() {
         return 1;
     }
 
-    printf("Connected to the broker successfully.\n");
-
     // Subscribe to a topic
     rc = mosquitto_subscribe(mosq, NULL, "test", 0);
 
-    
-    on_publish(mosq, NULL, 0);
     // Start the event loop
     rc = mosquitto_loop_start(mosq);
     if (rc != MOSQ_ERR_SUCCESS) {

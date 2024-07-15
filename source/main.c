@@ -30,7 +30,6 @@ int main(int argc, char *argv[]) {
     run_tasks(&sch);
 
     clean_up_mosquitto(&mosq);
-
     clean_device_data_service();
     clean_access_service();
 

@@ -20,10 +20,24 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
 }
 
 
+void on_publish(struct mosquitto *mosq, void *obj, int mid)
+{
+    printf("Message has been published.\n");
+}
+
+void publish_mqtt(struct mosquitto *mosq, char *topic, char *message) {
+    int rc = mosquitto_publish(mosq, NULL, topic, strlen(message), message, 0, false);
+    if (rc != MOSQ_ERR_SUCCESS) {
+        fprintf(stderr, "Error: Unable to publish message. %s\n", mosquitto_strerror(rc));
+    }
+}
+
 struct mosquitto * init_mosquitto() {
     struct mosquitto *mosq;
     int rc;
-
+    int pw_set;
+    int tls_set;
+    int tls_opts_set;
     // Initialize the Mosquitto library
     mosquitto_lib_init();
 
@@ -35,12 +49,36 @@ struct mosquitto * init_mosquitto() {
         return 1;
     }
 
+    pw_set = mosquitto_username_pw_set(mosq, "monitoring", "uAqAnL8L");
+    if(pw_set != MOSQ_ERR_SUCCESS){
+        fprintf(stderr, "Error: Unable to set username and password. %s\n", mosquitto_strerror(pw_set));
+        mosquitto_destroy(mosq);
+        mosquitto_lib_cleanup();
+        return 1;
+    }
+
+    tls_set = mosquitto_tls_set(mosq, "../source/certificates/ca.crt", NULL, "../source/certificates/monitoring.crt", "../source/certificates/monitoring.key", NULL);
+    if(tls_set != MOSQ_ERR_SUCCESS){
+        fprintf(stderr, "Error: Unable to set TLS. %s\n", mosquitto_strerror(tls_set));
+        mosquitto_destroy(mosq);
+        mosquitto_lib_cleanup();
+        return 1;
+    }
+
+    tls_opts_set = mosquitto_tls_opts_set(mosq, 1, "tlsv1.2", NULL);
+    if(tls_opts_set != MOSQ_ERR_SUCCESS){
+        fprintf(stderr, "Error: Unable to set TLS options. %s\n", mosquitto_strerror(tls_opts_set));
+        mosquitto_destroy(mosq);
+        mosquitto_lib_cleanup();
+        return 1;
+    }
     // Set callbacks
     mosquitto_connect_callback_set(mosq, on_connect);
     mosquitto_message_callback_set(mosq, on_message);
+    mosquitto_publish_callback_set(mosq, on_publish);
 
     // Connect to an MQTT broker
-    rc = mosquitto_connect(mosq, "test.mosquitto.org", 1883, 60);
+    rc = mosquitto_connect(mosq, "broker.internal.wayru.tech", 8883, 60);
     if (rc != MOSQ_ERR_SUCCESS) {
         fprintf(stderr, "Error: Unable to connect to broker. %s\n", mosquitto_strerror(rc));
         mosquitto_destroy(mosq);
@@ -53,6 +91,8 @@ struct mosquitto * init_mosquitto() {
     // Subscribe to a topic
     rc = mosquitto_subscribe(mosq, NULL, "test", 0);
 
+    
+    on_publish(mosq, NULL, 0);
     // Start the event loop
     rc = mosquitto_loop_start(mosq);
     if (rc != MOSQ_ERR_SUCCESS) {
@@ -63,6 +103,7 @@ struct mosquitto * init_mosquitto() {
         return 1;
     }
 
+    publish_mqtt(mosq, "wayru", "Hola desde una conexion segura!");
     // Keep the program running to listen for messages
     // printf("Press Enter to exit...\n");
     // getchar();
@@ -76,6 +117,6 @@ void clean_up_mosquitto(struct mosquitto **mosq) {
     mosquitto_lib_cleanup();
 }
 
-struct mosquitto * init_mqtt(){ 
+struct mosquitto * init_mqtt() { 
     return init_mosquitto();
 }

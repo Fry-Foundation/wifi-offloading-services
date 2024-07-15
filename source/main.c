@@ -26,9 +26,7 @@ int main(int argc, char *argv[]) {
     accounting_service(&sch);
 
     // print_tasks(&sch);
-
     struct mosquitto *mosq = init_mqtt();
-
     run_tasks(&sch);
 
     clean_up_mosquitto(&mosq);

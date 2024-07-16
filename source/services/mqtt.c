@@ -3,6 +3,13 @@
 #include "env.h"
 #include <mosquitto.h>
 #include <string.h>
+#include <services/config.h>
+#include <lib/console.h>
+
+#define CA_FILE_NAME "ca.crt"
+#define KEY_FILE_NAME "device.key"
+#define CSR_FILE_NAME "device.csr"
+#define CERT_FILE_NAME "device.crt"
 
 void on_connect(struct mosquitto *mosq, void *obj, int reason_code)
 {
@@ -67,7 +74,19 @@ struct mosquitto * init_mosquitto() {
         return NULL;
     }
 
-    tls_set = mosquitto_tls_set(mosq, "../source/certificates/ca.crt", NULL, "../source/certificates/monitoring.crt", "../source/certificates/monitoring.key", NULL);
+    char caPath[256];
+    char keyPath[256];
+    char crtPath[256];
+
+    snprintf(caPath, sizeof(caPath), "%s/%s", config.data_path, CA_FILE_NAME);
+    snprintf(keyPath, sizeof(keyPath), "%s/%s", config.data_path, KEY_FILE_NAME);
+    snprintf(crtPath, sizeof(crtPath), "%s/%s", config.data_path, CERT_FILE_NAME);
+
+    console(CONSOLE_DEBUG, "CA Path: %s", &caPath);
+    console(CONSOLE_DEBUG, "Key Path: %s", &keyPath);
+    console(CONSOLE_DEBUG, "Crt Path: %s", &crtPath);
+
+    tls_set = mosquitto_tls_set(mosq, caPath, NULL, crtPath, keyPath, NULL);
     if(tls_set != MOSQ_ERR_SUCCESS){
         fprintf(stderr, "Error: Unable to set TLS. %s\n", mosquitto_strerror(tls_set));
         mosquitto_destroy(mosq);

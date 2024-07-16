@@ -18,8 +18,8 @@ int main(int argc, char *argv[]) {
     Scheduler *sch = init_scheduler();
     init_config(argc, argv);
     init_device_data();
-    struct mosquitto *mosq = init_mqtt();
     generate_and_sign_cert();
+    struct mosquitto *mosq = init_mqtt();
 
     // Start services and schedule future tasks on each
     access_service(sch);

@@ -59,6 +59,7 @@ copy-scripts:
 	mkdir -p $(DIST_DATA_PATH)
 	mkdir -p $(DIST_DID_KEY_PATH)
 
+	cp certificates/ca.crt $(DIST_DATA_PATH)/ca.crt
 	cp VERSION $(DIST_PATH)/VERSION
 
 # Run the program

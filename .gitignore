@@ -63,5 +63,5 @@ dkms.conf
 compile_commands.json
 
 #MQTT TLS
-source/certificates
+certificates/
 .env

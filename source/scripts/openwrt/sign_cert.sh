@@ -10,6 +10,11 @@ CSR_PATH=$2
 CERT_PATH=$3
 BACKEND_URL=$4
 
+echo "INFO: KEY_PATH: $KEY_PATH"
+echo "INFO: CSR_PATH: $CSR_PATH"
+echo "INFO: CERT_PATH: $CERT_PATH"
+echo "INFO: BACKEND_URL: $BACKEND_URL"
+
 # Generate private key
 echo "INFO: Generating private key..."
 openssl genrsa -out $KEY_PATH 2048

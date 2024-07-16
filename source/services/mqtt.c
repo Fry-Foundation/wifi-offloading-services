@@ -2,6 +2,7 @@
 #include "mqtt.h"
 #include "env.h"
 #include <mosquitto.h>
+#include <string.h>
 
 void on_connect(struct mosquitto *mosq, void *obj, int reason_code)
 {
@@ -26,7 +27,7 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
 }
 
 
-void on_publish(struct mosquitto *mosq, void *obj, int mid, int reason_code)
+void on_publish(struct mosquitto *mosq, void *obj, int mid)
 {
     printf("Message has been published.\n");
 }
@@ -55,7 +56,7 @@ struct mosquitto * init_mosquitto() {
     if (!mosq) {
         fprintf(stderr, "Error: Unable to create Mosquitto client instance.\n");
         mosquitto_lib_cleanup();
-        return 1;
+        return NULL;
     }
 
     pw_set = mosquitto_username_pw_set(mosq, mqtt_user, mqtt_password);
@@ -63,7 +64,7 @@ struct mosquitto * init_mosquitto() {
         fprintf(stderr, "Error: Unable to set username and password. %s\n", mosquitto_strerror(pw_set));
         mosquitto_destroy(mosq);
         mosquitto_lib_cleanup();
-        return 1;
+        return NULL;
     }
 
     tls_set = mosquitto_tls_set(mosq, "../source/certificates/ca.crt", NULL, "../source/certificates/monitoring.crt", "../source/certificates/monitoring.key", NULL);
@@ -71,7 +72,7 @@ struct mosquitto * init_mosquitto() {
         fprintf(stderr, "Error: Unable to set TLS. %s\n", mosquitto_strerror(tls_set));
         mosquitto_destroy(mosq);
         mosquitto_lib_cleanup();
-        return 1;
+        return NULL;
     }
 
     tls_opts_set = mosquitto_tls_opts_set(mosq, 1, "tlsv1.2", NULL);
@@ -79,7 +80,7 @@ struct mosquitto * init_mosquitto() {
         fprintf(stderr, "Error: Unable to set TLS options. %s\n", mosquitto_strerror(tls_opts_set));
         mosquitto_destroy(mosq);
         mosquitto_lib_cleanup();
-        return 1;
+        return NULL;
     }
     // Set callbacks
     mosquitto_connect_callback_set(mosq, on_connect);
@@ -92,7 +93,7 @@ struct mosquitto * init_mosquitto() {
         fprintf(stderr, "Error: Unable to connect to broker. %s\n", mosquitto_strerror(rc));
         mosquitto_destroy(mosq);
         mosquitto_lib_cleanup();
-        return 1;
+        return NULL;
     }
 
     // Subscribe to a topic
@@ -105,7 +106,7 @@ struct mosquitto * init_mosquitto() {
         mosquitto_disconnect(mosq);
         mosquitto_destroy(mosq);
         mosquitto_lib_cleanup();
-        return 1;
+        return NULL;
     }
 
     publish_mqtt(mosq, "wayru", "Hola desde una conexion segura!");

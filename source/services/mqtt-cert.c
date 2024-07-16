@@ -4,6 +4,7 @@
 #include "lib/console.h"
 #include "lib/script_runner.h"
 #include <string.h>
+#include <stdio.h>
 
 #define KEY_FILE_NAME "device.key"
 #define CSR_FILE_NAME "device.csr"
@@ -41,7 +42,7 @@ void generate_and_sign_cert() {
 
     console(CONSOLE_INFO, "Running script to generate key, CSR and obtain signed certificate for mqtt");
     
-    printf(config.data_path);
+    // printf(config.data_path);
     char* cert = run_sign_cert(key_path, csr_path, cert_path);
 
     if (cert) {
@@ -49,6 +50,4 @@ void generate_and_sign_cert() {
     } else {
         console(CONSOLE_ERROR, "Error receiving signed certificate");
     }
-
-    return cert;
 }

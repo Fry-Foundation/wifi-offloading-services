@@ -8,6 +8,7 @@ CONFIG_ACCESS_INTERVAL = 10800
 CONFIG_DEVICE_STATUS_INTERVAL = 120
 CONFIG_SETUP_INTERVAL = 120
 CONFIG_LOG_LEVEL = 4
+CONFIG_MONITORING_INTERVAL = 20
 
 # Define paths
 SOURCE_PATH := source
@@ -73,7 +74,8 @@ run:
 	--config-access-interval "$(CONFIG_ACCESS_INTERVAL)" \
 	--config-device-status-interval "$(CONFIG_DEVICE_STATUS_INTERVAL)" \
 	--config-setup-interval "$(CONFIG_SETUP_INTERVAL)" \
-	--config-console-log-level "$(CONFIG_LOG_LEVEL)"
+	--config-console-log-level "$(CONFIG_LOG_LEVEL)" \
+	--config-monitoring-interval "$(CONFIG_MONITORING_INTERVAL)"
 
 # Clean the build
 clean:

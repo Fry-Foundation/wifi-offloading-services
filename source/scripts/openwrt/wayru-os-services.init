@@ -20,6 +20,7 @@ start_service() {
 	local device_status_interval
 	local setup_interval
 	local console_log_level
+	local monitoring_interval
 
 	config_get enabled wayru_os_services1 enabled
 	config_get main_api wayru_os_services1 main_api
@@ -30,6 +31,7 @@ start_service() {
 	config_get device_status_interval wayru_os_services1 device_status_interval
 	config_get setup_interval wayru_os_services1 setup_interval
 	config_get console_log_level wayru_os_services1 console_log_level
+	config_get monitoring_interval wayru_os_services1 monitoring_interval
 
 	logger -t "wayru-os-services" "Enabled: $enabled"
 	logger -t "wayru-os-services" "Main API: $main_api"
@@ -40,6 +42,7 @@ start_service() {
 	logger -t "wayru-os-services" "Device Status Interval: $device_status_interval"
 	logger -t "wayru-os-services" "Setup Interval: $setup_interval"
 	logger -t "wayru-os-services" "Console Log Level: $console_log_level"
+	logger -t "wayru-os-services" "Monitoring Interval: $monitoring_interval"
 
 	procd_open_instance
 
@@ -52,7 +55,8 @@ start_service() {
 		--config-access-interval "$access_interval" \
 		--config-device-status-interval "$device_status_interval" \
 		--config-setup-interval "$setup_interval" \
-		--config-console-log-level "$console_log_level"
+		--config-console-log-level "$console_log_level" \
+		--config-monitoring-interval "$monitoring_interval"
 	procd_set_param file /etc/config/wayru-os-services
 	procd_set_param respawn 150 10 10
 	procd_set_param term_timeout 60

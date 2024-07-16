@@ -196,7 +196,7 @@ int start_opennds() {
     }
 }
 
-void accounting_task(Scheduler *sch) {
+void accounting_task(Scheduler *sch, void *data) {
     // Set up paths
     int dev_env = config.dev_env;
     int accounting_enabled = config.accounting_enabled;
@@ -210,7 +210,7 @@ void accounting_task(Scheduler *sch) {
 
     if (device_status != Ready) {
         console(CONSOLE_DEBUG, "accounting is disabled because device is not ready; will try again later");
-        schedule_task(sch, time(NULL) + config.accounting_interval, accounting_task, "accounting");
+        schedule_task(sch, time(NULL) + config.accounting_interval, accounting_task, NULL, "accounting");
         return;
     }
 
@@ -227,7 +227,7 @@ void accounting_task(Scheduler *sch) {
     char *opennds_clients_data = query_opennds();
     if (opennds_clients_data == NULL) {
         console(CONSOLE_DEBUG, "failed to query OpenNDS; skipping server sync, will try again later");
-        schedule_task(sch, time(NULL) + config.accounting_interval, accounting_task, "accounting");
+        schedule_task(sch, time(NULL) + config.accounting_interval, accounting_task, NULL, "accounting");
         return;
     }
 
@@ -235,7 +235,7 @@ void accounting_task(Scheduler *sch) {
 
     free(opennds_clients_data);
 
-    schedule_task(sch, time(NULL) + config.accounting_interval, accounting_task, "accounting");
+    schedule_task(sch, time(NULL) + config.accounting_interval, accounting_task, NULL, "accounting");
 }
 
-void accounting_service(Scheduler *sch) { accounting_task(sch); }
+void accounting_service(Scheduler *sch) { accounting_task(sch, NULL); }

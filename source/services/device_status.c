@@ -107,16 +107,16 @@ DeviceStatus request_device_status() {
     return response_device_status; 
 }
 
-void device_status_task(Scheduler *sch) {
+void device_status_task(Scheduler *sch, void *data) {
     device_status = request_device_status();
     console(CONSOLE_DEBUG, "device status: %d", device_status);
     console(CONSOLE_DEBUG, "device status interval: %d", config.device_status_interval);
     console(CONSOLE_DEBUG, "device status interval time: %ld", time(NULL) + config.device_status_interval);
-    schedule_task(sch, time(NULL) + config.device_status_interval, device_status_task, "device status");
+    schedule_task(sch, time(NULL) + config.device_status_interval, device_status_task, NULL, "device status");
 }
 
 void device_status_service(Scheduler *sch) {
-    device_status_task(sch);
+    device_status_task(sch, NULL);
 
     // Side effects
     // Make sure wayru operator is running (all status codes but 6)

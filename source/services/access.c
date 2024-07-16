@@ -231,7 +231,7 @@ bool request_access_key() {
     return true;
 };
 
-void access_task(Scheduler *sch) {
+void access_task(Scheduler *sch, void *data) {
     console(CONSOLE_DEBUG, "access task");
 
     if (check_access_key_near_expiration()) {
@@ -242,7 +242,7 @@ void access_task(Scheduler *sch) {
     }
 
     // Schedule the next key request
-    schedule_task(sch, time(NULL) + config.access_interval, access_task, "access");
+    schedule_task(sch, time(NULL) + config.access_interval, access_task, NULL, "access");
 }
 
 void access_service(Scheduler *sch) {
@@ -257,7 +257,7 @@ void access_service(Scheduler *sch) {
     }
 
     console(CONSOLE_DEBUG, "access service");
-    schedule_task(sch, time(NULL) + config.access_interval, access_task, "access");
+    schedule_task(sch, time(NULL) + config.access_interval, access_task, NULL, "access");
 }
 
 void clean_access_service() {

@@ -19,13 +19,6 @@ void on_connect(struct mosquitto *mosq, void *obj, int reason_code)
     }else {
         console(CONSOLE_INFO, "Connected to the broker.");
     }
-
-    int rc = mosquitto_subscribe(mosq, NULL, "test/topic", 0);
-    if (rc != MOSQ_ERR_SUCCESS) {
-        console(CONSOLE_ERROR, "Error: Unable to subscribe to the topic. %s\n", mosquitto_strerror(rc));
-    } else {
-        console(CONSOLE_INFO, "Subscribed to the topic successfully.");
-    }
 }
 
 void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg)
@@ -37,6 +30,19 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
 void on_publish(struct mosquitto *mosq, void *obj, int mid)
 {
     console(CONSOLE_INFO, "Message has been published.\n");
+}
+
+void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos, const int * granted_qos){
+    console(CONSOLE_INFO, "Subscribed to a topic.\n");
+}
+
+void subscribe_mqtt(struct mosquitto *mosq, char *topic, int qos){
+    int rc = mosquitto_subscribe(mosq, NULL, topic, qos);
+        if (rc != MOSQ_ERR_SUCCESS) {
+            console(CONSOLE_ERROR, "Error: Unable to subscribe to the topic. %s\n", mosquitto_strerror(rc));
+        } else {
+            console(CONSOLE_INFO, "Subscribed to the topic successfully.");
+        }
 }
 
 void publish_mqtt(struct mosquitto *mosq, char *topic, char *message) {
@@ -105,6 +111,7 @@ struct mosquitto * init_mosquitto() {
     mosquitto_connect_callback_set(mosq, on_connect);
     mosquitto_message_callback_set(mosq, on_message);
     mosquitto_publish_callback_set(mosq, on_publish);
+    mosquitto_subscribe_callback_set(mosq, on_subscribe);
 
     // Connect to an MQTT broker
     rc = mosquitto_connect(mosq, "broker.internal.wayru.tech", 8883, 60);

@@ -9,7 +9,7 @@
 
 typedef struct Scheduler Scheduler;
 
-typedef void (*TaskFunction)(Scheduler *);
+typedef void (*TaskFunction)(Scheduler *, void *);
 
 typedef struct __attribute__((aligned(8))) Task {
     // Time when the task should be executed
@@ -17,6 +17,9 @@ typedef struct __attribute__((aligned(8))) Task {
 
     // Pointer to the task function
     TaskFunction task_function;
+
+    // Additional data for the task
+    void *data;
 
     // Detail string for identifying the task
     char detail[SCHEDULER_DETAIL_SIZE];
@@ -30,9 +33,9 @@ typedef struct Scheduler {
     Task *head;
 } Scheduler;
 
-Scheduler* init_scheduler();
+Scheduler *init_scheduler();
 void clean_scheduler(Scheduler *sch);
-void schedule_task(Scheduler *sch, time_t execute_at, TaskFunction task_function, const char *detail);
+void schedule_task(Scheduler *sch, time_t execute_at, TaskFunction task_function, void *data, const char *detail);
 void print_tasks(Scheduler *sch);
 void run_tasks(Scheduler *sch);
 

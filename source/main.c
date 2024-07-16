@@ -4,14 +4,15 @@
 #include "services/config.h"
 #include "services/device_data.h"
 #include "services/device_status.h"
-#include "services/setup.h"
-#include "services/mqtt.h"
+#include "services/monitoring.h"
 #include "services/mqtt-cert.h"
+#include "services/mqtt.h"
+#include "services/setup.h"
+#include <mosquitto.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <mosquitto.h>
 
 int main(int argc, char *argv[]) {
     // Init
@@ -26,6 +27,7 @@ int main(int argc, char *argv[]) {
     device_status_service(sch);
     setup_service(sch);
     accounting_service(sch);
+    monitoring_service(sch, mosq);
 
     run_tasks(sch);
 

@@ -14,35 +14,35 @@
 void on_connect(struct mosquitto *mosq, void *obj, int reason_code)
 {
     if(reason_code){
-        printf("connection error: %d (%s)\n", reason_code, mosquitto_connack_string(reason_code));
+        console(CONSOLE_ERROR, "Error: Unable to connect to the broker. %s\n", mosquitto_connack_string(reason_code));
         //exit (1);
     }else {
-        printf("Connected to the broker.\n");
+        console(CONSOLE_INFO, "Connected to the broker.");
     }
 
     int rc = mosquitto_subscribe(mosq, NULL, "test/topic", 0);
     if (rc != MOSQ_ERR_SUCCESS) {
-        fprintf(stderr, "Error: Unable to subscribe to the topic. %s\n", mosquitto_strerror(rc));
+        console(CONSOLE_ERROR, "Error: Unable to subscribe to the topic. %s\n", mosquitto_strerror(rc));
     } else {
-        printf("Subscribed to the topic successfully.\n");
+        console(CONSOLE_INFO, "Subscribed to the topic successfully.");
     }
 }
 
 void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg)
 {
-    printf("Received message: %s\n", (char *)msg->payload);
+    console(CONSOLE_INFO, "Received message: %s\n", (char *)msg->payload);
 }
 
 
 void on_publish(struct mosquitto *mosq, void *obj, int mid)
 {
-    printf("Message has been published.\n");
+    console(CONSOLE_INFO, "Message has been published.\n");
 }
 
 void publish_mqtt(struct mosquitto *mosq, char *topic, char *message) {
     int rc = mosquitto_publish(mosq, NULL, topic, strlen(message), message, 0, false);
     if (rc != MOSQ_ERR_SUCCESS) {
-        fprintf(stderr, "Error: Unable to publish message. %s\n", mosquitto_strerror(rc));
+        console(CONSOLE_ERROR, "Error: Unable to publish message. %s\n", mosquitto_strerror(rc));
     }
 }
 
@@ -61,14 +61,14 @@ struct mosquitto * init_mosquitto() {
     // Create a new Mosquitto client instance
     mosq = mosquitto_new("client_id", true, NULL);
     if (!mosq) {
-        fprintf(stderr, "Error: Unable to create Mosquitto client instance.\n");
+        console(CONSOLE_ERROR, "Error: Unable to create Mosquitto client instance.\n");
         mosquitto_lib_cleanup();
         return NULL;
     }
 
     pw_set = mosquitto_username_pw_set(mosq, mqtt_user, mqtt_password);
     if(pw_set != MOSQ_ERR_SUCCESS){
-        fprintf(stderr, "Error: Unable to set username and password. %s\n", mosquitto_strerror(pw_set));
+        console(CONSOLE_ERROR, "Error: Unable to set username and password. %s\n", mosquitto_strerror(pw_set));
         mosquitto_destroy(mosq);
         mosquitto_lib_cleanup();
         return NULL;
@@ -88,7 +88,7 @@ struct mosquitto * init_mosquitto() {
 
     tls_set = mosquitto_tls_set(mosq, caPath, NULL, crtPath, keyPath, NULL);
     if(tls_set != MOSQ_ERR_SUCCESS){
-        fprintf(stderr, "Error: Unable to set TLS. %s\n", mosquitto_strerror(tls_set));
+        console(CONSOLE_ERROR, "Error: Unable to set TLS. %s\n", mosquitto_strerror(tls_set));
         mosquitto_destroy(mosq);
         mosquitto_lib_cleanup();
         return NULL;
@@ -96,7 +96,7 @@ struct mosquitto * init_mosquitto() {
 
     tls_opts_set = mosquitto_tls_opts_set(mosq, 1, "tlsv1.2", NULL);
     if(tls_opts_set != MOSQ_ERR_SUCCESS){
-        fprintf(stderr, "Error: Unable to set TLS options. %s\n", mosquitto_strerror(tls_opts_set));
+        console(CONSOLE_ERROR, "Error: Unable to set TLS options. %s\n", mosquitto_strerror(tls_opts_set));
         mosquitto_destroy(mosq);
         mosquitto_lib_cleanup();
         return NULL;
@@ -109,7 +109,7 @@ struct mosquitto * init_mosquitto() {
     // Connect to an MQTT broker
     rc = mosquitto_connect(mosq, "broker.internal.wayru.tech", 8883, 60);
     if (rc != MOSQ_ERR_SUCCESS) {
-        fprintf(stderr, "Error: Unable to connect to broker. %s\n", mosquitto_strerror(rc));
+        console(CONSOLE_ERROR, "Error: Unable to connect to broker. %s\n", mosquitto_strerror(rc));
         mosquitto_destroy(mosq);
         mosquitto_lib_cleanup();
         return NULL;
@@ -121,7 +121,7 @@ struct mosquitto * init_mosquitto() {
     // Start the event loop
     rc = mosquitto_loop_start(mosq);
     if (rc != MOSQ_ERR_SUCCESS) {
-        fprintf(stderr, "Error: Unable to start the event loop. %s\n", mosquitto_strerror(rc));
+        console(CONSOLE_ERROR, "Error: Unable to start the event loop. %s\n", mosquitto_strerror(rc));
         mosquitto_disconnect(mosq);
         mosquitto_destroy(mosq);
         mosquitto_lib_cleanup();

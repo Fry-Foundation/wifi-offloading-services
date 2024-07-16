@@ -44,6 +44,7 @@ define Build/Compile
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/did-key.o -c $(PKG_BUILD_DIR)/services/did-key.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/end_report.o -c $(PKG_BUILD_DIR)/services/end_report.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/setup.o -c $(PKG_BUILD_DIR)/services/setup.c
+		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/mqtt-cert.o -c $(PKG_BUILD_DIR)/services/mqtt-cert.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/console.o -c $(PKG_BUILD_DIR)/lib/console.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/curl_helpers.o -c $(PKG_BUILD_DIR)/lib/curl_helpers.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/key_pair.o -c $(PKG_BUILD_DIR)/lib/key_pair.c
@@ -61,6 +62,7 @@ define Build/Compile
 			$(PKG_BUILD_DIR)/services/did-key.o \
 			$(PKG_BUILD_DIR)/services/end_report.o \
 			$(PKG_BUILD_DIR)/services/setup.o \
+			$(PKG_BUILD_DIR)/services/mqtt-cert.o \
 			$(PKG_BUILD_DIR)/lib/console.o \
 			$(PKG_BUILD_DIR)/lib/curl_helpers.o \
 			$(PKG_BUILD_DIR)/lib/key_pair.o \
@@ -136,6 +138,8 @@ define Package/wayru-os-services/install
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/nds-deauth.sh $(1)/etc/wayru-os-services/scripts/
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/get-public-ip.sh $(1)/etc/wayru-os-services/scripts/
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/get-osname.sh $(1)/etc/wayru-os-services/scripts/
+		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/sign_cert.sh $(1)/etc/wayru-os-services/scripts/
+
 		$(INSTALL_DATA) VERSION $(1)/etc/wayru-os-services/VERSION
 endef
 

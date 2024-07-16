@@ -40,7 +40,7 @@ bool read_access_key() {
 
     FILE *file = fopen(access_file_path, "r");
     if (file == NULL) {
-        console(CONSOLE_ERROR, "failed to open key file");
+        console(CONSOLE_ERROR, "failed to open access key file");
         return false;
     }
 
@@ -50,6 +50,10 @@ bool read_access_key() {
 
     while (fgets(line, sizeof(line), file)) {
         if (strncmp(line, "public_key", 10) == 0) {
+            if (access_key.public_key != NULL) {
+                free(access_key.public_key);
+            }
+
             // Subtract the length of "public_key" from the total length
             size_t key_length = strlen(line) - 11;
             access_key.public_key = malloc(key_length + 1);
@@ -163,6 +167,8 @@ bool request_access_key() {
 
     if (res != CURLE_OK) {
         console(CONSOLE_ERROR, "access key curl request failed: %s", curl_easy_strerror(res));
+        curl_easy_cleanup(curl);
+        curl_slist_free_all(headers);
         free(response_buffer);
         return false;
     }
@@ -177,7 +183,8 @@ bool request_access_key() {
     if (parsed_response == NULL) {
         // JSON parsing failed
         console(CONSOLE_ERROR, "failed to parse access key JSON data");
-        json_object_put(parsed_response);
+        curl_easy_cleanup(curl);
+        curl_slist_free_all(headers);
         free(response_buffer);
         return false;
     }
@@ -202,8 +209,14 @@ bool request_access_key() {
 
     if (error_occurred) {
         json_object_put(parsed_response);
+        curl_easy_cleanup(curl);
+        curl_slist_free_all(headers);
         free(response_buffer);
         return false;
+    }
+
+    if (access_key.public_key != NULL) {
+        free(access_key.public_key);
     }
 
     access_key.public_key = malloc(strlen(json_object_get_string(public_key)) + 1); // +1 for null-terminator
@@ -212,6 +225,8 @@ bool request_access_key() {
     access_key.expires_at_seconds = json_object_get_int64(expires_at_seconds);
 
     json_object_put(parsed_response);
+    curl_slist_free_all(headers);
+    curl_easy_cleanup(curl);
     free(response_buffer);
     return true;
 };

@@ -59,6 +59,8 @@ dkms.conf
 # Misc
 .DS_Store
 .vscode
+.cache
+compile_commands.json
 
 #MQTT TLS
 source/certificates

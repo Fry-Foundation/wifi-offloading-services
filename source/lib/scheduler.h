@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include <time.h>
 
+#define SCHEDULER_DETAIL_SIZE 64
+
 typedef struct Scheduler Scheduler;
 
 typedef void (*TaskFunction)(Scheduler *);
@@ -17,7 +19,7 @@ typedef struct __attribute__((aligned(8))) Task {
     TaskFunction task_function;
 
     // Detail string for identifying the task
-    char detail[64];
+    char detail[SCHEDULER_DETAIL_SIZE];
 
     // Pointer to the next task in the list
     struct Task *next;
@@ -28,6 +30,8 @@ typedef struct Scheduler {
     Task *head;
 } Scheduler;
 
+Scheduler* init_scheduler();
+void clean_scheduler(Scheduler *sch);
 void schedule_task(Scheduler *sch, time_t execute_at, TaskFunction task_function, const char *detail);
 void print_tasks(Scheduler *sch);
 void run_tasks(Scheduler *sch);

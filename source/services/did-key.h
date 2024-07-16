@@ -1,13 +1,8 @@
-#ifndef PEAQ_DID_H
-#define PEAQ_DID_H
+#ifndef DID_KEY_H
+#define DID_KEY_H
 
 #include <stdbool.h>
 
-void create_did_key_pair();
+char *get_did_public_key_or_generate_keypair();
 
-char *read_did_public_key();
-
-// @todo
-// void verify_did_key_pair();
-
-#endif /* PEAQ_DID_H  */
+#endif /* DID_KEY_H  */

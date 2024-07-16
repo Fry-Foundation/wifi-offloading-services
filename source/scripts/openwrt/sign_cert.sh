@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 #KEY_PATH="/etc/mosquitto/certs/device.key"
 #CSR_PATH="/etc/mosquitto/certs/device.csr"

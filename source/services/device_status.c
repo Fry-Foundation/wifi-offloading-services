@@ -1,13 +1,13 @@
 #include "device_status.h"
-#include "lib/scheduler.h"
 #include "lib/console.h"
 #include "lib/curl_helpers.h"
-#include "services/config.h"
+#include "lib/scheduler.h"
 #include "services/access.h"
-#include <stdbool.h>
-#include <stdlib.h>
+#include "services/config.h"
 #include <curl/curl.h>
 #include <json-c/json.h>
+#include <stdbool.h>
+#include <stdlib.h>
 
 #define DEVICE_STATUS_ENDPOINT "/api/nfnode/device-status"
 
@@ -15,10 +15,10 @@ DeviceStatus device_status = Unknown;
 
 bool on_boot = true;
 
-DeviceStatus request_device_status() { 
+DeviceStatus request_device_status() {
     CURL *curl;
     CURLcode res;
-    
+
     char *response_buffer = init_response_buffer();
 
     curl = curl_easy_init();
@@ -104,19 +104,19 @@ DeviceStatus request_device_status() {
 
     on_boot = false;
 
-    return response_device_status; 
+    return response_device_status;
 }
 
-void device_status_task(Scheduler *sch, void *data) {
+void device_status_task(Scheduler *sch) {
     device_status = request_device_status();
     console(CONSOLE_DEBUG, "device status: %d", device_status);
     console(CONSOLE_DEBUG, "device status interval: %d", config.device_status_interval);
     console(CONSOLE_DEBUG, "device status interval time: %ld", time(NULL) + config.device_status_interval);
-    schedule_task(sch, time(NULL) + config.device_status_interval, device_status_task, NULL, "device status");
+    schedule_task(sch, time(NULL) + config.device_status_interval, device_status_task, "device status");
 }
 
 void device_status_service(Scheduler *sch) {
-    device_status_task(sch, NULL);
+    device_status_task(sch);
 
     // Side effects
     // Make sure wayru operator is running (all status codes but 6)

@@ -39,7 +39,7 @@ void publish_mqtt(struct mosquitto *mosq, char *topic, char *message) {
 }
 
 struct mosquitto * init_mosquitto() {
-    load_env("../env.txt");
+    load_env("../.env");
     struct mosquitto *mosq;
     const char *mqtt_user = env("MQTT_USER");
     const char *mqtt_password = env("MQTT_PASS");

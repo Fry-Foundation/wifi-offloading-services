@@ -14,5 +14,6 @@ bool save_private_key_in_pem(EVP_PKEY *pkey, char *private_key_filepath);
 bool save_public_key_in_pem(EVP_PKEY *pkey, char *public_key_filepath);
 EVP_PKEY *load_private_key_from_pem(char *private_key_filepath);
 char *get_public_key_pem_string(EVP_PKEY *pkey);
+void generate_csr(EVP_PKEY *pkey, const char *csr_filepath);
 
 #endif /* KEY_PAIR_H  */

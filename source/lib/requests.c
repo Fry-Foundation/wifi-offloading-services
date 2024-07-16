@@ -43,6 +43,8 @@ int performHttpGet(const char *url, const char *file_path) {
 int performHttpPost(const PostRequestOptions *options) {
     CURL *curl;
     CURLcode res = CURLE_OK;
+    curl_mime *form = NULL;
+    curl_mimepart *field = NULL;
 
     curl = curl_easy_init();
     if (curl) {
@@ -69,12 +71,19 @@ int performHttpPost(const PostRequestOptions *options) {
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
         if (options->filePath != NULL) {
-            file = fopen(options->filePath, "wb");
+            form = curl_mime_init(curl);
+            field = curl_mime_addpart(form);
+            curl_mime_name(field, "file");
+            curl_mime_filedata(field, options->filePath);
+            curl_easy_setopt(curl, CURLOPT_MIMEPOST, form);
+        }
+
+        if (options->resultFilePath != NULL) {
+            file = fopen(options->resultFilePath, "wb");
             if (!file) {
-                console(CONSOLE_ERROR, "failed to open the file for writing curl POST response");
+                console(CONSOLE_ERROR, "failed to open file for writing %s", options->resultFilePath);
                 return -1;
             }
-
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, file);
         }
 
@@ -96,8 +105,11 @@ int performHttpPost(const PostRequestOptions *options) {
         }
 
         // Cleanup
-        if (options->filePath != NULL) {
+        if (options->resultFilePath != NULL) {
             fclose(file);
+        }
+        if (form != NULL) {
+            curl_mime_free(form);
         }
         curl_slist_free_all(headers); // Free the header list
         curl_easy_cleanup(curl);

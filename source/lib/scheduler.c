@@ -118,7 +118,6 @@ void execute_tasks(Scheduler *sch) {
     get_task_count(sch);
     console(CONSOLE_DEBUG, "Task count: %d", get_task_count(sch));
 
-
     while (sch->head && difftime(sch->head->execute_at, now) <= 0) {
         // Get the task at the head of the list
         Task *task = sch->head;

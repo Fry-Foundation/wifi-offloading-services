@@ -22,6 +22,8 @@ typedef struct {
 
     int setup_interval;
 
+    int monitoring_interval;
+
     char active_path[PATH_SIZE];
     char scripts_path[PATH_SIZE];
     char data_path[PATH_SIZE];
@@ -30,7 +32,5 @@ typedef struct {
 extern Config config;
 
 void init_config(int argc, char *argv[]);
-
-void clean_config();
 
 #endif // CONFIG_H

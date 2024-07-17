@@ -13,6 +13,7 @@ CONFIG_LOG_LEVEL = 4
 SOURCE_PATH := source
 DIST_PATH := dist
 DIST_SCRIPTS_PATH := $(DIST_PATH)/scripts
+DIST_CERTS_PATH := $(DIST_PATH)/certificates
 DIST_DATA_PATH := $(DIST_PATH)/data
 DIST_DID_KEY_PATH := $(DIST_DATA_PATH)/did-key
 
@@ -58,6 +59,7 @@ copy-scripts:
 
 	mkdir -p $(DIST_DATA_PATH)
 	mkdir -p $(DIST_DID_KEY_PATH)
+	mkdir -p $(DIST_CERTS_PATH)
 
 	cp VERSION $(DIST_PATH)/VERSION
 

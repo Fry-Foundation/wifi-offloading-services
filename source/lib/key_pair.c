@@ -168,3 +168,66 @@ void generate_csr(EVP_PKEY *pkey, const char *csr_path) {
     X509_NAME_free(name);
     X509_REQ_free(x509_req);
 }
+
+// Load a certificate from a PEM file
+X509* load_certificate(const char *cert_path) {
+    FILE *cert_file = fopen(cert_path, "rb");
+    if (!cert_file) {
+        console(CONSOLE_ERROR, "Unable to open certificate file: %s", cert_path);
+        return NULL;
+    }
+    X509 *cert = PEM_read_X509(cert_file, NULL, NULL, NULL);
+    fclose(cert_file);
+    return cert;
+}
+
+// Verify a certificate against a CA certificate
+int verify_certificate(const char *cert_path, const char *ca_cert_path) {
+    X509 *cert = load_certificate(cert_path);
+    if (!cert) {
+        console(CONSOLE_ERROR, "Failed to load certificate: %s", cert_path);
+        return 0;
+    }
+
+    X509 *ca_cert = load_certificate(ca_cert_path);
+    if (!ca_cert) {
+        console(CONSOLE_ERROR, "Failed to load CA certificate: %s", ca_cert_path);
+        X509_free(cert);
+        return 0;
+    }
+
+    X509_STORE *store = X509_STORE_new();
+    if (!store) {
+        console(CONSOLE_ERROR, "Failed to create X509_STORE");
+        X509_free(cert);
+        X509_free(ca_cert);
+        return 0;
+    }
+    X509_STORE_add_cert(store, ca_cert);
+
+    X509_STORE_CTX *ctx = X509_STORE_CTX_new();
+    if (!ctx) {
+        console(CONSOLE_ERROR, "Failed to create X509_STORE_CTX");
+        X509_STORE_free(store);
+        X509_free(cert);
+        X509_free(ca_cert);
+        return 0;
+    }
+
+    X509_STORE_CTX_init(ctx, store, cert, NULL);
+
+    int ret = X509_verify_cert(ctx);
+    if (ret == 1) {
+        console(CONSOLE_INFO, "Certificate is valid.");
+    } else {
+        int err = X509_STORE_CTX_get_error(ctx);
+        console(CONSOLE_ERROR, "Certificate verification failed: %s\n", X509_verify_cert_error_string(err));
+    }
+
+    X509_STORE_CTX_free(ctx);
+    X509_STORE_free(store);
+    X509_free(cert);
+    X509_free(ca_cert);
+
+    return ret == 1;
+}

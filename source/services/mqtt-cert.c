@@ -12,12 +12,14 @@
 #define KEY_FILE_NAME "device.key"
 #define CSR_FILE_NAME "device.csr"
 #define CERT_FILE_NAME "device.crt"
+#define CA_CERT_FILE_NAME "ca.crt"
+#define BACKEND_ENDPOINT "/certificate-signing/sign"
 
-char backend_url[256] = "https://wifi.api.internal.wayru.tech/certificate-signing/sign";
+//char backend_url[256] = "https://wifi.api.internal.wayru.tech/certificate-signing/sign";
 
 // char backend_url[256] = "https://wifi.api.dev.wayru.tech/certificate-signing/sign";
 
-char *run_sign_cert(const char *key_path, const char *csr_path, const char *cert_path) {
+/*char *run_sign_cert(const char *key_path, const char *csr_path, const char *cert_path) {
     char script_file[256];
     snprintf(script_file, sizeof(script_file), "%s/sign_cert.sh", config.scripts_path);
 
@@ -26,32 +28,37 @@ char *run_sign_cert(const char *key_path, const char *csr_path, const char *cert
 
     char *result = run_script(command);
     return result;
-}
+}*/
 
 void generate_and_sign_cert() {
     char key_path[256];
     char csr_path[256];
     char cert_path[256];
     char ca_cert_path[256];
-
-    if (config.dev_env == 1) {
-        strcpy(ca_cert_path, "./source/certificates/ca.crt");
-    } else {
-        strcpy(ca_cert_path, "/etc/wayru-os-services/data/ca.crt");
-    }
+    char backend_url[256];
 
     snprintf(key_path, sizeof(key_path), "%s/%s", config.data_path, KEY_FILE_NAME);
     snprintf(csr_path, sizeof(csr_path), "%s/%s", config.data_path, CSR_FILE_NAME);
     snprintf(cert_path, sizeof(cert_path), "%s/%s", config.data_path, CERT_FILE_NAME);
-    //snprintf(ca_cert_path, sizeof(ca_cert_path), "%s/%s", config.data_path, CA_CERT_FILE_NAME);
-
+    snprintf(ca_cert_path, sizeof(ca_cert_path), "%s/%s", config.data_path, CA_CERT_FILE_NAME);
+    snprintf(backend_url, sizeof(backend_url), "%s%s", config.accounting_api, BACKEND_ENDPOINT);
+   
     // Print the paths for debugging
     console(CONSOLE_DEBUG, "Key path: %s", key_path);
     console(CONSOLE_DEBUG, "CSR path: %s", csr_path);
     console(CONSOLE_DEBUG, "Cert path: %s", cert_path);
     console(CONSOLE_DEBUG, "CA Cert path: %s", ca_cert_path);
+    console(CONSOLE_DEBUG, "BAckend URL: %s", backend_url);
 
-    // char* cert = run_sign_cert(key_path, csr_path, cert_path);
+    // Check if the certificate already exists and is valid
+    console(CONSOLE_DEBUG, "Checking if certificate already exists and is valid (mqtt)...");
+    int initial_verify_result = verify_certificate(cert_path, ca_cert_path);
+    if (initial_verify_result == 1) {
+        console(CONSOLE_INFO, "Existing certificate is valid. No further action required (mqtt).");
+        return;
+    }else {
+        console(CONSOLE_INFO, "Certificate does not exist or is not valid. Generating a new one (mqtt).");
+    }
 
     // Generate private key
     console(CONSOLE_DEBUG, "Generating private key (mqtt)...");

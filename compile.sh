@@ -30,6 +30,7 @@ fi
 cp -r "$CURRENT_DIR/Makefile" "$TEMP_FEEDS_DIR/admin/wayru-os-services/"
 cp -r "$CURRENT_DIR/VERSION" "$TEMP_FEEDS_DIR/admin/wayru-os-services/"
 cp -r "$CURRENT_DIR/source" "$TEMP_FEEDS_DIR/admin/wayru-os-services/"
+cp -r "$CURRENT_DIR/certificates" "$TEMP_FEEDS_DIR/admin/wayru-os-services/"
 
 # Move to the build system repo and get the current branch
 cd "$OPENWRT_DIR"

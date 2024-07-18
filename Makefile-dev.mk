@@ -14,7 +14,6 @@ CONFIG_MONITORING_INTERVAL = 20
 SOURCE_PATH := source
 DIST_PATH := dist
 DIST_SCRIPTS_PATH := $(DIST_PATH)/scripts
-DIST_CERTS_PATH := $(DIST_PATH)/certificates
 DIST_DATA_PATH := $(DIST_PATH)/data
 DIST_DID_KEY_PATH := $(DIST_DATA_PATH)/did-key
 
@@ -60,7 +59,6 @@ copy-scripts:
 
 	mkdir -p $(DIST_DATA_PATH)
 	mkdir -p $(DIST_DID_KEY_PATH)
-	mkdir -p $(DIST_CERTS_PATH)
 
 	cp certificates/ca.crt $(DIST_DATA_PATH)/ca.crt
 	cp VERSION $(DIST_PATH)/VERSION

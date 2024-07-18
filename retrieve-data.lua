@@ -1,10 +1,6 @@
 #!/usr/bin/lua 
 
-local ubus_lib = require('ubus')
 local io = require('io')
-local ubus = ubus_lib.connect()
-if not ubus then error('Failed to connect to ubusd') end
-local system_info = ubus:call('system', 'info', {})
 
 --utils
 function get_cpus()
@@ -61,11 +57,37 @@ function parse_disk_usage()
 end
 
 -- get memory info
-local memoryTotal = system_info.memory.total
-local memoryFree = system_info.memory.free
-local memoryUsed = memoryTotal - memoryFree
-local memoryShared = system_info.memory.shared
-local memoryBuffered = system_info.memory.buffered
+local function get_memory_info()
+  local memory_info = {}
+  local handle = io.popen("cat /proc/meminfo")
+  local result = handle:read("*a")
+  handle:close()
+
+  -- Parse the output of `cat /proc/meminfo`
+  for line in result:gmatch("[^\r\n]+") do
+      local key, value = line:match("([^:]+):%s+(%d+)")
+      if key and value then
+          key = key:gsub(" ", "_"):lower()
+          memory_info[key] = tonumber(value)
+      end
+  end
+
+  -- Calculate additional memory metrics
+  memory_info.memory_total = memory_info.memtotal
+  memory_info.memory_free = memory_info.memfree
+  memory_info.memory_used = memory_info.memory_total - memory_info.memory_free
+  memory_info.memory_shared = memory_info.shmem
+  memory_info.memory_buffered = memory_info.buffers
+
+  return memory_info
+end
+
+local system_info = get_memory_info()
+local memoryTotal = system_info.memory_total
+local memoryFree = system_info.memory_free
+local memoryUsed = system_info.memory_used
+local memoryShared = system_info.memory_shared
+local memoryBuffered = system_info.memory_buffered
 
 -- get disk info
 local disks = parse_disk_usage()
@@ -152,18 +174,18 @@ for _, wiphy in ipairs(wiphy_list) do
 end
 
 -- print results
-print("Wifi Clients: ", wifiClients)
+print("Wifi Clients:", wifiClients)
 print("memory Total:", memoryTotal)
-print("memory Free: ", memoryFree)
-print("memory Used: ", memoryUsed)
-print("memory Shared: ", memoryShared)
-print("memory Buffered: ", memoryBuffered)
-print("CPU Count: ", cpu_count)
-print("CPU Load: ", cpuLoad)
-print("CPU Load Percent: ", cpuLoadPercent)
-print("Disk Used: ",diskUsed)
-print("Disk Size: ", diskSize)
-print("Disk Available: ", diskAvailable)
-print("Disk Used Percent: ", diskUsedPercent)
+print("memory Free:", memoryFree)
+print("memory Used:", memoryUsed)
+print("memory Shared:", memoryShared)
+print("memory Buffered:", memoryBuffered)
+print("CPU Count:", cpu_count)
+print("CPU Load:", cpuLoad)
+print("CPU Load Percent:", cpuLoadPercent)
+print("Disk Used:",diskUsed)
+print("Disk Size:", diskSize)
+print("Disk Available:", diskAvailable)
+print("Disk Used Percent:", diskUsedPercent)
 print("Radio Count:", radioCount)
 print("Radio Live:", radioLive)

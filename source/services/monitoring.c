@@ -8,6 +8,7 @@
 #include "services/device_data.h"
 #include <lib/console.h>
 #include <json-c/json.h>
+#include <time.h>
 
 struct mosquitto *mosq;
 
@@ -65,8 +66,9 @@ void parse_output(const char *output, RouterData *info) {
     }
 }
 
-void createjson(RouterData *info, json_object *jobj) {
+void createjson(RouterData *info, json_object *jobj, int timestamp) {
     json_object_object_add(jobj, "device_id", json_object_new_string(device_data.device_id));
+    json_object_object_add(jobj, "timestamp", json_object_new_int(timestamp));
     json_object_object_add(jobj, "wifi_clients", json_object_new_int(info->wifi_clients));
     json_object_object_add(jobj, "memory_total", json_object_new_int64(info->memory_total));
     json_object_object_add(jobj, "memory_free", json_object_new_int64(info->memory_free));
@@ -86,10 +88,8 @@ void createjson(RouterData *info, json_object *jobj) {
 }
 
 void monitoring_task(Scheduler *sch) {
-    // Run the monitoring task
-    time_t now = time(NULL);
-    char time_str[64];
-    ctime_r(&now, time_str);
+    time_t now;
+    time(&now);
     RouterData info;
     char script_file[256];
     snprintf(script_file, sizeof(script_file), "%s%s", config.scripts_path, "/retrieve-data.lua");
@@ -101,9 +101,8 @@ void monitoring_task(Scheduler *sch) {
     parse_output(output, &info);
     free(output);
     json_object *json_device_data = json_object_new_object();
-    createjson(&info, json_device_data);
+    createjson(&info, json_device_data, now);
     console(CONSOLE_INFO, "Device data: %s", json_object_to_json_string(json_device_data));
-    publish_mqtt(mosq, "time/topic", time_str);
     publish_mqtt(mosq, "monitoring/device-data", json_object_to_json_string(json_device_data));
     // Schedule monitoring_task to rerun later
     schedule_task(sch, time(NULL) + config.monitoring_interval, monitoring_task, "monitoring");

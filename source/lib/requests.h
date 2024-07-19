@@ -12,6 +12,7 @@ typedef struct {
     const char *key;
     const char *body;
     const char *filePath;
+    const char *resultFilePath;
     size_t (*writeFunction)(char *ptr, size_t size, size_t nmemb, void *userdata);
     void *writeData;
 } PostRequestOptions;

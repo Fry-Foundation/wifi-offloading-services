@@ -17,7 +17,7 @@ define Package/wayru-os-services
   SECTION:=admin
   CATEGORY:=Administration
   TITLE:=Wayru config daemon and scripts
-  DEPENDS:=+libcurl +libjson-c +libopenssl
+  DEPENDS:=+libcurl +libjson-c +libopenssl +libmosquitto
 endef
 
 # Package description; a more verbose description on what our package does
@@ -28,6 +28,7 @@ endef
 # Package preparation instructions; create the build directory and copy the source code. 
 # The last command is necessary to ensure our preparation instructions remain compatible with the patching system.
 define Build/Prepare
+
 		mkdir -p $(PKG_BUILD_DIR)
 		cp -r $(SOURCE_DIR)/* $(PKG_BUILD_DIR)
 		$(Build/Patch)
@@ -45,6 +46,9 @@ define Build/Compile
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/end_report.o -c $(PKG_BUILD_DIR)/services/end_report.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/setup.o -c $(PKG_BUILD_DIR)/services/setup.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/mqtt-cert.o -c $(PKG_BUILD_DIR)/services/mqtt-cert.c
+		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/mqtt.o -c $(PKG_BUILD_DIR)/services/mqtt.c
+		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/monitoring.o -c $(PKG_BUILD_DIR)/services/monitoring.c
+		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/env.o -c $(PKG_BUILD_DIR)/services/env.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/console.o -c $(PKG_BUILD_DIR)/lib/console.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/curl_helpers.o -c $(PKG_BUILD_DIR)/lib/curl_helpers.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/key_pair.o -c $(PKG_BUILD_DIR)/lib/key_pair.c
@@ -63,6 +67,9 @@ define Build/Compile
 			$(PKG_BUILD_DIR)/services/end_report.o \
 			$(PKG_BUILD_DIR)/services/setup.o \
 			$(PKG_BUILD_DIR)/services/mqtt-cert.o \
+			$(PKG_BUILD_DIR)/services/mqtt.o \
+			$(PKG_BUILD_DIR)/services/monitoring.o \
+			$(PKG_BUILD_DIR)/services/env.o \
 			$(PKG_BUILD_DIR)/lib/console.o \
 			$(PKG_BUILD_DIR)/lib/curl_helpers.o \
 			$(PKG_BUILD_DIR)/lib/key_pair.o \
@@ -70,7 +77,7 @@ define Build/Compile
 			$(PKG_BUILD_DIR)/lib/scheduler.o \
 			$(PKG_BUILD_DIR)/lib/script_runner.o \
 			-o $(PKG_BUILD_DIR)/wayru-os-services \
-			-lcurl -ljson-c -lssl -lcrypto
+			-lcurl -ljson-c -lssl -lcrypto -lmosquitto
 endef
 
 # define Build/Compile
@@ -139,7 +146,7 @@ define Package/wayru-os-services/install
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/get-public-ip.sh $(1)/etc/wayru-os-services/scripts/
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/get-osname.sh $(1)/etc/wayru-os-services/scripts/
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/sign_cert.sh $(1)/etc/wayru-os-services/scripts/
-
+		
 		$(INSTALL_DATA) certificates/ca.crt $(1)/etc/wayru-os-services/data/ca.crt
 		$(INSTALL_DATA) VERSION $(1)/etc/wayru-os-services/VERSION
 endef

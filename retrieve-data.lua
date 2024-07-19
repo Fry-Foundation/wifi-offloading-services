@@ -73,11 +73,11 @@ local function get_memory_info()
   end
 
   -- Calculate additional memory metrics
-  memory_info.memory_total = memory_info.memtotal
-  memory_info.memory_free = memory_info.memfree
-  memory_info.memory_used = memory_info.memory_total - memory_info.memory_free
-  memory_info.memory_shared = memory_info.shmem
-  memory_info.memory_buffered = memory_info.buffers
+  memory_info.memory_total = memory_info.memtotal * 1024
+  memory_info.memory_free = memory_info.memfree * 1024
+  memory_info.memory_used = (memory_info.memory_total - memory_info.memory_free)
+  memory_info.memory_shared = memory_info.shmem * 1024
+  memory_info.memory_buffered = memory_info.buffers * 1024
 
   return memory_info
 end

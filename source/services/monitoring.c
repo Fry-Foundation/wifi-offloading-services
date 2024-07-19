@@ -1,13 +1,14 @@
-#include <string.h>
-#include <mosquitto.h>
 #include "lib/console.h"
 #include "lib/scheduler.h"
-#include "services/config.h"
 #include "lib/script_runner.h"
-#include "services/mqtt.h"
+#include "services/config.h"
 #include "services/device_data.h"
-#include <lib/console.h>
+#include "services/mqtt.h"
 #include <json-c/json.h>
+#include <lib/console.h>
+#include <mosquitto.h>
+#include <stdio.h>
+#include <string.h>
 #include <time.h>
 
 struct mosquitto *mosq;
@@ -52,7 +53,7 @@ void parse_output(const char *output, RouterData *info) {
         {"radio_count:", " %d", &info->radio_count},
         {"radio_live:", " %d", &info->radio_live},
     };
-    
+
     const int mappings_count = sizeof(mappings) / sizeof(mappings[0]);
     char *line = strtok(output, "\n");
     while (line != NULL) {
@@ -66,7 +67,7 @@ void parse_output(const char *output, RouterData *info) {
     }
 }
 
-void createjson(RouterData *info, json_object *jobj, int timestamp) {
+json_object *createjson(RouterData *info, json_object *jobj, int timestamp) {
     json_object_object_add(jobj, "device_id", json_object_new_string(device_data.device_id));
     json_object_object_add(jobj, "timestamp", json_object_new_int(timestamp));
     json_object_object_add(jobj, "wifi_clients", json_object_new_int(info->wifi_clients));
@@ -102,8 +103,11 @@ void monitoring_task(Scheduler *sch) {
     free(output);
     json_object *json_device_data = json_object_new_object();
     createjson(&info, json_device_data, now);
-    console(CONSOLE_INFO, "Device data: %s", json_object_to_json_string(json_device_data));
-    publish_mqtt(mosq, "monitoring/device-data", json_object_to_json_string(json_device_data));
+
+    const char *device_data_str = json_object_to_json_string(json_device_data);
+
+    console(CONSOLE_INFO, "Device data: %s", device_data_str);
+    publish_mqtt(mosq, "monitoring/device-data", device_data_str);
     // Schedule monitoring_task to rerun later
     schedule_task(sch, time(NULL) + config.monitoring_interval, monitoring_task, "monitoring");
 }

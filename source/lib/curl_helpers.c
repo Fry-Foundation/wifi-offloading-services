@@ -6,7 +6,6 @@
 
 char *init_response_buffer() {
     char *response = malloc(1);
-
     if (response == NULL) {
         fprintf(stderr, "malloc() failed\n");
         return NULL;
@@ -19,17 +18,22 @@ char *init_response_buffer() {
 size_t save_to_buffer_callback(void *contents, size_t size, size_t nmemb, void *userp) {
     size_t total_size = size * nmemb;
     char **response_ptr = (char **)userp;
+    size_t current_length = strlen(*response_ptr);
 
     // Allocate memory to store the response
-    *response_ptr = realloc(*response_ptr, strlen(*response_ptr) + total_size + 1);
-
-    if (*response_ptr == NULL) {
+    char *temp = realloc(*response_ptr, current_length + total_size + 1);
+    if (temp == NULL) {
         fprintf(stderr, "realloc() failed\n");
+        free(*response_ptr); // Free the original memory to prevent memory leaks
+        *response_ptr = NULL;
         return 0;
     }
 
+    *response_ptr = temp;
+
     // Append the new data to the response buffer
-    strncat(*response_ptr, contents, total_size);
+    memcpy(*response_ptr + current_length, contents, total_size);
+    (*response_ptr)[current_length + total_size] = '\0'; // Null-terminate the string
 
     return total_size;
 }

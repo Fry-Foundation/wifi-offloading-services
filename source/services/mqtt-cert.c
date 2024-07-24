@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
-#include <lib/requests.h>
+#include <lib/http-requests.h>
 
 #define KEY_FILE_NAME "device.key"
 #define CSR_FILE_NAME "device.csr"
@@ -73,28 +73,41 @@ void generate_and_sign_cert() {
 
     // Send CSR to backend to be signed
     console(CONSOLE_DEBUG, "Sending CSR to be signed (mqtt)....");
-    PostRequestOptions post_cert_sign_options = {
+    HttpPostOptions post_cert_sign_options = {
         .url = backend_url,
-        .key = access_key.public_key,
-        .body = NULL,
-        .filePath = csr_path,
-        .resultFilePath = cert_path,
-        .writeFunction = NULL,
-        .writeData = NULL,
+        .upload_file_path = csr_path,
     };
 
-    performHttpPost(&post_cert_sign_options);
+    HttpResult result = http_post(&post_cert_sign_options);
+    if (result.is_error) {
+        console(CONSOLE_ERROR, "Failed to sign certificate (mqtt): %s", result.error);
+        return;
+    }
 
-    // Check backend response
+    if (result.response_buffer == NULL) {
+        console(CONSOLE_ERROR, "Failed to sign certificate (mqtt): no response");
+        return;
+    }
+
+    // Save the signed certificate
+    FILE *file = fopen(cert_path, "wb");
+    if (file == NULL) {
+        console(CONSOLE_ERROR, "Failed to open file for writing (mqtt): %s", cert_path);
+        free(result.response_buffer);
+        return;
+    }
+
+    fwrite(result.response_buffer, 1, strlen(result.response_buffer), file);
+    fclose(file);
+    free(result.response_buffer);
+
+    // Check that the written backend response is OK
     // Verify that the certificate is valid with the CA cert that we have
     console(CONSOLE_DEBUG, "Verifying signed certificate (mqtt)...");
     int verify_result = verify_certificate(cert_path, ca_cert_path);
-
     if (verify_result == 1) {
         console(CONSOLE_INFO, "Certificate verification successful (mqtt).");
     } else{
         console(CONSOLE_ERROR, "Certificate verification failed (mqtt).");
     }
-    
-    
 }

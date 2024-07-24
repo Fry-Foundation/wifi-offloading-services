@@ -1,9 +1,8 @@
 #include "accounting.h"
 #include "lib/console.h"
-#include "lib/requests.h"
+#include "lib/http-requests.h"
 #include "lib/scheduler.h"
 #include "lib/script_runner.h"
-#include "services/access.h"
 #include "services/config.h"
 #include "services/device_status.h"
 #include <json-c/json.h>
@@ -55,36 +54,56 @@ void deauthenticate_session(const char *client_mac_address) {
     free(deauthenticate_output);
 }
 
-size_t process_accounting_response(char *ptr, size_t size, size_t nmemb, void *userdata) {
-    console(CONSOLE_DEBUG, "processing accounting response");
-    console(CONSOLE_DEBUG, "ptr: %s", ptr);
+void post_accounting_update(char *opennds_clients_data) {
+    // Build accounting URL
+    char accounting_url[256];
+    snprintf(accounting_url, sizeof(accounting_url), "%s%s", config.accounting_api, ACCOUNTING_ENDPOINT);
 
-    size_t realsize = size * nmemb;
+    console(CONSOLE_DEBUG, "accounting_url: %s", accounting_url);
+    console(CONSOLE_DEBUG, "posting accounting update");
 
-    // Parse JSON
+    // Request options
+    HttpPostOptions post_accounting_options = {
+        .url = accounting_url,
+        .body_json_str = opennds_clients_data,
+    };
+
+    HttpResult result = http_post(&post_accounting_options);
+    if (result.is_error) {
+        console(CONSOLE_ERROR, "failed to post accounting update");
+        console(CONSOLE_ERROR, "error: %s", result.error);
+        return;
+    }
+
+    if (result.response_buffer == NULL) {
+        console(CONSOLE_ERROR, "failed to post accounting update");
+        console(CONSOLE_ERROR, "no response received");
+        return;
+    }
+
+    // Parse the response as JSON
     struct json_object *parsed_response;
     struct json_object *end_list;
 
-    // Parse the response as JSON
-    parsed_response = json_tokener_parse(ptr);
+    parsed_response = json_tokener_parse(result.response_buffer);
     if (parsed_response == NULL) {
         // JSON parsing failed
         console(CONSOLE_ERROR, "failed to parse accounting response JSON");
-        return realsize;
+        return;
     }
 
     // Make sure the 'end_list' key exists,  and extract it
     if (!json_object_object_get_ex(parsed_response, "end_list", &end_list)) {
         console(CONSOLE_ERROR, "'end_list' key not found in JSON");
         json_object_put(parsed_response);
-        return realsize;
+        return;
     }
 
     // Ensure 'end_list' is an array
     if (!json_object_is_type(end_list, json_type_array)) {
         console(CONSOLE_ERROR, "'end_list' is not an array");
         json_object_put(parsed_response);
-        return realsize;
+        return;
     }
 
     // Iterate over the end list
@@ -95,28 +114,7 @@ size_t process_accounting_response(char *ptr, size_t size, size_t nmemb, void *u
     }
 
     json_object_put(parsed_response);
-    return realsize;
-}
-
-void post_accounting_update(char *opennds_clients_data) {
-    // Build accounting URL
-    char accounting_url[256];
-    snprintf(accounting_url, sizeof(accounting_url), "%s%s", config.accounting_api, ACCOUNTING_ENDPOINT);
-
-    console(CONSOLE_DEBUG, "accounting_url: %s", accounting_url);
-    console(CONSOLE_DEBUG, "posting accounting update");
-
-    // Request options
-    PostRequestOptions post_accounting_options = {
-        .url = accounting_url,
-        .key = access_key.public_key,
-        .body = opennds_clients_data,
-        .filePath = NULL,
-        .writeFunction = process_accounting_response,
-        .writeData = NULL,
-    };
-
-    performHttpPost(&post_accounting_options);
+    free(result.response_buffer);
 }
 
 char *status_opennds() {

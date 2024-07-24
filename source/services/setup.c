@@ -1,6 +1,6 @@
 #include "setup.h"
 #include "lib/console.h"
-#include "lib/requests.h"
+#include "lib/http-requests.h"
 #include "services/access.h"
 #include "services/config.h"
 #include "services/device_status.h"
@@ -22,22 +22,23 @@ void request_setup() {
     snprintf(setup_url, sizeof(setup_url), "%s%s", config.main_api, SETUP_ENDPOINT);
     console(CONSOLE_DEBUG, "setup_url: %s", setup_url);
 
-    // Request options
-    PostRequestOptions requestSetup = {
+    HttpPostOptions setup_options = {
         .url = setup_url,
-        .key = access_key.public_key,
-        .body = NULL,
-        .filePath = NULL,
-        .writeFunction = NULL,
-        .writeData = NULL,
+        .legacy_key = access_key.public_key,
     };
 
-    int result = performHttpPost(&requestSetup);
-    if (result == 1) {
-        console(CONSOLE_DEBUG, "setup request was a success");
-    } else {
-        console(CONSOLE_DEBUG, "setup request failed");
+    HttpResult result = http_post(&setup_options);
+    if (result.is_error) {
+        console(CONSOLE_ERROR, "setup request failed: %s", result.error);
+        return;
     }
+
+    if (result.response_buffer == NULL) {
+        console(CONSOLE_ERROR, "setup request failed: no response received");
+        return;
+    }
+
+    console(CONSOLE_DEBUG, "setup request response: %s", result.response_buffer);
 }
 
 void setup_task(Scheduler *sch) {

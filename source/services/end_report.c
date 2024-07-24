@@ -1,5 +1,5 @@
 #include "lib/console.h"
-#include "lib/requests.h"
+#include "lib/http-requests.h"
 #include "services/access.h"
 #include "services/config.h"
 #include <json-c/json.h>
@@ -68,17 +68,23 @@ void post_end_report(json_object *mac_address_array) {
     // Stringify the JSON
     const char *mac_address_json = json_object_to_json_string(mac_address_array);
 
-    // Request options
-    PostRequestOptions post_end_report_options = {
+    HttpPostOptions post_end_report_options = {
         .url = end_report_url,
-        .key = access_key.public_key,
-        .body = mac_address_json,
-        .filePath = NULL,
-        .writeFunction = process_end_report_response,
-        .writeData = NULL,
+        .body_json_str = mac_address_json,
     };
 
-    performHttpPost(&post_end_report_options);
+    HttpResult result = http_post(&post_end_report_options);
+    if (result.is_error) {
+        console(CONSOLE_ERROR, "failed to post end report: %s", result.error);
+        return;
+    }
+
+    if (result.response_buffer == NULL) {
+        console(CONSOLE_ERROR, "failed to post end report: no response received");
+        return;
+    }
+
+    console(CONSOLE_DEBUG, "end report response: %s", result.response_buffer);
 }
 
 void end_report_task() {

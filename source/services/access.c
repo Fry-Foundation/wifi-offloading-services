@@ -1,6 +1,6 @@
 #include "access.h"
 #include "lib/console.h"
-#include "lib/curl_helpers.h"
+#include "lib/http-requests.h"
 #include "lib/scheduler.h"
 #include "lib/script_runner.h"
 #include "services/config.h"
@@ -114,31 +114,9 @@ bool check_access_key_near_expiration() {
 }
 
 bool request_access_key() {
-    CURL *curl;
-    CURLcode res;
-
-    char *response_buffer = init_response_buffer();
-
-    curl = curl_easy_init();
-
-    if (!curl) {
-        console(CONSOLE_ERROR, "access key curl could not be initialized");
-        free(response_buffer);
-        return false;
-    }
-
-    // Set up as POST request
-    curl_easy_setopt(curl, CURLOPT_POST, 1L);
-
     // Url
     char access_url[256];
     snprintf(access_url, sizeof(access_url), "%s%s", config.main_api, ACCESS_ENDPOINT);
-    curl_easy_setopt(curl, CURLOPT_URL, access_url);
-
-    // Request headers
-    struct curl_slist *headers = NULL;
-    headers = curl_slist_append(headers, "Content-Type: application/json");
-    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
     // Request body
     json_object *json_body = json_object_new_object();
@@ -153,23 +131,27 @@ bool request_access_key() {
     json_object_object_add(json_body, "os_services_version", json_object_new_string(device_data.os_services_version));
     json_object_object_add(json_body, "did_public_key", json_object_new_string(device_data.did_public_key));
     const char *body = json_object_to_json_string(json_body);
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body);
 
     console(CONSOLE_DEBUG, "access key request body %s", body);
 
-    // Response callback and buffer
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, save_to_buffer_callback);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_buffer);
+    HttpPostOptions options = {
+        .url = access_url,
+        .body_json_str = body,
+    };
 
-    res = curl_easy_perform(curl);
+    HttpResult result = http_post(&options);
 
     json_object_put(json_body);
 
-    if (res != CURLE_OK) {
-        console(CONSOLE_ERROR, "access key curl request failed: %s", curl_easy_strerror(res));
-        curl_easy_cleanup(curl);
-        curl_slist_free_all(headers);
-        free(response_buffer);
+    if (result.is_error) {
+        console(CONSOLE_ERROR, "failed to request access key");
+        console(CONSOLE_ERROR, "error: %s", result.error);
+        return false;
+    }
+
+    if (result.response_buffer == NULL) {
+        console(CONSOLE_ERROR, "failed to request access key");
+        console(CONSOLE_ERROR, "no response received");
         return false;
     }
 
@@ -179,13 +161,11 @@ bool request_access_key() {
     struct json_object *issued_at_seconds;
     struct json_object *expires_at_seconds;
 
-    parsed_response = json_tokener_parse(response_buffer);
+    parsed_response = json_tokener_parse(result.response_buffer);
     if (parsed_response == NULL) {
         // JSON parsing failed
         console(CONSOLE_ERROR, "failed to parse access key JSON data");
-        curl_easy_cleanup(curl);
-        curl_slist_free_all(headers);
-        free(response_buffer);
+        free(result.response_buffer);
         return false;
     }
 
@@ -209,9 +189,7 @@ bool request_access_key() {
 
     if (error_occurred) {
         json_object_put(parsed_response);
-        curl_easy_cleanup(curl);
-        curl_slist_free_all(headers);
-        free(response_buffer);
+        free(result.response_buffer);
         return false;
     }
 
@@ -225,9 +203,8 @@ bool request_access_key() {
     access_key.expires_at_seconds = json_object_get_int64(expires_at_seconds);
 
     json_object_put(parsed_response);
-    curl_slist_free_all(headers);
-    curl_easy_cleanup(curl);
-    free(response_buffer);
+    free(result.response_buffer);
+
     return true;
 };
 

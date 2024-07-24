@@ -52,7 +52,7 @@ define Build/Compile
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/console.o -c $(PKG_BUILD_DIR)/lib/console.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/curl_helpers.o -c $(PKG_BUILD_DIR)/lib/curl_helpers.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/key_pair.o -c $(PKG_BUILD_DIR)/lib/key_pair.c
-		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/requests.o -c $(PKG_BUILD_DIR)/lib/requests.c
+		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/http-requests.o -c $(PKG_BUILD_DIR)/lib/http-requests.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/scheduler.o -c $(PKG_BUILD_DIR)/lib/scheduler.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/script_runner.o -c $(PKG_BUILD_DIR)/lib/script_runner.c
 
@@ -73,7 +73,7 @@ define Build/Compile
 			$(PKG_BUILD_DIR)/lib/console.o \
 			$(PKG_BUILD_DIR)/lib/curl_helpers.o \
 			$(PKG_BUILD_DIR)/lib/key_pair.o \
-			$(PKG_BUILD_DIR)/lib/requests.o \
+			$(PKG_BUILD_DIR)/lib/http-requests.o \
 			$(PKG_BUILD_DIR)/lib/scheduler.o \
 			$(PKG_BUILD_DIR)/lib/script_runner.o \
 			-o $(PKG_BUILD_DIR)/wayru-os-services \

@@ -101,6 +101,7 @@ void monitoring_task(Scheduler *sch) {
     }
     parse_output(output, &info);
     free(output);
+
     json_object *json_device_data = json_object_new_object();
     createjson(&info, json_device_data, now);
 
@@ -108,6 +109,9 @@ void monitoring_task(Scheduler *sch) {
 
     console(CONSOLE_INFO, "Device data: %s", device_data_str);
     publish_mqtt(mosq, "monitoring/device-data", device_data_str);
+
+    json_object_put(json_device_data);
+
     // Schedule monitoring_task to rerun later
     schedule_task(sch, time(NULL) + config.monitoring_interval, monitoring_task, "monitoring");
 }

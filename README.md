@@ -9,7 +9,7 @@ Services for wayru-os:
 
 > OpenSSL / libssl is also needed. Check Makefile. @todo document that dependency here too.
 
-### Install the `libcurl` and `json-c` dependencies
+### Install the `libcurl`, `json-c`, `mosquitto` dependencies
 
 **Debian-based linux**
 
@@ -19,21 +19,8 @@ Install with `apt-get`:
 sudo apt-get update
 sudo apt-get install libcurl4-gnutls-dev
 sudo apt-get install libjson-c-dev
+sudo apt-get install libmosquitto-dev
 ```
-
-**macOS**
-
-Install with `brew`:
-
-```bash
-berw update
-brew install curl
-brew install json-c
-```
-
-**Windows**
-
-Not tested yet.
 
 ## Clone the repository
 

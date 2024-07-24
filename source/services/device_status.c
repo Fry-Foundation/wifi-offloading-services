@@ -4,7 +4,6 @@
 #include "lib/scheduler.h"
 #include "services/access.h"
 #include "services/config.h"
-#include <curl/curl.h>
 #include <json-c/json.h>
 #include <stdbool.h>
 #include <stdlib.h>

@@ -6,7 +6,6 @@
 #include "services/config.h"
 #include "services/device_data.h"
 #include "services/setup.h"
-#include <curl/curl.h>
 #include <json-c/json.h>
 #include <stdbool.h>
 #include <stdio.h>

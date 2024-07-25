@@ -3,8 +3,8 @@
 #include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/pem.h>
-#include <stdbool.h>
 #include <openssl/x509v3.h>
+#include <stdbool.h>
 
 #define KEY_PATH_SIZE 512
 
@@ -145,10 +145,10 @@ void generate_csr(EVP_PKEY *pkey, const char *csr_path) {
 
     // Set the subject name for the request
     X509_NAME *name = X509_NAME_new();
-    X509_NAME_add_entry_by_txt(name, "C",  MBSTRING_ASC, (unsigned char *)"US", -1, -1, 0);
+    X509_NAME_add_entry_by_txt(name, "C", MBSTRING_ASC, (unsigned char *)"US", -1, -1, 0);
     X509_NAME_add_entry_by_txt(name, "ST", MBSTRING_ASC, (unsigned char *)"Florida", -1, -1, 0);
-    X509_NAME_add_entry_by_txt(name, "L",  MBSTRING_ASC, (unsigned char *)"Boca Raton", -1, -1, 0);
-    X509_NAME_add_entry_by_txt(name, "O",  MBSTRING_ASC, (unsigned char *)"Wayru Inc.", -1, -1, 0);
+    X509_NAME_add_entry_by_txt(name, "L", MBSTRING_ASC, (unsigned char *)"Boca Raton", -1, -1, 0);
+    X509_NAME_add_entry_by_txt(name, "O", MBSTRING_ASC, (unsigned char *)"Wayru Inc.", -1, -1, 0);
     X509_NAME_add_entry_by_txt(name, "OU", MBSTRING_ASC, (unsigned char *)"Engineering", -1, -1, 0);
     X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, (unsigned char *)"wayru.tech", -1, -1, 0);
     X509_REQ_set_subject_name(x509_req, name);
@@ -170,7 +170,7 @@ void generate_csr(EVP_PKEY *pkey, const char *csr_path) {
 }
 
 // Load a certificate from a PEM file
-X509* load_certificate(const char *cert_path) {
+X509 *load_certificate(const char *cert_path) {
     FILE *cert_file = fopen(cert_path, "rb");
     if (!cert_file) {
         console(CONSOLE_ERROR, "Unable to open certificate file: %s", cert_path);

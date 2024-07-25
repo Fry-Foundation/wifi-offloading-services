@@ -145,4 +145,6 @@ void clean_up_mosquitto(struct mosquitto **mosq) {
     mosquitto_lib_cleanup();
 }
 
-struct mosquitto *init_mqtt() { return init_mosquitto(); }
+struct mosquitto *init_mqtt() {
+    return init_mosquitto();
+}

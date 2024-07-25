@@ -1,7 +1,7 @@
+#include "env.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "env.h"
 
 #define MAX_LINE_LENGTH 256
 #define MAX_VARIABLES 100

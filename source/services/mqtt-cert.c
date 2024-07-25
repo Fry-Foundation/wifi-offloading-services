@@ -4,10 +4,10 @@
 #include "lib/script_runner.h"
 #include "services/access.h"
 #include "services/config.h"
+#include <lib/http-requests.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
-#include <stdbool.h>
-#include <lib/http-requests.h>
 
 #define KEY_FILE_NAME "device.key"
 #define CSR_FILE_NAME "device.csr"
@@ -15,7 +15,7 @@
 #define CA_CERT_FILE_NAME "ca.crt"
 #define BACKEND_ENDPOINT "/certificate-signing/sign"
 
-//char backend_url[256] = "https://wifi.api.internal.wayru.tech/certificate-signing/sign";
+// char backend_url[256] = "https://wifi.api.internal.wayru.tech/certificate-signing/sign";
 
 // char backend_url[256] = "https://wifi.api.dev.wayru.tech/certificate-signing/sign";
 
@@ -42,7 +42,7 @@ void generate_and_sign_cert() {
     snprintf(cert_path, sizeof(cert_path), "%s/%s", config.data_path, CERT_FILE_NAME);
     snprintf(ca_cert_path, sizeof(ca_cert_path), "%s/%s", config.data_path, CA_CERT_FILE_NAME);
     snprintf(backend_url, sizeof(backend_url), "%s%s", config.accounting_api, BACKEND_ENDPOINT);
-   
+
     // Print the paths for debugging
     console(CONSOLE_DEBUG, "Key path: %s", key_path);
     console(CONSOLE_DEBUG, "CSR path: %s", csr_path);
@@ -56,7 +56,7 @@ void generate_and_sign_cert() {
     if (initial_verify_result == 1) {
         console(CONSOLE_INFO, "Existing certificate is valid. No further action required (mqtt).");
         return;
-    }else {
+    } else {
         console(CONSOLE_INFO, "Certificate does not exist or is not valid. Generating a new one (mqtt).");
     }
 
@@ -107,7 +107,7 @@ void generate_and_sign_cert() {
     int verify_result = verify_certificate(cert_path, ca_cert_path);
     if (verify_result == 1) {
         console(CONSOLE_INFO, "Certificate verification successful (mqtt).");
-    } else{
+    } else {
         console(CONSOLE_ERROR, "Certificate verification failed (mqtt).");
     }
 }

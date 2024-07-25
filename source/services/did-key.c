@@ -2,10 +2,10 @@
 #include "lib/console.h"
 #include "lib/key_pair.h"
 #include "services/config.h"
+#include <ctype.h>
 #include <openssl/evp.h>
 #include <stdbool.h>
 #include <string.h>
-#include <ctype.h>
 
 #define DID_KEY_DIR "did-key"
 #define PRIVKEY_FILE_NAME "key"
@@ -87,7 +87,8 @@ bool is_valid_base64(const char *str, size_t length) {
 char *get_did_public_key_or_generate_keypair() {
     // Load the private key
     char private_key_filepath[KEY_PATH_SIZE];
-    snprintf(private_key_filepath, sizeof(private_key_filepath), "%s/%s/%s", config.data_path, DID_KEY_DIR, PRIVKEY_FILE_NAME);
+    snprintf(private_key_filepath, sizeof(private_key_filepath), "%s/%s/%s", config.data_path, DID_KEY_DIR,
+             PRIVKEY_FILE_NAME);
 
     console(CONSOLE_DEBUG, "Attempting to load private key from %s", private_key_filepath);
     EVP_PKEY *pkey = load_private_key_from_pem(private_key_filepath);
@@ -122,7 +123,8 @@ char *get_did_public_key_or_generate_keypair() {
 
                     // Save the public key
                     char public_key_filepath[KEY_PATH_SIZE];
-                    snprintf(public_key_filepath, sizeof(public_key_filepath), "%s/%s/%s", config.data_path, DID_KEY_DIR, PUBKEY_FILE_NAME);
+                    snprintf(public_key_filepath, sizeof(public_key_filepath), "%s/%s/%s", config.data_path,
+                             DID_KEY_DIR, PUBKEY_FILE_NAME);
 
                     bool save_public_result = save_public_key_in_pem(pkey, public_key_filepath);
                     if (!save_public_result) {
@@ -132,7 +134,7 @@ char *get_did_public_key_or_generate_keypair() {
 
                     EVP_PKEY_free(pkey);
                     return public_key_pem;
-                }            
+                }
             }
 
             attempts++;
@@ -142,4 +144,3 @@ char *get_did_public_key_or_generate_keypair() {
         exit(1);
     }
 }
-

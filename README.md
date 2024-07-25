@@ -128,6 +128,12 @@ gdb /usr/bin/wayru-os-services
 ## Tooling
 
 ### Formatting
+Install the clang-format util:
+```bash
+sudo apt install clang-format
+```
+
+
 Run the `format-c` script from the `wayru-os-services` repo:
 
 ```bash

@@ -7,11 +7,10 @@
 #include "services/monitoring.h"
 #include "services/mqtt-cert.h"
 #include "services/mqtt.h"
+#include "services/registration.h"
 #include "services/setup.h"
 #include <mosquitto.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <stdbool.h>
 #include <unistd.h>
 
 int main(int argc, char *argv[]) {
@@ -19,6 +18,8 @@ int main(int argc, char *argv[]) {
     Scheduler *sch = init_scheduler();
     init_config(argc, argv);
     init_device_data();
+    bool valid_registration = init_registration(device_data.mac, device_data.model, device_data.brand);
+    if (!valid_registration) return 1;
     generate_and_sign_cert();
     struct mosquitto *mosq = init_mqtt();
 

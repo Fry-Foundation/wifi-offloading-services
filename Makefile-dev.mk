@@ -30,8 +30,8 @@ $(info OBJECTS: $(OBJECTS))
 
 # Compiler and flags
 CC = gcc
-CFLAGS = -Wall -Wextra -std=gnu11 -I$(SOURCE_PATH) 
-# CFLAGS = -g -Wall -Wextra -std=gnu11 -I$(SOURCE_PATH) 
+CFLAGS = -Wall -Wextra -std=gnu11 -I$(SOURCE_PATH)
+# CFLAGS = -g -Wall -Wextra -std=gnu11 -I$(SOURCE_PATH)
 
 # Libraries
 LIBS = -lcurl -ljson-c -lssl -lcrypto -lmosquitto

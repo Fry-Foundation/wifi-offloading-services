@@ -8,11 +8,14 @@
 #include "services/mqtt-cert.h"
 #include "services/mqtt.h"
 #include "services/registration.h"
+#include "services/access_token.h"
 #include "services/setup.h"
 #include <mosquitto.h>
 #include <stdbool.h>
 #include <unistd.h>
 
+// @todo reschedule device registration if it fails
+// @todo reschedule access token refresh if it fails
 int main(int argc, char *argv[]) {
     // Init
     Scheduler *sch = init_scheduler();
@@ -20,6 +23,8 @@ int main(int argc, char *argv[]) {
     init_device_data();
     bool valid_registration = init_registration(device_data.mac, device_data.model, device_data.brand);
     if (!valid_registration) return 1;
+    Registration registration = get_registration();
+    AccessToken *access_token = init_access_token(&registration);
     generate_and_sign_cert();
     struct mosquitto *mosq = init_mqtt();
 

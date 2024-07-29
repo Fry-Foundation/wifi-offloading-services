@@ -50,6 +50,7 @@ define Build/Compile
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/monitoring.o -c $(PKG_BUILD_DIR)/services/monitoring.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/env.o -c $(PKG_BUILD_DIR)/services/env.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/registration.o -c $(PKG_BUILD_DIR)/services/registration.c
+		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/access_token.o -c $(PKG_BUILD_DIR)/services/access_token.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/console.o -c $(PKG_BUILD_DIR)/lib/console.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/curl_helpers.o -c $(PKG_BUILD_DIR)/lib/curl_helpers.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/key_pair.o -c $(PKG_BUILD_DIR)/lib/key_pair.c
@@ -72,6 +73,7 @@ define Build/Compile
 			$(PKG_BUILD_DIR)/services/monitoring.o \
 			$(PKG_BUILD_DIR)/services/env.o \
 			$(PKG_BUILD_DIR)/services/registration.o \
+			$(PKG_BUILD_DIR)/services/access_token.o \
 			$(PKG_BUILD_DIR)/lib/console.o \
 			$(PKG_BUILD_DIR)/lib/curl_helpers.o \
 			$(PKG_BUILD_DIR)/lib/key_pair.o \

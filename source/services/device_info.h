@@ -20,10 +20,7 @@ typedef struct {
     char *did_public_key;
 } DeviceInfo;
 
-extern DeviceInfo device_info;
-
-void init_device_info();
-
-void clean_device_info_service();
+DeviceInfo *init_device_info();
+void clean_device_info(DeviceInfo *device_info);
 
 #endif // DEVICE_INFO_H

@@ -11,7 +11,8 @@
 #include <string.h>
 #include <time.h>
 
-struct mosquitto *mosq;
+static struct mosquitto *mosq;
+static DeviceInfo *device_info;
 
 typedef struct {
     int wifi_clients;
@@ -67,24 +68,24 @@ void parse_output(const char *output, DeviceData *info) {
     }
 }
 
-json_object *createjson(DeviceData *info, json_object *jobj, int timestamp) {
-    json_object_object_add(jobj, "device_id", json_object_new_string(device_info.device_id));
+json_object *createjson(DeviceData *device_data, json_object *jobj, int timestamp) {
+    json_object_object_add(jobj, "device_id", json_object_new_string(device_info->device_id));
     json_object_object_add(jobj, "timestamp", json_object_new_int(timestamp));
-    json_object_object_add(jobj, "wifi_clients", json_object_new_int(info->wifi_clients));
-    json_object_object_add(jobj, "memory_total", json_object_new_int64(info->memory_total));
-    json_object_object_add(jobj, "memory_free", json_object_new_int64(info->memory_free));
-    json_object_object_add(jobj, "memory_used", json_object_new_int64(info->memory_used));
-    json_object_object_add(jobj, "memory_shared", json_object_new_int64(info->memory_shared));
-    json_object_object_add(jobj, "memory_buffered", json_object_new_int64(info->memory_buffered));
-    json_object_object_add(jobj, "cpu_count", json_object_new_int(info->cpu_count));
-    json_object_object_add(jobj, "cpu_load", json_object_new_double(info->cpu_load));
-    json_object_object_add(jobj, "cpu_load_percent", json_object_new_int(info->cpu_load_percent));
-    json_object_object_add(jobj, "disk_used", json_object_new_int64(info->disk_used));
-    json_object_object_add(jobj, "disk_size", json_object_new_int64(info->disk_size));
-    json_object_object_add(jobj, "disk_available", json_object_new_int64(info->disk_available));
-    json_object_object_add(jobj, "disk_used_percent", json_object_new_int(info->disk_used_percent));
-    json_object_object_add(jobj, "radio_count", json_object_new_int(info->radio_count));
-    json_object_object_add(jobj, "radio_live", json_object_new_int(info->radio_live));
+    json_object_object_add(jobj, "wifi_clients", json_object_new_int(device_data->wifi_clients));
+    json_object_object_add(jobj, "memory_total", json_object_new_int64(device_data->memory_total));
+    json_object_object_add(jobj, "memory_free", json_object_new_int64(device_data->memory_free));
+    json_object_object_add(jobj, "memory_used", json_object_new_int64(device_data->memory_used));
+    json_object_object_add(jobj, "memory_shared", json_object_new_int64(device_data->memory_shared));
+    json_object_object_add(jobj, "memory_buffered", json_object_new_int64(device_data->memory_buffered));
+    json_object_object_add(jobj, "cpu_count", json_object_new_int(device_data->cpu_count));
+    json_object_object_add(jobj, "cpu_load", json_object_new_double(device_data->cpu_load));
+    json_object_object_add(jobj, "cpu_load_percent", json_object_new_int(device_data->cpu_load_percent));
+    json_object_object_add(jobj, "disk_used", json_object_new_int64(device_data->disk_used));
+    json_object_object_add(jobj, "disk_size", json_object_new_int64(device_data->disk_size));
+    json_object_object_add(jobj, "disk_available", json_object_new_int64(device_data->disk_available));
+    json_object_object_add(jobj, "disk_used_percent", json_object_new_int(device_data->disk_used_percent));
+    json_object_object_add(jobj, "radio_count", json_object_new_int(device_data->radio_count));
+    json_object_object_add(jobj, "radio_live", json_object_new_int(device_data->radio_live));
     return jobj;
 }
 
@@ -116,7 +117,8 @@ void monitoring_task(Scheduler *sch) {
     schedule_task(sch, time(NULL) + config.monitoring_interval, monitoring_task, "monitoring");
 }
 
-void monitoring_service(Scheduler *sch, struct mosquitto *_mosq) {
+void monitoring_service(Scheduler *sch, struct mosquitto *_mosq, DeviceInfo *_device_info) {
     mosq = _mosq;
+    device_info = _device_info;
     monitoring_task(sch);
 }

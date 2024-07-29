@@ -20,25 +20,25 @@ int main(int argc, char *argv[]) {
     // Init
     Scheduler *sch = init_scheduler();
     init_config(argc, argv);
-    init_device_info();
-    Registration *registration = init_registration(device_info.mac, device_info.model, device_info.brand);
+    DeviceInfo *device_info = init_device_info();
+    Registration *registration = init_registration(device_info->mac, device_info->model, device_info->brand);
     AccessToken *access_token = init_access_token(registration);
     generate_and_sign_cert();
     struct mosquitto *mosq = init_mqtt();
 
     // Start services and schedule future tasks on each
-    access_service(sch);
+    access_service(sch, device_info);
     device_status_service(sch);
     setup_service(sch);
     accounting_service(sch);
-    monitoring_service(sch, mosq);
+    monitoring_service(sch, mosq, device_info);
 
     run_tasks(sch);
 
     // Clean up
     clean_up_mosquitto(&mosq);
     clean_scheduler(sch);
-    clean_device_info_service();
+    clean_device_info(device_info);
     clean_access_service();
     clean_registration(registration);
 

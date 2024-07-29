@@ -13,9 +13,7 @@
 #define PACKAGE_VERSION_FILE "/etc/wayru-os-services/VERSION"
 #define ID_LENGTH 37
 #define MAX_RETRIES 50
-#define DEVICE_INFO_FILE "/etc/wayru-os/device.json"
-
-DeviceInfo device_info = {0};
+#define DEVICE_PROFILE_FILE "/etc/wayru-os/device.json"
 
 char *get_os_version() {
     if (config.dev_env) {
@@ -132,7 +130,7 @@ DeviceProfile get_device_profile() {
         return device_profile;
     }
 
-    FILE *file = fopen(DEVICE_INFO_FILE, "r");
+    FILE *file = fopen(DEVICE_PROFILE_FILE, "r");
     if (file == NULL) {
         console(CONSOLE_ERROR, "error opening device info file");
         perror("error opening device info file");
@@ -230,32 +228,34 @@ char *get_os_name() {
     return os_name;
 }
 
-void init_device_info() {
-    device_info.os_version = get_os_version();
-    device_info.os_services_version = get_os_services_version();
-    device_info.mac = get_mac();
+DeviceInfo* init_device_info() {
+    DeviceInfo *device_info = malloc(sizeof(DeviceInfo));
+    device_info->os_version = get_os_version();
+    device_info->os_services_version = get_os_services_version();
+    device_info->mac = get_mac();
 
     DeviceProfile device_profile = get_device_profile();
-    device_info.name = device_profile.name;
-    device_info.model = device_profile.model;
-    device_info.brand = device_profile.brand;
+    device_info->name = device_profile.name;
+    device_info->model = device_profile.model;
+    device_info->brand = device_profile.brand;
 
-    device_info.device_id = get_id();
-    device_info.public_ip = get_public_ip();
-    device_info.os_name = get_os_name();
+    device_info->device_id = get_id();
+    device_info->public_ip = get_public_ip();
+    device_info->os_name = get_os_name();
+    device_info->did_public_key = get_did_public_key_or_generate_keypair();
 
-    device_info.did_public_key = get_did_public_key_or_generate_keypair();
+    return device_info;
 }
 
-void clean_device_info_service() {
-    free(device_info.mac);
-    free(device_info.name);
-    free(device_info.brand);
-    free(device_info.model);
-    free(device_info.os_name);
-    free(device_info.os_version);
-    free(device_info.os_services_version);
-    free(device_info.device_id);
-    free(device_info.public_ip);
-    free(device_info.did_public_key);
+void clean_device_info(DeviceInfo* device_info) {
+    free(device_info->mac);
+    free(device_info->name);
+    free(device_info->brand);
+    free(device_info->model);
+    free(device_info->os_name);
+    free(device_info->os_version);
+    free(device_info->os_services_version);
+    free(device_info->device_id);
+    free(device_info->public_ip);
+    free(device_info->did_public_key);
 }

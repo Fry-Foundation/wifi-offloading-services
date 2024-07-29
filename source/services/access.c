@@ -2,10 +2,8 @@
 #include "lib/console.h"
 #include "lib/http-requests.h"
 #include "lib/scheduler.h"
-#include "lib/script_runner.h"
 #include "services/config.h"
 #include "services/device_info.h"
-#include "services/setup.h"
 #include <json-c/json.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -22,6 +20,7 @@
 #define ACCESS_ENDPOINT "/api/nfnode/access-v2"
 #define SCRIPTS_PATH "/etc/wayru-os-services/scripts"
 
+static DeviceInfo *device_info;
 AccessKey access_key = {.public_key = NULL, .issued_at_seconds = 0, .expires_at_seconds = 0};
 
 time_t convert_to_time_t(char *timestamp_str) {
@@ -119,16 +118,16 @@ bool request_access_key() {
 
     // Request body
     json_object *json_body = json_object_new_object();
-    json_object_object_add(json_body, "device_id", json_object_new_string(device_info.device_id));
-    json_object_object_add(json_body, "mac", json_object_new_string(device_info.mac));
-    json_object_object_add(json_body, "name", json_object_new_string(device_info.name));
-    json_object_object_add(json_body, "brand", json_object_new_string(device_info.brand));
-    json_object_object_add(json_body, "model", json_object_new_string(device_info.model));
-    json_object_object_add(json_body, "public_ip", json_object_new_string(device_info.public_ip));
-    json_object_object_add(json_body, "os_name", json_object_new_string(device_info.os_name));
-    json_object_object_add(json_body, "os_version", json_object_new_string(device_info.os_version));
-    json_object_object_add(json_body, "os_services_version", json_object_new_string(device_info.os_services_version));
-    json_object_object_add(json_body, "did_public_key", json_object_new_string(device_info.did_public_key));
+    json_object_object_add(json_body, "device_id", json_object_new_string(device_info->device_id));
+    json_object_object_add(json_body, "mac", json_object_new_string(device_info->mac));
+    json_object_object_add(json_body, "name", json_object_new_string(device_info->name));
+    json_object_object_add(json_body, "brand", json_object_new_string(device_info->brand));
+    json_object_object_add(json_body, "model", json_object_new_string(device_info->model));
+    json_object_object_add(json_body, "public_ip", json_object_new_string(device_info->public_ip));
+    json_object_object_add(json_body, "os_name", json_object_new_string(device_info->os_name));
+    json_object_object_add(json_body, "os_version", json_object_new_string(device_info->os_version));
+    json_object_object_add(json_body, "os_services_version", json_object_new_string(device_info->os_services_version));
+    json_object_object_add(json_body, "did_public_key", json_object_new_string(device_info->did_public_key));
     const char *body = json_object_to_json_string(json_body);
 
     console(CONSOLE_DEBUG, "access key request body %s", body);
@@ -221,7 +220,9 @@ void access_task(Scheduler *sch) {
     schedule_task(sch, time(NULL) + config.access_interval, access_task, "access");
 }
 
-void access_service(Scheduler *sch) {
+void access_service(Scheduler *sch, DeviceInfo *_device_info) {
+    device_info = _device_info;
+
     if (read_access_key()) {
         if (check_access_key_near_expiration()) {
             request_access_key();

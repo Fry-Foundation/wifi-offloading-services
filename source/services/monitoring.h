@@ -2,9 +2,9 @@
 #define MONITORING_H
 
 #include "lib/scheduler.h"
-#include "services/device_info.h"
+#include "services/registration.h"
 #include <mosquitto.h>
 
-void monitoring_service(Scheduler *sch, struct mosquitto *_mosq, DeviceInfo *_device_info);
+void monitoring_service(Scheduler *sch, struct mosquitto *_mosq, Registration *_registration);
 
 #endif /* MONITORING_H */

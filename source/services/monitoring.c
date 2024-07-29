@@ -2,7 +2,7 @@
 #include "lib/scheduler.h"
 #include "lib/script_runner.h"
 #include "services/config.h"
-#include "services/device_info.h"
+#include "services/registration.h"
 #include "services/mqtt.h"
 #include <json-c/json.h>
 #include <lib/console.h>
@@ -12,7 +12,7 @@
 #include <time.h>
 
 static struct mosquitto *mosq;
-static DeviceInfo *device_info;
+static Registration *registration;
 
 typedef struct {
     int wifi_clients;
@@ -69,7 +69,7 @@ void parse_output(const char *output, DeviceData *info) {
 }
 
 json_object *createjson(DeviceData *device_data, json_object *jobj, int timestamp) {
-    json_object_object_add(jobj, "device_id", json_object_new_string(device_info->device_id));
+    json_object_object_add(jobj, "device_id", json_object_new_string(registration->wayru_device_id));
     json_object_object_add(jobj, "timestamp", json_object_new_int(timestamp));
     json_object_object_add(jobj, "wifi_clients", json_object_new_int(device_data->wifi_clients));
     json_object_object_add(jobj, "memory_total", json_object_new_int64(device_data->memory_total));
@@ -117,8 +117,8 @@ void monitoring_task(Scheduler *sch) {
     schedule_task(sch, time(NULL) + config.monitoring_interval, monitoring_task, "monitoring");
 }
 
-void monitoring_service(Scheduler *sch, struct mosquitto *_mosq, DeviceInfo *_device_info) {
+void monitoring_service(Scheduler *sch, struct mosquitto *_mosq, Registration *_registration) {
     mosq = _mosq;
-    device_info = _device_info;
+    registration = _registration;
     monitoring_task(sch);
 }

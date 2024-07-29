@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
     device_status_service(sch);
     setup_service(sch);
     accounting_service(sch);
-    monitoring_service(sch, mosq, device_info);
+    monitoring_service(sch, mosq, registration);
 
     run_tasks(sch);
 

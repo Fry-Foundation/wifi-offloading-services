@@ -8,8 +8,7 @@ typedef struct {
     char *access_key;
 } Registration;
 
-bool init_registration(char *mac, char *model, char *brand);
-Registration get_registration();
+Registration *init_registration(char *mac, char *model, char *brand);
 void clean_registration(Registration *registration);
 
 #endif /* REGISTRATION_H */

@@ -103,6 +103,22 @@ int get_task_count(Scheduler *sch) {
     return count;
 }
 
+void print_tasks(Scheduler *sch) {
+    Task *current = sch->head;
+    if (current == NULL) {
+        console(CONSOLE_DEBUG, "No tasks scheduled");
+        return;
+    }
+
+    console(CONSOLE_DEBUG, "Tasks scheduled:");
+    time_t current_time = time(NULL);
+    while (current != NULL) {
+        int time_left = difftime(current->execute_at, current_time);
+        console(CONSOLE_DEBUG, "- '%s' will run in: %d seconds", current->detail, time_left);
+        current = current->next;
+    }
+}
+
 /*
  * Loop through the task list and execute all tasks that are due.
  *
@@ -114,9 +130,9 @@ void execute_tasks(Scheduler *sch) {
 
     console(CONSOLE_DEBUG, "-------------------------------------------------");
     console(CONSOLE_DEBUG, "Executing tasks, time is now: %ld", now);
-
-    get_task_count(sch);
     console(CONSOLE_DEBUG, "Task count: %d", get_task_count(sch));
+    print_tasks(sch);
+    console(CONSOLE_DEBUG, "-------------------------------------------------");
 
     while (sch->head && difftime(sch->head->execute_at, now) <= 0) {
         // Get the task at the head of the list
@@ -133,32 +149,6 @@ void execute_tasks(Scheduler *sch) {
         // Free the task memory
         console(CONSOLE_DEBUG, "Freeing task memory for task with memory address: '%p'", (void *)task);
         free(task);
-    }
-}
-
-void print_tasks(Scheduler *sch) {
-    console(CONSOLE_DEBUG, "Printing tasks");
-    Task *current = sch->head;
-    int task_index = 0;
-
-    while (current) {
-        console(CONSOLE_DEBUG, "Processing task %d at address: %p", task_index, (void *)current);
-
-        if (current->detail != NULL) {
-            console(CONSOLE_DEBUG, "Task %d detail: %s at address: %p", task_index, current->detail,
-                    (void *)current->detail);
-
-            // Isolate the problematic print statement
-            console(CONSOLE_DEBUG, "Task scheduled at %ld", current->execute_at);
-            console(CONSOLE_DEBUG, "Task detail: %s", current->detail);
-            // The combined print statement that might be causing the issue
-            console(CONSOLE_DEBUG, "Task scheduled at %ld: %s", current->execute_at, current->detail);
-        } else {
-            console(CONSOLE_ERROR, "Task %d has a null detail pointer", task_index);
-        }
-
-        current = current->next;
-        task_index++;
     }
 }
 

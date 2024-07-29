@@ -2,7 +2,7 @@
 #include "services/access.h"
 #include "services/accounting.h"
 #include "services/config.h"
-#include "services/device_data.h"
+#include "services/device_info.h"
 #include "services/device_status.h"
 #include "services/monitoring.h"
 #include "services/mqtt-cert.h"
@@ -20,8 +20,8 @@ int main(int argc, char *argv[]) {
     // Init
     Scheduler *sch = init_scheduler();
     init_config(argc, argv);
-    init_device_data();
-    bool valid_registration = init_registration(device_data.mac, device_data.model, device_data.brand);
+    init_device_info();
+    bool valid_registration = init_registration(device_info.mac, device_info.model, device_info.brand);
     if (!valid_registration) return 1;
     Registration registration = get_registration();
     AccessToken *access_token = init_access_token(&registration);
@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
     // Clean up
     clean_up_mosquitto(&mosq);
     clean_scheduler(sch);
-    clean_device_data_service();
+    clean_device_info_service();
     clean_access_service();
 
     return 0;

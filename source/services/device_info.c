@@ -1,4 +1,4 @@
-#include "device_data.h"
+#include "device_info.h"
 #include "config.h"
 #include "lib/console.h"
 #include "lib/script_runner.h"
@@ -15,7 +15,7 @@
 #define MAX_RETRIES 50
 #define DEVICE_INFO_FILE "/etc/wayru-os/device.json"
 
-DeviceData device_data = {0};
+DeviceInfo device_info = {0};
 
 char *get_os_version() {
     if (config.dev_env) {
@@ -122,21 +122,21 @@ char *get_mac() {
     return mac;
 }
 
-DeviceInfo get_device_info() {
-    DeviceInfo device_info = {0};
+DeviceProfile get_device_profile() {
+    DeviceProfile device_profile = {0};
 
     if (config.dev_env) {
-        device_info.name = strdup("Genesis");
-        device_info.brand = strdup("Wayru");
-        device_info.model = strdup("Genesis");
-        return device_info;
+        device_profile.name = strdup("Genesis");
+        device_profile.brand = strdup("Wayru");
+        device_profile.model = strdup("Genesis");
+        return device_profile;
     }
 
     FILE *file = fopen(DEVICE_INFO_FILE, "r");
     if (file == NULL) {
         console(CONSOLE_ERROR, "error opening device info file");
         perror("error opening device info file");
-        return device_info;
+        return device_profile;
     }
 
     // Read the file into a string
@@ -161,17 +161,17 @@ DeviceInfo get_device_info() {
     json_object_object_get_ex(parsed_json, "model", &model);
 
     // Copy the values into the device_info struct
-    device_info.name = strdup(json_object_get_string(name));
-    device_info.brand = strdup(json_object_get_string(brand));
-    device_info.model = strdup(json_object_get_string(model));
+    device_profile.name = strdup(json_object_get_string(name));
+    device_profile.brand = strdup(json_object_get_string(brand));
+    device_profile.model = strdup(json_object_get_string(model));
 
     // Free the JSON object
     json_object_put(parsed_json);
 
-    console(CONSOLE_DEBUG, "device identifiers are: %s, %s, %s", device_info.name, device_info.brand,
-            device_info.model);
+    console(CONSOLE_DEBUG, "device identifiers are: %s, %s, %s", device_profile.name, device_profile.brand,
+            device_profile.model);
 
-    return device_info;
+    return device_profile;
 }
 
 char *get_id() {
@@ -230,32 +230,32 @@ char *get_os_name() {
     return os_name;
 }
 
-void init_device_data() {
-    device_data.os_version = get_os_version();
-    device_data.os_services_version = get_os_services_version();
-    device_data.mac = get_mac();
+void init_device_info() {
+    device_info.os_version = get_os_version();
+    device_info.os_services_version = get_os_services_version();
+    device_info.mac = get_mac();
 
-    DeviceInfo device_info = get_device_info();
-    device_data.name = device_info.name;
-    device_data.model = device_info.model;
-    device_data.brand = device_info.brand;
+    DeviceProfile device_profile = get_device_profile();
+    device_info.name = device_profile.name;
+    device_info.model = device_profile.model;
+    device_info.brand = device_profile.brand;
 
-    device_data.device_id = get_id();
-    device_data.public_ip = get_public_ip();
-    device_data.os_name = get_os_name();
+    device_info.device_id = get_id();
+    device_info.public_ip = get_public_ip();
+    device_info.os_name = get_os_name();
 
-    device_data.did_public_key = get_did_public_key_or_generate_keypair();
+    device_info.did_public_key = get_did_public_key_or_generate_keypair();
 }
 
-void clean_device_data_service() {
-    free(device_data.mac);
-    free(device_data.name);
-    free(device_data.brand);
-    free(device_data.model);
-    free(device_data.os_name);
-    free(device_data.os_version);
-    free(device_data.os_services_version);
-    free(device_data.device_id);
-    free(device_data.public_ip);
-    free(device_data.did_public_key);
+void clean_device_info_service() {
+    free(device_info.mac);
+    free(device_info.name);
+    free(device_info.brand);
+    free(device_info.model);
+    free(device_info.os_name);
+    free(device_info.os_version);
+    free(device_info.os_services_version);
+    free(device_info.device_id);
+    free(device_info.public_ip);
+    free(device_info.did_public_key);
 }

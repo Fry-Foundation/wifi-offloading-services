@@ -1,11 +1,11 @@
-#ifndef DEVICE_DATA_H
-#define DEVICE_DATA_H
+#ifndef DEVICE_INFO_H
+#define DEVICE_INFO_H
 
 typedef struct {
     char *name;
     char *brand;
     char *model;
-} DeviceInfo;
+} DeviceProfile;
 
 typedef struct {
     char *device_id;
@@ -18,12 +18,12 @@ typedef struct {
     char *os_version;
     char *os_services_version;
     char *did_public_key;
-} DeviceData;
+} DeviceInfo;
 
-extern DeviceData device_data;
+extern DeviceInfo device_info;
 
-void init_device_data();
+void init_device_info();
 
-void clean_device_data_service();
+void clean_device_info_service();
 
-#endif // DEVICE_DATA_H
+#endif // DEVICE_INFO_H

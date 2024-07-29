@@ -40,7 +40,7 @@ define Build/Compile
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/access.o -c $(PKG_BUILD_DIR)/services/access.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/accounting.o -c $(PKG_BUILD_DIR)/services/accounting.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/config.o -c $(PKG_BUILD_DIR)/services/config.c
-		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/device_data.o -c $(PKG_BUILD_DIR)/services/device_data.c
+		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/device_info.o -c $(PKG_BUILD_DIR)/services/device_info.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/device_status.o -c $(PKG_BUILD_DIR)/services/device_status.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/did-key.o -c $(PKG_BUILD_DIR)/services/did-key.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/end_report.o -c $(PKG_BUILD_DIR)/services/end_report.c
@@ -63,7 +63,7 @@ define Build/Compile
 			$(PKG_BUILD_DIR)/services/access.o \
 			$(PKG_BUILD_DIR)/services/accounting.o \
 			$(PKG_BUILD_DIR)/services/config.o \
-			$(PKG_BUILD_DIR)/services/device_data.o \
+			$(PKG_BUILD_DIR)/services/device_info.o \
 			$(PKG_BUILD_DIR)/services/device_status.o \
 			$(PKG_BUILD_DIR)/services/did-key.o \
 			$(PKG_BUILD_DIR)/services/end_report.o \
@@ -89,7 +89,7 @@ endef
 # 		$(TARGET_CC) $(TARGET_CFLAGS) -g -O0 -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/access.o -c $(PKG_BUILD_DIR)/services/access.c
 # 		$(TARGET_CC) $(TARGET_CFLAGS) -g -O0 -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/accounting.o -c $(PKG_BUILD_DIR)/services/accounting.c
 # 		$(TARGET_CC) $(TARGET_CFLAGS) -g -O0 -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/config.o -c $(PKG_BUILD_DIR)/services/config.c
-# 		$(TARGET_CC) $(TARGET_CFLAGS) -g -O0 -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/device_data.o -c $(PKG_BUILD_DIR)/services/device_data.c
+# 		$(TARGET_CC) $(TARGET_CFLAGS) -g -O0 -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/device_info.o -c $(PKG_BUILD_DIR)/services/device_info.c
 # 		$(TARGET_CC) $(TARGET_CFLAGS) -g -O0 -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/device_status.o -c $(PKG_BUILD_DIR)/services/device_status.c
 # 		$(TARGET_CC) $(TARGET_CFLAGS) -g -O0 -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/did-key.o -c $(PKG_BUILD_DIR)/services/did-key.c
 # 		$(TARGET_CC) $(TARGET_CFLAGS) -g -O0 -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/end_report.o -c $(PKG_BUILD_DIR)/services/end_report.c
@@ -106,7 +106,7 @@ endef
 # 			$(PKG_BUILD_DIR)/services/access.o \
 # 			$(PKG_BUILD_DIR)/services/accounting.o \
 # 			$(PKG_BUILD_DIR)/services/config.o \
-# 			$(PKG_BUILD_DIR)/services/device_data.o \
+# 			$(PKG_BUILD_DIR)/services/device_info.o \
 # 			$(PKG_BUILD_DIR)/services/device_status.o \
 # 			$(PKG_BUILD_DIR)/services/did-key.o \
 # 			$(PKG_BUILD_DIR)/services/end_report.o \

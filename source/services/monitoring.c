@@ -2,7 +2,7 @@
 #include "lib/scheduler.h"
 #include "lib/script_runner.h"
 #include "services/config.h"
-#include "services/device_data.h"
+#include "services/device_info.h"
 #include "services/mqtt.h"
 #include <json-c/json.h>
 #include <lib/console.h>
@@ -29,9 +29,9 @@ typedef struct {
     int disk_used_percent;
     int radio_count;
     int radio_live;
-} RouterData;
+} DeviceData;
 
-void parse_output(const char *output, RouterData *info) {
+void parse_output(const char *output, DeviceData *info) {
     struct {
         const char *key;
         const char *format;
@@ -67,8 +67,8 @@ void parse_output(const char *output, RouterData *info) {
     }
 }
 
-json_object *createjson(RouterData *info, json_object *jobj, int timestamp) {
-    json_object_object_add(jobj, "device_id", json_object_new_string(device_data.device_id));
+json_object *createjson(DeviceData *info, json_object *jobj, int timestamp) {
+    json_object_object_add(jobj, "device_id", json_object_new_string(device_info.device_id));
     json_object_object_add(jobj, "timestamp", json_object_new_int(timestamp));
     json_object_object_add(jobj, "wifi_clients", json_object_new_int(info->wifi_clients));
     json_object_object_add(jobj, "memory_total", json_object_new_int64(info->memory_total));
@@ -91,7 +91,7 @@ json_object *createjson(RouterData *info, json_object *jobj, int timestamp) {
 void monitoring_task(Scheduler *sch) {
     time_t now;
     time(&now);
-    RouterData info;
+    DeviceData device_data;
     char script_file[256];
     snprintf(script_file, sizeof(script_file), "%s%s", config.scripts_path, "/retrieve-data.lua");
     char *output = run_script(script_file);
@@ -99,11 +99,11 @@ void monitoring_task(Scheduler *sch) {
         console(CONSOLE_ERROR, "failed to run script %s", script_file);
         return;
     }
-    parse_output(output, &info);
+    parse_output(output, &device_data);
     free(output);
 
     json_object *json_device_data = json_object_new_object();
-    createjson(&info, json_device_data, now);
+    createjson(&device_data, json_device_data, now);
 
     const char *device_data_str = json_object_to_json_string(json_device_data);
 

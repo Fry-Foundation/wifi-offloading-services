@@ -4,7 +4,7 @@
 #include "lib/scheduler.h"
 #include "lib/script_runner.h"
 #include "services/config.h"
-#include "services/device_data.h"
+#include "services/device_info.h"
 #include "services/setup.h"
 #include <json-c/json.h>
 #include <stdbool.h>
@@ -119,16 +119,16 @@ bool request_access_key() {
 
     // Request body
     json_object *json_body = json_object_new_object();
-    json_object_object_add(json_body, "device_id", json_object_new_string(device_data.device_id));
-    json_object_object_add(json_body, "mac", json_object_new_string(device_data.mac));
-    json_object_object_add(json_body, "name", json_object_new_string(device_data.name));
-    json_object_object_add(json_body, "brand", json_object_new_string(device_data.brand));
-    json_object_object_add(json_body, "model", json_object_new_string(device_data.model));
-    json_object_object_add(json_body, "public_ip", json_object_new_string(device_data.public_ip));
-    json_object_object_add(json_body, "os_name", json_object_new_string(device_data.os_name));
-    json_object_object_add(json_body, "os_version", json_object_new_string(device_data.os_version));
-    json_object_object_add(json_body, "os_services_version", json_object_new_string(device_data.os_services_version));
-    json_object_object_add(json_body, "did_public_key", json_object_new_string(device_data.did_public_key));
+    json_object_object_add(json_body, "device_id", json_object_new_string(device_info.device_id));
+    json_object_object_add(json_body, "mac", json_object_new_string(device_info.mac));
+    json_object_object_add(json_body, "name", json_object_new_string(device_info.name));
+    json_object_object_add(json_body, "brand", json_object_new_string(device_info.brand));
+    json_object_object_add(json_body, "model", json_object_new_string(device_info.model));
+    json_object_object_add(json_body, "public_ip", json_object_new_string(device_info.public_ip));
+    json_object_object_add(json_body, "os_name", json_object_new_string(device_info.os_name));
+    json_object_object_add(json_body, "os_version", json_object_new_string(device_info.os_version));
+    json_object_object_add(json_body, "os_services_version", json_object_new_string(device_info.os_services_version));
+    json_object_object_add(json_body, "did_public_key", json_object_new_string(device_info.did_public_key));
     const char *body = json_object_to_json_string(json_body);
 
     console(CONSOLE_DEBUG, "access key request body %s", body);

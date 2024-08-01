@@ -141,6 +141,11 @@ HttpResult http_post(const HttpPostOptions *options) {
         curl_easy_setopt(curl, CURLOPT_MIMEPOST, form);
     }
 
+    if(options->upload_data != NULL) {
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, options->upload_data);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, options->upload_data_size);
+    }
+
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, save_to_buffer_callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_buffer);
 

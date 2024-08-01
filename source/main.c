@@ -10,6 +10,7 @@
 #include "services/registration.h"
 #include "services/access_token.h"
 #include "services/setup.h"
+#include "services/speedtest.h"
 #include <mosquitto.h>
 #include <stdbool.h>
 #include <unistd.h>
@@ -33,6 +34,7 @@ int main(int argc, char *argv[]) {
     accounting_service(sch);
     monitoring_service(sch, mosq, registration);
 
+    speedTest();
     run_tasks(sch);
 
     // Clean up

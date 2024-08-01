@@ -23,6 +23,8 @@ typedef struct {
     const char *bearer_token;
     const char *body_json_str;
     const char *upload_file_path;
+    const char *upload_data;
+    size_t upload_data_size;
 } HttpPostOptions;
 
 HttpResult http_post(const HttpPostOptions *options);

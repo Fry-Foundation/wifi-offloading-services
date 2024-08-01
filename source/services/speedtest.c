@@ -1,39 +1,17 @@
-#include "console.h"
 #include <stdarg.h>
 #include <stdio.h>
-#include "http-requests.h"
 #include <stdlib.h>
 #include <curl/curl.h>
 #include <sys/time.h>
+#include <string.h>
+#include "lib/console.h"
+#include "lib/http-requests.h"
+#include "env.h"
+#include "access.h"
 
-void speedTest() {
-    char *url = "https://speedtestapi.net/api/v1";
-    char *legacy_key = "YOUR_LEGACY";
-    char *bearer_token = "a";
-    console(CONSOLE_INFO, "Starting speed test\n");
-
-    HttpResult download_result = downloadTest(url, legacy_key, bearer_token);
-    if (download_result.is_error) {
-        console(CONSOLE_ERROR, "Download test failed\n");
-        return;
-    }
-
-    HttpResult upload_result = uploadTest(url, legacy_key, bearer_token, download_result.response_buffer, strlen(download_result.response_buffer));
-    if (upload_result.is_error) {
-        console(CONSOLE_ERROR, "Upload test failed\n");
-        return;
-    }
-
-    free(download_result.response_buffer);
-    free(upload_result.response_buffer);
-
-    console(CONSOLE_INFO, "Speed test complete\n");
-}
-
-HttpResult downloadTest(char *url, char *legacy_key, char *bearer_token) {
+HttpResult downloadTest(char *url, char *bearer_token) {
     HttpGetOptions options = {
         .url = url,
-        .legacy_key = legacy_key,  
         .bearer_token = bearer_token, 
     };
 
@@ -58,15 +36,13 @@ HttpResult downloadTest(char *url, char *legacy_key, char *bearer_token) {
     return result;
 }
 
-HttpResult uploadTest(char *url, char *legacy_key, char *bearer_token, char *upload_data, size_t upload_data_size) {
+HttpResult uploadTest(char *url, char *bearer_token, char *upload_data, size_t upload_data_size) {
     HttpPostOptions options = {
         .url = url,
-        .legacy_key = legacy_key,
         .bearer_token = bearer_token,
         .upload_data = upload_data,
         .upload_data_size = upload_data_size,
     };
-
     struct timeval start, end;
     double time_taken = 0.0;
 
@@ -86,4 +62,27 @@ HttpResult uploadTest(char *url, char *legacy_key, char *bearer_token, char *upl
     }
 
     return result;
+}
+
+void speedTest() {
+    char *url = "http://192.168.56.1:4050/monitoring/speedtest";
+    char *bearer_token = env("BEARER_TOKEN");
+    console(CONSOLE_INFO, "Starting speed test\n");
+
+    HttpResult download_result = downloadTest(url, bearer_token);
+    if (download_result.is_error) {
+        console(CONSOLE_ERROR, "Download test failed\n");
+        return;
+    }
+
+    HttpResult upload_result = uploadTest(url, bearer_token, download_result.response_buffer, strlen(download_result.response_buffer));
+    if (upload_result.is_error) {
+        console(CONSOLE_ERROR, "Upload test failed\n");
+        return;
+    }
+
+    free(download_result.response_buffer);
+    free(upload_result.response_buffer);
+
+    console(CONSOLE_INFO, "Speed test complete\n");
 }

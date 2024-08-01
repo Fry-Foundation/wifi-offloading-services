@@ -2,6 +2,7 @@
 #define HTTP_REQUESTS_H
 
 #include <stdbool.h>
+#include <stdio.h>
 
 typedef struct {
     bool is_error;
@@ -24,7 +25,7 @@ typedef struct {
     const char *body_json_str;
     const char *upload_file_path;
     const char *upload_data;
-    size_t upload_data_size;
+    const size_t upload_data_size;
 } HttpPostOptions;
 
 HttpResult http_post(const HttpPostOptions *options);

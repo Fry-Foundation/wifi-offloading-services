@@ -43,7 +43,7 @@ HttpResult http_get(const HttpGetOptions *options) {
 
     if (options->bearer_token != NULL) {
         char auth_header[1024];
-        snprintf(auth_header, 1024, "Authorization Bearer %s", options->bearer_token);
+        snprintf(auth_header, 1024, "Authorization: Bearer %s", options->bearer_token);
         struct curl_slist *headers = NULL;
         headers = curl_slist_append(headers, auth_header);
     }
@@ -117,7 +117,7 @@ HttpResult http_post(const HttpPostOptions *options) {
 
     if (options->bearer_token != NULL) {
         char auth_header[1024];
-        snprintf(auth_header, 1024, "Authorization Bearer %s", options->bearer_token);
+        snprintf(auth_header, 1024, "Authorization: Bearer %s", options->bearer_token);
         struct curl_slist *headers = NULL;
         headers = curl_slist_append(headers, auth_header);
     }

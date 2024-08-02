@@ -56,9 +56,8 @@ HttpResult uploadTest(char *url, char *bearer_token, char *upload_data, size_t u
         console(CONSOLE_ERROR, "HTTP POST request failed: %s\n", result.error);
         free(result.error);
     } else {
-        size_t total_bytes = strlen(result.response_buffer);
-        console(CONSOLE_DEBUG, "Uploaded %zu bytes in %.2f seconds\n", total_bytes, time_taken);
-        console(CONSOLE_DEBUG, "Upload speed: %.2f bytes/second\n", total_bytes / time_taken);
+        console(CONSOLE_DEBUG, "Uploaded %zu bytes in %.2f seconds\n", upload_data_size, time_taken);
+        console(CONSOLE_DEBUG, "Upload speed: %.2f bytes/second\n", upload_data_size / time_taken);
     }
 
     return result;

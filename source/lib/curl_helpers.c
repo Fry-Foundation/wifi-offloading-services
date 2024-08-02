@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "lib/http-requests.h"
 
 char *init_response_buffer() {
     char *response = malloc(1);
@@ -36,4 +37,16 @@ size_t save_to_buffer_callback(void *contents, size_t size, size_t nmemb, void *
     (*response_ptr)[current_length + total_size] = '\0'; // Null-terminate the string
 
     return total_size;
+}
+
+size_t read_callback(void *ptr, size_t size, size_t nmemb, void *userp) {
+    HttpPostOptions *options = (HttpPostOptions *)userp;
+    size_t total_size = size * nmemb;
+    size_t bytes_to_copy = (total_size > options->upload_data_size) ? options->upload_data_size : total_size;
+
+    memcpy(ptr, options->upload_data, bytes_to_copy);
+    options->upload_data += bytes_to_copy;
+    options->upload_data_size -= bytes_to_copy;
+
+    return bytes_to_copy;
 }

@@ -25,7 +25,7 @@ typedef struct {
     const char *body_json_str;
     const char *upload_file_path;
     const char *upload_data;
-    const size_t upload_data_size;
+    size_t upload_data_size;
 } HttpPostOptions;
 
 HttpResult http_post(const HttpPostOptions *options);

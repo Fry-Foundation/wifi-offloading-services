@@ -44,7 +44,7 @@ HttpResult http_get(const HttpGetOptions *options) {
     if (options->bearer_token != NULL) {
         char auth_header[1024];
         snprintf(auth_header, 1024, "Authorization: Bearer %s", options->bearer_token);
-        struct curl_slist *headers = NULL;
+        // struct curl_slist *headers = NULL;
         headers = curl_slist_append(headers, auth_header);
     }
 
@@ -118,14 +118,14 @@ HttpResult http_post(const HttpPostOptions *options) {
     if (options->bearer_token != NULL) {
         char auth_header[1024];
         snprintf(auth_header, 1024, "Authorization: Bearer %s", options->bearer_token);
-        struct curl_slist *headers = NULL;
+        // struct curl_slist *headers = NULL;
         headers = curl_slist_append(headers, auth_header);
     }
 
     if (options->body_json_str != NULL) {
         headers = curl_slist_append(headers, "Content-Type: application/json");
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, options->body_json_str);
-    } else {
+    } else if (options->upload_data == NULL){
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "");
     }
 
@@ -142,10 +142,18 @@ HttpResult http_post(const HttpPostOptions *options) {
     }
 
     if(options->upload_data != NULL) {
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, options->upload_data);
+        form = curl_mime_init(curl);
+        field = curl_mime_addpart(form);
+        curl_mime_name(field, "file");
+        curl_mime_type(field, "application/octet-stream");
+        curl_mime_data(field, options->upload_data, options->upload_data_size);
+        curl_easy_setopt(curl, CURLOPT_MIMEPOST, form);
+        curl_easy_setopt(curl, CURLOPT_READFUNCTION, read_callback);
+        curl_easy_setopt(curl, CURLOPT_READDATA, (void *)options);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, options->upload_data_size);
     }
 
+    
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, save_to_buffer_callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_buffer);
 

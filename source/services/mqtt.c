@@ -1,5 +1,6 @@
 #include "mqtt.h"
-#include "env.h"
+#include "services/env.h"
+#include "services/access_token.h"
 #include <lib/console.h>
 #include <mosquitto.h>
 #include <services/config.h>
@@ -46,13 +47,20 @@ void publish_mqtt(struct mosquitto *mosq, char *topic, const char *message) {
     }
 }
 
-struct mosquitto *init_mosquitto() {
+struct mosquitto *init_mosquitto(AccessToken *access_token) {
+    // Load user and password from env file
+    // If present, these override the access token
     char env_file[256];
     snprintf(env_file, sizeof(env_file), "%s%s", config.data_path, "/.env");
     load_env(env_file);
+    const char *env_mqtt_user = env("MQTT_USER");
+    const char *env_mqtt_password = env("MQTT_PASS");
+    const char *mqtt_user = (env_mqtt_user && strlen(env_mqtt_user) > 0) ? env_mqtt_user : access_token->token;
+    const char *mqtt_password = (env_mqtt_password && strlen(env_mqtt_password) > 0) ? env_mqtt_password : "any";
+    console(CONSOLE_DEBUG, "user is %s", mqtt_user);
+    console(CONSOLE_DEBUG, "password is %s", mqtt_password);
+
     struct mosquitto *mosq;
-    const char *mqtt_user = env("MQTT_USER");
-    const char *mqtt_password = env("MQTT_PASS");
     int rc;
     int pw_set;
     int tls_set;
@@ -145,6 +153,6 @@ void clean_up_mosquitto(struct mosquitto **mosq) {
     mosquitto_lib_cleanup();
 }
 
-struct mosquitto *init_mqtt() {
-    return init_mosquitto();
+struct mosquitto *init_mqtt(AccessToken *access_token) {
+    return init_mosquitto(access_token);
 }

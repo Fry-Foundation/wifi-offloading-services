@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
     Registration *registration = init_registration(device_info->mac, device_info->model, device_info->brand);
     AccessToken *access_token = init_access_token(registration);
     generate_and_sign_cert();
-    struct mosquitto *mosq = init_mqtt();
+    struct mosquitto *mosq = init_mqtt(access_token);
 
     // Start services and schedule future tasks on each
     access_service(sch, device_info);

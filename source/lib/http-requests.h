@@ -8,6 +8,7 @@ typedef struct {
     bool is_error;
     char *error;
     char *response_buffer;
+    size_t response_size;
 } HttpResult;
 
 typedef struct {
@@ -24,7 +25,7 @@ typedef struct {
     const char *bearer_token;
     const char *body_json_str;
     const char *upload_file_path;
-    const char *upload_data;
+    char *upload_data;
     size_t upload_data_size;
 } HttpPostOptions;
 

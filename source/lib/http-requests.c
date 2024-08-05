@@ -12,6 +12,7 @@ HttpResult http_get(const HttpGetOptions *options) {
         .is_error = false,
         .error = NULL,
         .response_buffer = NULL,
+        .response_size = 0,
     };
 
     CURL *curl = curl_easy_init();
@@ -54,7 +55,7 @@ HttpResult http_get(const HttpGetOptions *options) {
 
     // Response callback and buffer
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, save_to_buffer_callback);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_buffer);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &result);
 
     // Request
     res = curl_easy_perform(curl);
@@ -63,12 +64,9 @@ HttpResult http_get(const HttpGetOptions *options) {
     // Response
     if (res != CURLE_OK) {
         console(CONSOLE_ERROR, "curl GET failed: %s", curl_easy_strerror(res));
-        free(response_buffer);
+        free(result.response_buffer);
         result.is_error = true;
         result.error = strdup(curl_easy_strerror(res));
-    } else {
-        result.is_error = false;
-        result.response_buffer = response_buffer;
     }
 
     if (headers != NULL) curl_slist_free_all(headers);
@@ -83,6 +81,7 @@ HttpResult http_post(const HttpPostOptions *options) {
         .is_error = false,
         .error = NULL,
         .response_buffer = NULL,
+        .response_size = 0,
     };
 
     CURL *curl = curl_easy_init();
@@ -155,7 +154,7 @@ HttpResult http_post(const HttpPostOptions *options) {
 
     
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, save_to_buffer_callback);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_buffer);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &result);
 
     // Request
     res = curl_easy_perform(curl);
@@ -164,13 +163,12 @@ HttpResult http_post(const HttpPostOptions *options) {
     // Response
     if (res != CURLE_OK) {
         console(CONSOLE_ERROR, "curl POST failed: %s", curl_easy_strerror(res));
-        free(response_buffer);
+        free(result.response_buffer);
         result.is_error = true;
         result.error = strdup(curl_easy_strerror(res));
     } else {
-        console(CONSOLE_DEBUG, "response buffer: %s", response_buffer);
+        console(CONSOLE_DEBUG, "response buffer: %s", result.response_buffer);
         result.is_error = false;
-        result.response_buffer = response_buffer;
     }
 
     // Cleanup

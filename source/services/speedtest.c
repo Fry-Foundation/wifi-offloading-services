@@ -24,8 +24,6 @@ char* get_available_memory_str() {
     }
     
     snprintf(mem_str, buf_size, "%zu", half_free_memory);
-    printf("Available memory: %s\n", mem_str);
-    printf("Half free memory: %zu\n", half_free_memory);
     return mem_str;
 }
 
@@ -50,8 +48,10 @@ HttpResult download_test(char *url, char *bearer_token) {
         result.response_buffer = NULL;
     } else {
         size_t total_bytes = result.response_size;
+        double speed_bps = total_bytes / time_taken;
+        double speed_mbps = (speed_bps * 8) / 1e6;
         console(CONSOLE_DEBUG, "Downloaded %zu bytes in %.2f seconds\n", total_bytes, time_taken);
-        console(CONSOLE_DEBUG, "Download speed: %.2f bytes/second\n", total_bytes / time_taken);
+        console(CONSOLE_DEBUG, "Download speed: %.2f Mbps\n", speed_mbps);
     }
 
     return result;
@@ -77,8 +77,10 @@ HttpResult upload_test(char *url, char *bearer_token, char *upload_data, size_t 
         console(CONSOLE_ERROR, "HTTP POST request failed: %s\n", result.error);
         free(result.error);
     } else {
+        double speed_bps = upload_data_size / time_taken;
+        double speed_mbps = (speed_bps * 8) / 1e6;
         console(CONSOLE_DEBUG, "Uploaded %zu bytes in %.2f seconds\n", upload_data_size, time_taken);
-        console(CONSOLE_DEBUG, "Upload speed: %.2f bytes/second\n", upload_data_size / time_taken);
+        console(CONSOLE_DEBUG, "Upload speed: %.2f Mbps\n", speed_mbps);
     }
 
     return result;

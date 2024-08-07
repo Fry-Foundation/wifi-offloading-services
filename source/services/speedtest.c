@@ -14,6 +14,10 @@
 
 char* get_available_memory_str() {
     struct sysinfo si;
+    if (sysinfo(&si) != 0) {
+        console(CONSOLE_ERROR, "sysinfo call failed");
+        return NULL;
+    }
     sysinfo(&si);
     size_t half_free_memory = (size_t)(si.freeram * MEMORY_PERCENTAGE);
     size_t buf_size = 20;
@@ -45,7 +49,7 @@ HttpResult download_test(char *url, char *bearer_token) {
     if (result.is_error) {
         console(CONSOLE_ERROR, "HTTP GET request failed: %s\n", result.error);
         free(result.error);
-        result.response_buffer = NULL;
+        free(result.response_buffer);
     } else {
         size_t total_bytes = result.response_size;
         double speed_bps = total_bytes / time_taken;
@@ -70,12 +74,14 @@ HttpResult upload_test(char *url, char *bearer_token, char *upload_data, size_t 
     gettimeofday(&start, NULL);
     HttpResult result = http_post(&options);
     gettimeofday(&end, NULL);
+
     time_taken = (end.tv_sec - start.tv_sec) * 1e6;
     time_taken = (time_taken + (end.tv_usec - start.tv_usec)) * 1e-6;
 
     if (result.is_error) {
         console(CONSOLE_ERROR, "HTTP POST request failed: %s\n", result.error);
         free(result.error);
+        free(result.response_buffer);
     } else {
         double speed_bps = upload_data_size / time_taken;
         double speed_mbps = (speed_bps * 8) / 1e6;
@@ -96,12 +102,12 @@ void speed_test() {
     strcat(get_url, "/");
     strcat(get_url, freeram_str);
     console(CONSOLE_DEBUG, "GET URL: %s\n", get_url);
+
     HttpResult download_result = download_test(get_url, bearer_token);
     if (download_result.is_error) {
         console(CONSOLE_ERROR, "Download test failed\n");
         return;
     }
-    free(freeram_str);
 
     HttpResult upload_result = upload_test(url, bearer_token, download_result.response_buffer, download_result.response_size);
     if (upload_result.is_error) {

@@ -9,6 +9,7 @@
 #include "lib/http-requests.h"
 #include "env.h"
 #include "access.h"
+#include <json-c/json.h>
 
 #define MEMORY_PERCENTAGE 0.5
 
@@ -131,7 +132,7 @@ SpeedTestResult speed_test() {
     free(upload_result.response_buffer);
 
     console(CONSOLE_INFO, "Speed test complete\n");
-    
+
     return result;
 }
 
@@ -153,4 +154,21 @@ void speedtest_service(){
 
     console(CONSOLE_INFO, "Average upload speed: %.2f Mbps\n", result.upload_speed_mbps);
     console(CONSOLE_INFO, "Average download speed: %.2f Mbps\n", result.download_speed_mbps);
+
+    json_object *speedtest_data = json_object_new_object();
+    json_object_object_add(speedtest_data, "upload_speed", json_object_new_double(result.upload_speed_mbps));
+    json_object_object_add(speedtest_data, "download_speed", json_object_new_double(result.download_speed_mbps));
+    const char *speedtest_data_str = json_object_to_json_string(speedtest_data);
+    HttpPostOptions options = {
+        .url = "http://192.168.56.1:4050/monitoring/speedtest/result",
+        .bearer_token = env("BEARER"),
+        .body_json_str = speedtest_data_str,
+    };
+    HttpResult post_result = http_post(&options);
+    if (post_result.is_error) {
+        console(CONSOLE_ERROR, "Failed to post speedtest result\n");
+    } else {
+        console(CONSOLE_INFO, "Speedtest result posted successfully\n");
+    }
+    json_object_put(speedtest_data);
 }

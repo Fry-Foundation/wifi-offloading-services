@@ -12,6 +12,10 @@
 
 #define MEMORY_PERCENTAGE 0.5
 
+typedef struct {
+    double upload_speed_mbps, download_speed_mbps;
+} SpeedTestResult;
+
 char* get_available_memory_str() {
     struct sysinfo si;
     if (sysinfo(&si) != 0) {
@@ -56,6 +60,7 @@ HttpResult download_test(char *url, char *bearer_token) {
         double speed_mbps = (speed_bps * 8) / 1e6;
         console(CONSOLE_DEBUG, "Downloaded %zu bytes in %.2f seconds\n", total_bytes, time_taken);
         console(CONSOLE_DEBUG, "Download speed: %.2f Mbps\n", speed_mbps);
+        result.download_speed_mbps = speed_mbps;
     }
 
     return result;
@@ -87,12 +92,13 @@ HttpResult upload_test(char *url, char *bearer_token, char *upload_data, size_t 
         double speed_mbps = (speed_bps * 8) / 1e6;
         console(CONSOLE_DEBUG, "Uploaded %zu bytes in %.2f seconds\n", upload_data_size, time_taken);
         console(CONSOLE_DEBUG, "Upload speed: %.2f Mbps\n", speed_mbps);
+        result.upload_speed_mbps = speed_mbps;
     }
 
     return result;
 }
 
-void speed_test() {
+SpeedTestResult speed_test() {
     char *url = "http://192.168.56.1:4050/monitoring/speedtest";
     char *bearer_token = env("BEARER_TOKEN");
     console(CONSOLE_INFO, "Starting speed test\n");
@@ -116,8 +122,35 @@ void speed_test() {
         return;
     }
 
+    SpeedTestResult result = {
+        .upload_speed_mbps = upload_result.upload_speed_mbps,
+        .download_speed_mbps = download_result.download_speed_mbps,
+    };
+
     free(download_result.response_buffer);
     free(upload_result.response_buffer);
 
     console(CONSOLE_INFO, "Speed test complete\n");
+    
+    return result;
+}
+
+void speedtest_service(){
+    console(CONSOLE_INFO, "Starting speedtest service\n");
+    int interval = 0;
+    double upload_speed = 0.0;
+    double download_speed = 0.0;
+    while (interval < 5) {
+        SpeedTestResult result = speed_test();
+        upload_speed += result.upload_speed_mbps;
+        download_speed += result.download_speed_mbps;
+        interval++;
+    }
+    SpeedTestResult result = {
+        .upload_speed_mbps = upload_speed/interval,
+        .download_speed_mbps = download_speed/interval,
+    };
+
+    console(CONSOLE_INFO, "Average upload speed: %.2f Mbps\n", result.upload_speed_mbps);
+    console(CONSOLE_INFO, "Average download speed: %.2f Mbps\n", result.download_speed_mbps);
 }

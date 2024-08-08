@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
     accounting_service(sch);
     monitoring_service(sch, mosq, registration);
 
-    speed_test();
+    speedtest_service();
     run_tasks(sch);
 
     // Clean up

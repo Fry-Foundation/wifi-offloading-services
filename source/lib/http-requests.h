@@ -9,6 +9,8 @@ typedef struct {
     char *error;
     char *response_buffer;
     size_t response_size;
+    double upload_speed_mbps;
+    double download_speed_mbps;
 } HttpResult;
 
 typedef struct {

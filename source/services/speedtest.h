@@ -2,5 +2,5 @@
 #define SPEEDTEST_H
 
 void speed_test();
-
+void speedtest_service();
 #endif

@@ -40,10 +40,12 @@ int main(int argc, char *argv[]) {
 
     // Clean up
     clean_up_mosquitto(&mosq);
-    clean_scheduler(sch);
-    clean_device_info(device_info);
     clean_access_service();
+    clean_device_context(device_context);
+    clean_access_token(access_token);
     clean_registration(registration);
+    clean_device_info(device_info);
+    clean_scheduler(sch);
 
     return 0;
 }

@@ -89,7 +89,9 @@ json_object *createjson(DeviceData *device_data, json_object *jobj, int timestam
     return jobj;
 }
 
-void monitoring_task(Scheduler *sch) {
+void monitoring_task(Scheduler *sch, void *task_context) {
+    (void)task_context;
+
     time_t now;
     time(&now);
     DeviceData device_data;
@@ -114,11 +116,11 @@ void monitoring_task(Scheduler *sch) {
     json_object_put(json_device_data);
 
     // Schedule monitoring_task to rerun later
-    schedule_task(sch, time(NULL) + config.monitoring_interval, monitoring_task, "monitoring");
+    schedule_task(sch, time(NULL) + config.monitoring_interval, monitoring_task, "monitoring", NULL);
 }
 
 void monitoring_service(Scheduler *sch, struct mosquitto *_mosq, Registration *_registration) {
     mosq = _mosq;
     registration = _registration;
-    monitoring_task(sch);
+    monitoring_task(sch, NULL);
 }

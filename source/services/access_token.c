@@ -12,8 +12,10 @@
 #define ACCESS_TOKEN_ENDPOINT "access"
 #define ACCESS_TOKEN_FILE "access-token.json"
 
-static AccessToken *access_token;
-static Registration *registration;
+typedef struct {
+    AccessToken *access_token;
+    Registration *registration;
+} AccessTokenTaskContext;
 
 bool save_access_token(char *access_token_json) {
     char access_token_file_path[256];
@@ -105,14 +107,14 @@ AccessToken parse_access_token(const char *access_token_json) {
     return access_token;
 }
 
-char *request_access_token(Registration *_registration) {
+char *request_access_token(Registration *registration) {
     char url[256];
     snprintf(url, sizeof(url), "%s/%s", config.accounting_api, ACCESS_TOKEN_ENDPOINT);
 
     // Convert registration to json
     json_object *json_body = json_object_new_object();
-    json_object_object_add(json_body, "wayru_device_id", json_object_new_string(_registration->wayru_device_id));
-    json_object_object_add(json_body, "access_key", json_object_new_string(_registration->access_key));
+    json_object_object_add(json_body, "wayru_device_id", json_object_new_string(registration->wayru_device_id));
+    json_object_object_add(json_body, "access_key", json_object_new_string(registration->access_key));
     const char *body_json_str = json_object_to_json_string(json_body);
     console(CONSOLE_DEBUG, "access request body is %s", body_json_str);
 
@@ -138,7 +140,7 @@ char *request_access_token(Registration *_registration) {
     return result.response_buffer;
 }
 
-AccessToken *init_access_token(Registration *_registration) {
+AccessToken *init_access_token(Registration *registration) {
     AccessToken *access_token = (AccessToken *)malloc(sizeof(AccessToken));
     if (access_token != NULL) {
         access_token->token = NULL;
@@ -159,7 +161,7 @@ AccessToken *init_access_token(Registration *_registration) {
         }
     }
 
-    char *access_token_json = request_access_token(_registration);
+    char *access_token_json = request_access_token(registration);
     if (access_token_json == NULL) {
         console(CONSOLE_ERROR, "failed to request access token");
         return access_token;
@@ -185,8 +187,10 @@ AccessToken *init_access_token(Registration *_registration) {
     return access_token;
 }
 
-void access_token_task(Scheduler *sch) {
-    char *access_token_json = request_access_token(registration);
+void access_token_task(Scheduler *sch, void *task_context) {
+    AccessTokenTaskContext *context = (AccessTokenTaskContext *)task_context;
+
+    char *access_token_json = request_access_token(context->registration);
     if (access_token_json == NULL) {
         console(CONSOLE_ERROR, "failed to request access token");
         return;
@@ -204,20 +208,27 @@ void access_token_task(Scheduler *sch) {
     }
 
     free(access_token_json);
-    access_token->token = parsed_access_token.token;
-    access_token->issued_at_seconds = parsed_access_token.issued_at_seconds;
-    access_token->expires_at_seconds = parsed_access_token.expires_at_seconds;
-    console(CONSOLE_DEBUG, "token: %s", access_token->token);
-    console(CONSOLE_DEBUG, "issued at seconds: %ld", access_token->issued_at_seconds);
-    console(CONSOLE_DEBUG, "expires at seconds: %ld", access_token->expires_at_seconds);
+    context->access_token->token = parsed_access_token.token;
+    context->access_token->issued_at_seconds = parsed_access_token.issued_at_seconds;
+    context->access_token->expires_at_seconds = parsed_access_token.expires_at_seconds;
+    console(CONSOLE_DEBUG, "token: %s", context->access_token->token);
+    console(CONSOLE_DEBUG, "issued at seconds: %ld", context->access_token->issued_at_seconds);
+    console(CONSOLE_DEBUG, "expires at seconds: %ld", context->access_token->expires_at_seconds);
 
-    schedule_task(sch, time(NULL) + config.accounting_interval, access_token_task, "access token task");
+    schedule_task(sch, time(NULL) + config.access_interval, access_token_task, "access token task", context);
 }
 
-void access_token_service(Scheduler *sch, AccessToken *_access_token, Registration *_registration) {
-    access_token = _access_token;
-    registration = _registration;
-    access_token_task(sch);
+void access_token_service(Scheduler *sch, AccessToken *access_token, Registration *registration) {
+    AccessTokenTaskContext *context = (AccessTokenTaskContext *)malloc(sizeof(AccessTokenTaskContext));
+    if (context == NULL) {
+        console(CONSOLE_ERROR, "failed to allocate memory for access token task context");
+        return;
+    }
+
+    context->access_token = access_token;
+    context->registration = registration;
+
+    schedule_task(sch, time(NULL), access_token_task, "access token task", context);
 }
 
 void clean_access_token(AccessToken *access_token) {

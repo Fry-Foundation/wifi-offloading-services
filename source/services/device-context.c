@@ -13,16 +13,18 @@
 #define DEVICE_ENDPOINT "devices"
 #define DEVICE_CONTEXT_ENDPOINT "context"
 
-static DeviceContext *device_context;
-static Registration *registration;
-static AccessToken *access_token;
+typedef struct {
+    DeviceContext *device_context;
+    Registration *registration;
+    AccessToken *access_token;
+} DeviceContextTaskContext;
 
-char *request_device_context(Registration *_registration, AccessToken *_access_token) {
+char *request_device_context(Registration *registration, AccessToken *access_token) {
     char url[256];
-    snprintf(url, sizeof(url), "%s/%s/%s/%s", config.accounting_api, DEVICE_ENDPOINT, _registration->wayru_device_id,
+    snprintf(url, sizeof(url), "%s/%s/%s/%s", config.accounting_api, DEVICE_ENDPOINT, registration->wayru_device_id,
              DEVICE_CONTEXT_ENDPOINT);
 
-    HttpGetOptions options = {.url = url, .bearer_token = _access_token->token};
+    HttpGetOptions options = {.url = url, .bearer_token = access_token->token};
 
     HttpResult result = http_get(&options);
     if (result.is_error) {
@@ -80,8 +82,10 @@ DeviceContext *init_device_context(Registration *registration, AccessToken *acce
     return _device_context;
 }
 
-void device_context_task(Scheduler *sch) {
-    char *device_context_json = request_device_context(registration, access_token);
+void device_context_task(Scheduler *sch, void *task_context) {
+    DeviceContextTaskContext *context = (DeviceContextTaskContext *)task_context;
+
+    char *device_context_json = request_device_context(context->registration, context->access_token);
     if (device_context_json == NULL) {
         console(CONSOLE_ERROR, "failed to request device context");
         return;
@@ -89,19 +93,26 @@ void device_context_task(Scheduler *sch) {
 
     DeviceContext parsed_device_context = parse_device_context(device_context_json);
     free(device_context_json);
-    device_context->site = parsed_device_context.site;
-    console(CONSOLE_DEBUG, "context site %s", device_context->site);
-    schedule_task(sch, time(NULL) + config.device_status_interval, device_context_task, "device context");
+    context->device_context->site = parsed_device_context.site;
+    console(CONSOLE_DEBUG, "device context site %s", context->device_context->site);
+    schedule_task(sch, time(NULL) + config.device_status_interval, device_context_task, "device context", context);
 }
 
-void device_context_service(DeviceContext *_device_context,
-                            Registration *_registration,
-                            AccessToken *_access_token,
-                            Scheduler *_sch) {
-    device_context = _device_context;
-    registration = _registration;
-    access_token = _access_token;
-    device_context_task(_sch);
+void device_context_service(Scheduler *sch,
+                            DeviceContext *device_context,
+                            Registration *registration,
+                            AccessToken *access_token) {
+    DeviceContextTaskContext *context = (DeviceContextTaskContext *)malloc(sizeof(DeviceContextTaskContext));
+    if (context == NULL) {
+        console(CONSOLE_ERROR, "failed to allocate memory for access token task context");
+        return;
+    }
+
+    context->device_context = device_context;
+    context->registration = registration;
+    context->access_token = access_token;
+
+    device_context_task(sch, context);
 }
 
 void clean_device_context(DeviceContext *device_context) {

@@ -30,6 +30,7 @@ int main(int argc, char *argv[]) {
 
     // Start services and schedule future tasks on each
     access_service(sch, device_info);
+    access_token_service(sch, access_token, registration);
     device_context_service(device_context, registration, access_token, sch);
     device_status_service(sch);
     setup_service(sch);

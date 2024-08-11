@@ -12,7 +12,7 @@ typedef struct {
 } AccessToken;
 
 AccessToken *init_access_token(Registration *registration);
-void access_token_service(Scheduler *sch, Registration *registration);
+void access_token_service(Scheduler *sch, AccessToken *_access_token, Registration *_registration);
 void clean_access_token(AccessToken *access_token);
 
 #endif /* ACCESS_TOKEN_H */

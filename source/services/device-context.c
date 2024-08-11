@@ -42,44 +42,44 @@ char *request_device_context(Registration *registration, AccessToken *access_tok
 }
 
 DeviceContext parse_device_context(const char *device_context_json) {
-    DeviceContext _device_context;
-    _device_context.site = NULL;
+    DeviceContext device_context;
+    device_context.site = NULL;
 
     json_object *json = json_tokener_parse(device_context_json);
     if (json == NULL) {
         console(CONSOLE_ERROR, "failed to parse device context json");
-        return _device_context;
+        return device_context;
     }
 
     json_object *site_json = NULL;
     if (!json_object_object_get_ex(json, "site", &site_json)) {
         console(CONSOLE_ERROR, "failed to get site from device context json");
         json_object_put(json);
-        return _device_context;
+        return device_context;
     }
 
-    _device_context.site = strdup(json_object_get_string(site_json));
+    device_context.site = strdup(json_object_get_string(site_json));
     json_object_put(json);
-    return _device_context;
+    return device_context;
 }
 
 DeviceContext *init_device_context(Registration *registration, AccessToken *access_token) {
-    DeviceContext *_device_context = (DeviceContext *)malloc(sizeof(DeviceContext));
-    if (_device_context != NULL) {
-        _device_context->site = NULL;
+    DeviceContext *device_context = (DeviceContext *)malloc(sizeof(DeviceContext));
+    if (device_context != NULL) {
+        device_context->site = NULL;
     }
 
     char *device_context_json = request_device_context(registration, access_token);
     if (device_context_json == NULL) {
         console(CONSOLE_ERROR, "failed to request device context");
-        return _device_context;
+        return device_context;
     }
 
     DeviceContext parsed_device_context = parse_device_context(device_context_json);
     free(device_context_json);
-    _device_context->site = parsed_device_context.site;
-    console(CONSOLE_DEBUG, "context site %s", _device_context->site);
-    return _device_context;
+    device_context->site = parsed_device_context.site;
+    console(CONSOLE_DEBUG, "context site %s", device_context->site);
+    return device_context;
 }
 
 void device_context_task(Scheduler *sch, void *task_context) {

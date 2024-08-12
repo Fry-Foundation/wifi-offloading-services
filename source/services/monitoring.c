@@ -2,8 +2,8 @@
 #include "lib/scheduler.h"
 #include "lib/script_runner.h"
 #include "services/config.h"
-#include "services/registration.h"
 #include "services/mqtt.h"
+#include "services/registration.h"
 #include <json-c/json.h>
 #include <lib/console.h>
 #include <mosquitto.h>
@@ -11,8 +11,10 @@
 #include <string.h>
 #include <time.h>
 
-static struct mosquitto *mosq;
-static Registration *registration;
+typedef struct {
+    struct mosquitto *mosq;
+    Registration *registration;
+} MonitoringTaskContext;
 
 typedef struct {
     int wifi_clients;
@@ -68,7 +70,7 @@ void parse_output(const char *output, DeviceData *info) {
     }
 }
 
-json_object *createjson(DeviceData *device_data, json_object *jobj, int timestamp) {
+json_object *createjson(DeviceData *device_data, json_object *jobj, int timestamp, Registration *registration) {
     json_object_object_add(jobj, "device_id", json_object_new_string(registration->wayru_device_id));
     json_object_object_add(jobj, "timestamp", json_object_new_int(timestamp));
     json_object_object_add(jobj, "wifi_clients", json_object_new_int(device_data->wifi_clients));
@@ -90,7 +92,7 @@ json_object *createjson(DeviceData *device_data, json_object *jobj, int timestam
 }
 
 void monitoring_task(Scheduler *sch, void *task_context) {
-    (void)task_context;
+    MonitoringTaskContext *context = (MonitoringTaskContext *)task_context;
 
     time_t now;
     time(&now);
@@ -106,21 +108,28 @@ void monitoring_task(Scheduler *sch, void *task_context) {
     free(output);
 
     json_object *json_device_data = json_object_new_object();
-    createjson(&device_data, json_device_data, now);
+    createjson(&device_data, json_device_data, now, context->registration);
 
     const char *device_data_str = json_object_to_json_string(json_device_data);
 
     console(CONSOLE_INFO, "Device data: %s", device_data_str);
-    publish_mqtt(mosq, "monitoring/device-data", device_data_str);
+    publish_mqtt(context->mosq, "monitoring/device-data", device_data_str);
 
     json_object_put(json_device_data);
 
     // Schedule monitoring_task to rerun later
-    schedule_task(sch, time(NULL) + config.monitoring_interval, monitoring_task, "monitoring", NULL);
+    schedule_task(sch, time(NULL) + config.monitoring_interval, monitoring_task, "monitoring", context);
 }
 
-void monitoring_service(Scheduler *sch, struct mosquitto *_mosq, Registration *_registration) {
-    mosq = _mosq;
-    registration = _registration;
-    monitoring_task(sch, NULL);
+void monitoring_service(Scheduler *sch, struct mosquitto *mosq, Registration *registration) {
+    MonitoringTaskContext *context = (MonitoringTaskContext *)malloc(sizeof(MonitoringTaskContext));
+    if (context == NULL) {
+        console(CONSOLE_ERROR, "failed to allocate memory for access token task context");
+        return;
+    }
+
+    context->mosq = mosq;
+    context->registration = registration;
+
+    monitoring_task(sch, context);
 }

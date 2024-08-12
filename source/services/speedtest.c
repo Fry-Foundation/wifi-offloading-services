@@ -10,9 +10,13 @@
 #include "env.h"
 #include "access.h"
 #include <json-c/json.h>
+#include <mosquitto.h>
+#include "services/registration.h"
+#include <time.h>
 
 #define MEMORY_PERCENTAGE 0.5
-
+static struct mosquitto *mosq;
+static Registration *registration;
 typedef struct {
     double upload_speed_mbps, download_speed_mbps;
 } SpeedTestResult;
@@ -136,7 +140,7 @@ SpeedTestResult speed_test() {
     return result;
 }
 
-void speedtest_service(){
+void speedtest_service(struct mosquitto *_mosq, Registration *_registration) {
     console(CONSOLE_INFO, "Starting speedtest service\n");
     int interval = 0;
     double upload_speed = 0.0;
@@ -155,20 +159,20 @@ void speedtest_service(){
     console(CONSOLE_INFO, "Average upload speed: %.2f Mbps\n", result.upload_speed_mbps);
     console(CONSOLE_INFO, "Average download speed: %.2f Mbps\n", result.download_speed_mbps);
 
+    time_t now;
+    time(&now);
+    registration = _registration;
     json_object *speedtest_data = json_object_new_object();
+    json_object_object_add(speedtest_data, "device_id", json_object_new_string(registration->wayru_device_id));
+    json_object_object_add(speedtest_data, "timestamp", json_object_new_int(now));
     json_object_object_add(speedtest_data, "upload_speed", json_object_new_double(result.upload_speed_mbps));
     json_object_object_add(speedtest_data, "download_speed", json_object_new_double(result.download_speed_mbps));
+    json_object_object_add(speedtest_data, "latency", json_object_new_int(22));
     const char *speedtest_data_str = json_object_to_json_string(speedtest_data);
-    HttpPostOptions options = {
-        .url = "http://192.168.56.1:4050/monitoring/speedtest/result",
-        .bearer_token = env("BEARER"),
-        .body_json_str = speedtest_data_str,
-    };
-    HttpResult post_result = http_post(&options);
-    if (post_result.is_error) {
-        console(CONSOLE_ERROR, "Failed to post speedtest result\n");
-    } else {
-        console(CONSOLE_INFO, "Speedtest result posted successfully\n");
-    }
+
+    mosq = _mosq;
+    console(CONSOLE_INFO, "Publishing speedtest results\n");
+    publish_mqtt(mosq, "monitoring/speedtest", speedtest_data_str);
+
     json_object_put(speedtest_data);
 }

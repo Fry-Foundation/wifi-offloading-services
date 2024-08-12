@@ -24,6 +24,10 @@ char *request_device_context(Registration *registration, AccessToken *access_tok
     snprintf(url, sizeof(url), "%s/%s/%s/%s", config.accounting_api, DEVICE_ENDPOINT, registration->wayru_device_id,
              DEVICE_CONTEXT_ENDPOINT);
 
+    // print token
+    console(CONSOLE_DEBUG, "url: %s", url);
+    console(CONSOLE_DEBUG, "access token: %s", access_token->token);
+
     HttpGetOptions options = {.url = url, .bearer_token = access_token->token};
 
     HttpResult result = http_get(&options);
@@ -41,33 +45,56 @@ char *request_device_context(Registration *registration, AccessToken *access_tok
     return result.response_buffer;
 }
 
-DeviceContext parse_device_context(const char *device_context_json) {
-    DeviceContext device_context;
-    device_context.site = NULL;
-
+void parse_and_update_device_context(DeviceContext *device_context, char *device_context_json) {
     json_object *json = json_tokener_parse(device_context_json);
     if (json == NULL) {
         console(CONSOLE_ERROR, "failed to parse device context json");
-        return device_context;
+        return;
     }
 
     json_object *site_json = NULL;
     if (!json_object_object_get_ex(json, "site", &site_json)) {
         console(CONSOLE_ERROR, "failed to get site from device context json");
         json_object_put(json);
-        return device_context;
+        return;
     }
 
-    device_context.site = strdup(json_object_get_string(site_json));
+    json_object *site_id_json = NULL;
+    if (!json_object_object_get_ex(site_json, "id", &site_id_json)) {
+        console(CONSOLE_ERROR, "failed to get site id from device context json");
+        json_object_put(json);
+        return;
+    }
+
+    json_object *site_name_json = NULL;
+    if (!json_object_object_get_ex(site_json, "name", &site_name_json)) {
+        console(CONSOLE_ERROR, "failed to get site name from device context json");
+        json_object_put(json);
+        return;
+    }
+
+    json_object *site_mac_json = NULL;
+    if (!json_object_object_get_ex(site_json, "mac", &site_mac_json)) {
+        console(CONSOLE_ERROR, "failed to get site mac from device context json");
+        json_object_put(json);
+        return;
+    }
+
+    device_context->site->id = strdup(json_object_get_string(site_id_json));
+    device_context->site->name = strdup(json_object_get_string(site_name_json));
+    device_context->site->mac = strdup(json_object_get_string(site_mac_json));
+
     json_object_put(json);
-    return device_context;
+    free(device_context_json);
 }
 
 DeviceContext *init_device_context(Registration *registration, AccessToken *access_token) {
     DeviceContext *device_context = (DeviceContext *)malloc(sizeof(DeviceContext));
-    if (device_context != NULL) {
-        device_context->site = NULL;
-    }
+    Site *site = (Site *)malloc(sizeof(Site));
+    device_context->site = site;
+    device_context->site->id = NULL;
+    device_context->site->name = NULL;
+    device_context->site->mac = NULL;
 
     char *device_context_json = request_device_context(registration, access_token);
     if (device_context_json == NULL) {
@@ -75,10 +102,7 @@ DeviceContext *init_device_context(Registration *registration, AccessToken *acce
         return device_context;
     }
 
-    DeviceContext parsed_device_context = parse_device_context(device_context_json);
-    free(device_context_json);
-    device_context->site = parsed_device_context.site;
-    console(CONSOLE_DEBUG, "context site %s", device_context->site);
+    parse_and_update_device_context(device_context, device_context_json);
     return device_context;
 }
 
@@ -91,10 +115,7 @@ void device_context_task(Scheduler *sch, void *task_context) {
         return;
     }
 
-    DeviceContext parsed_device_context = parse_device_context(device_context_json);
-    free(device_context_json);
-    context->device_context->site = parsed_device_context.site;
-    console(CONSOLE_DEBUG, "device context site %s", context->device_context->site);
+    parse_and_update_device_context(context->device_context, device_context_json);
     schedule_task(sch, time(NULL) + config.device_status_interval, device_context_task, "device context", context);
 }
 
@@ -117,6 +138,10 @@ void device_context_service(Scheduler *sch,
 
 void clean_device_context(DeviceContext *device_context) {
     if (device_context->site != NULL) {
+        if (device_context->site->id != NULL) free(device_context->site->id);
+        if (device_context->site->name != NULL) free(device_context->site->name);
+        if (device_context->site->mac != NULL) free(device_context->site->mac);
+
         free(device_context->site);
     }
 

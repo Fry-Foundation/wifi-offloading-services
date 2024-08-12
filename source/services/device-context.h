@@ -6,7 +6,13 @@
 #include "services/registration.h"
 
 typedef struct {
-    char *site;
+    char *id;
+    char *name;
+    char *mac;
+} Site;
+
+typedef struct {
+    Site *site;
 } DeviceContext;
 
 DeviceContext *init_device_context(Registration *registration, AccessToken *access_token);

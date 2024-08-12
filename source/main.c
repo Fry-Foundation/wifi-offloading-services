@@ -30,16 +30,16 @@ int main(int argc, char *argv[]) {
     struct mosquitto *mosq = init_mqtt(access_token);
 
     // Start services and schedule future tasks on each
-    access_service(sch, device_info);
-    access_token_service(sch, access_token, registration);
-    device_context_service(sch, device_context, registration, access_token);
-    device_status_service(sch);
-    setup_service(sch);
-    accounting_service(sch);
-    monitoring_service(sch, mosq, registration);
+    // access_service(sch, device_info);
+    // access_token_service(sch, access_token, registration);
+    // device_context_service(sch, device_context, registration, access_token);
+    // device_status_service(sch);
+    // setup_service(sch);
+    // accounting_service(sch);
+    // monitoring_service(sch, mosq, registration);
     site_clients_service(mosq, device_context->site);
 
-    run_tasks(sch);
+    // run_tasks(sch);
 
     // Clean up
     clean_up_mosquitto(&mosq);

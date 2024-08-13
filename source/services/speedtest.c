@@ -15,11 +15,48 @@
 #include <time.h>
 
 #define MEMORY_PERCENTAGE 0.5
+#define NUM_PINGS 4
+
 static struct mosquitto *mosq;
 static Registration *registration;
+
 typedef struct {
     double upload_speed_mbps, download_speed_mbps;
 } SpeedTestResult;
+
+float get_average_latency(const char *hostname){
+    char command[256];
+    snprintf(command, sizeof(command), "ping -c %d %s", NUM_PINGS, hostname);
+
+    FILE *fp = popen(command, "r");
+    if (fp == NULL) {
+        console(CONSOLE_ERROR, "Failed to run ping command\n");
+        return -1;
+    }
+
+    char output[1024];
+    float total_latency = 0.0;
+    int executed_pings = 0;
+
+    while (fgets(output, sizeof(output), fp) != NULL) {
+        char *time_str = strstr(output, "time=");
+        if (time_str != NULL) {
+            float latency;
+            if (sscanf(time_str, "time=%f", &latency) == 1) {
+                total_latency += latency;
+                executed_pings++;
+            }
+        }
+    }
+
+    pclose(fp);
+
+    if (executed_pings > 0) {
+        return total_latency / executed_pings;
+    } else {
+        return -1;
+    }
+}
 
 char* get_available_memory_str() {
     struct sysinfo si;
@@ -145,6 +182,8 @@ void speedtest_service(struct mosquitto *_mosq, Registration *_registration) {
     int interval = 0;
     double upload_speed = 0.0;
     double download_speed = 0.0;
+    float latency = get_average_latency("www.google.com");
+    console(CONSOLE_INFO, "Average latency: %.2f ms\n", latency);
     while (interval < 5) {
         SpeedTestResult result = speed_test();
         upload_speed += result.upload_speed_mbps;
@@ -159,6 +198,7 @@ void speedtest_service(struct mosquitto *_mosq, Registration *_registration) {
     console(CONSOLE_INFO, "Average upload speed: %.2f Mbps\n", result.upload_speed_mbps);
     console(CONSOLE_INFO, "Average download speed: %.2f Mbps\n", result.download_speed_mbps);
 
+
     time_t now;
     time(&now);
     registration = _registration;
@@ -167,11 +207,11 @@ void speedtest_service(struct mosquitto *_mosq, Registration *_registration) {
     json_object_object_add(speedtest_data, "timestamp", json_object_new_int(now));
     json_object_object_add(speedtest_data, "upload_speed", json_object_new_double(result.upload_speed_mbps));
     json_object_object_add(speedtest_data, "download_speed", json_object_new_double(result.download_speed_mbps));
-    json_object_object_add(speedtest_data, "latency", json_object_new_int(22));
+    json_object_object_add(speedtest_data, "latency", json_object_new_double(latency));
     const char *speedtest_data_str = json_object_to_json_string(speedtest_data);
 
-    mosq = _mosq;
     console(CONSOLE_INFO, "Publishing speedtest results\n");
+    mosq = _mosq;
     publish_mqtt(mosq, "monitoring/speedtest", speedtest_data_str);
 
     json_object_put(speedtest_data);

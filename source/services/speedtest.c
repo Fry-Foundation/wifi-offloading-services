@@ -1,30 +1,35 @@
+#include "lib/console.h"
+#include "lib/http-requests.h"
+#include "services/config.h"
+#include "services/mqtt.h"
+#include "services/registration.h"
+#include <curl/curl.h>
+#include <json-c/json.h>
+#include <mosquitto.h>
+#include <services/access_token.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <curl/curl.h>
-#include <sys/time.h>
-#include <sys/sysinfo.h>
 #include <string.h>
-#include "lib/console.h"
-#include "lib/http-requests.h"
-#include "env.h"
-#include "access.h"
-#include <json-c/json.h>
-#include <mosquitto.h>
-#include "services/registration.h"
+#include <sys/sysinfo.h>
+#include <sys/time.h>
 #include <time.h>
 
 #define MEMORY_PERCENTAGE 0.5
 #define NUM_PINGS 4
+#define SPEEDTEST_ENDPOINT "monitoring/speedtest"
 
-static struct mosquitto *mosq;
-static Registration *registration;
+typedef struct {
+    struct mosquitto *mosq;
+    Registration *registration;
+    AccessToken *access_token;
+} SpeedTestTaskContext;
 
 typedef struct {
     double upload_speed_mbps, download_speed_mbps;
 } SpeedTestResult;
 
-float get_average_latency(const char *hostname){
+float get_average_latency(const char *hostname) {
     char command[256];
     snprintf(command, sizeof(command), "ping -c %d %s", NUM_PINGS, hostname);
 
@@ -58,7 +63,7 @@ float get_average_latency(const char *hostname){
     }
 }
 
-char* get_available_memory_str() {
+char *get_available_memory_str() {
     struct sysinfo si;
     if (sysinfo(&si) != 0) {
         console(CONSOLE_ERROR, "sysinfo call failed");
@@ -72,7 +77,7 @@ char* get_available_memory_str() {
         fprintf(stderr, "Memory allocation failed\n");
         exit(EXIT_FAILURE);
     }
-    
+
     snprintf(mem_str, buf_size, "%zu", half_free_memory);
     return mem_str;
 }
@@ -80,7 +85,7 @@ char* get_available_memory_str() {
 HttpResult download_test(char *url, char *bearer_token) {
     HttpGetOptions options = {
         .url = url,
-        .bearer_token = bearer_token, 
+        .bearer_token = bearer_token,
     };
 
     struct timeval start, end;
@@ -140,13 +145,14 @@ HttpResult upload_test(char *url, char *bearer_token, char *upload_data, size_t 
     return result;
 }
 
-SpeedTestResult speed_test() {
-    char *url = "http://192.168.56.1:4050/monitoring/speedtest";
-    char *bearer_token = env("BEARER_TOKEN");
+SpeedTestResult speed_test(char *bearer_token) {
     console(CONSOLE_INFO, "Starting speed test\n");
+
     char *freeram_str = get_available_memory_str();
     char get_url[256];
-    strcpy(get_url, url);
+    strcpy(get_url, config.accounting_api);
+    strcat(get_url, "/");
+    strcat(get_url, SPEEDTEST_ENDPOINT);
     strcat(get_url, "/");
     strcat(get_url, freeram_str);
     console(CONSOLE_DEBUG, "GET URL: %s\n", get_url);
@@ -157,7 +163,14 @@ SpeedTestResult speed_test() {
         return;
     }
 
-    HttpResult upload_result = upload_test(url, bearer_token, download_result.response_buffer, download_result.response_size);
+    char post_url[256];
+    strcpy(post_url, config.accounting_api);
+    strcat(post_url, "/");
+    strcat(post_url, SPEEDTEST_ENDPOINT);
+    console(CONSOLE_DEBUG, "POST URL: %s\n", post_url);
+
+    HttpResult upload_result =
+        upload_test(post_url, bearer_token, download_result.response_buffer, download_result.response_size);
     if (upload_result.is_error) {
         console(CONSOLE_ERROR, "Upload test failed\n");
         free(download_result.response_buffer);
@@ -177,7 +190,19 @@ SpeedTestResult speed_test() {
     return result;
 }
 
-void speedtest_service(struct mosquitto *_mosq, Registration *_registration) {
+void speedtest_service(struct mosquitto *mosq, Registration *registration, AccessToken *access_token) {
+    SpeedTestTaskContext *context = (SpeedTestTaskContext *)malloc(sizeof(SpeedTestTaskContext));
+    if (context == NULL) {
+        console(CONSOLE_ERROR, "failed to allocate memory for speedtest task context");
+        return;
+    }
+
+    context->mosq = mosq;
+    context->registration = registration;
+    context->access_token = access_token;
+
+    console(CONSOLE_DEBUG, "access_token: %s\n", access_token->token);
+
     console(CONSOLE_INFO, "Starting speedtest service\n");
     int interval = 0;
     double upload_speed = 0.0;
@@ -185,23 +210,22 @@ void speedtest_service(struct mosquitto *_mosq, Registration *_registration) {
     float latency = get_average_latency("www.google.com");
     console(CONSOLE_INFO, "Average latency: %.2f ms\n", latency);
     while (interval < 5) {
-        SpeedTestResult result = speed_test();
+        SpeedTestResult result = speed_test(access_token->token);
         upload_speed += result.upload_speed_mbps;
         download_speed += result.download_speed_mbps;
         interval++;
     }
+
     SpeedTestResult result = {
-        .upload_speed_mbps = upload_speed/interval,
-        .download_speed_mbps = download_speed/interval,
+        .upload_speed_mbps = upload_speed / interval,
+        .download_speed_mbps = download_speed / interval,
     };
 
     console(CONSOLE_INFO, "Average upload speed: %.2f Mbps\n", result.upload_speed_mbps);
     console(CONSOLE_INFO, "Average download speed: %.2f Mbps\n", result.download_speed_mbps);
 
-
     time_t now;
     time(&now);
-    registration = _registration;
     json_object *speedtest_data = json_object_new_object();
     json_object_object_add(speedtest_data, "device_id", json_object_new_string(registration->wayru_device_id));
     json_object_object_add(speedtest_data, "timestamp", json_object_new_int(now));
@@ -211,8 +235,7 @@ void speedtest_service(struct mosquitto *_mosq, Registration *_registration) {
     const char *speedtest_data_str = json_object_to_json_string(speedtest_data);
 
     console(CONSOLE_INFO, "Publishing speedtest results\n");
-    mosq = _mosq;
-    publish_mqtt(mosq, "monitoring/speedtest", speedtest_data_str);
+    publish_mqtt(context->mosq, "monitoring/speedtest", speedtest_data_str);
 
     json_object_put(speedtest_data);
 }

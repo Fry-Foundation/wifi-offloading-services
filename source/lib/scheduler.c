@@ -26,13 +26,19 @@ void clean_scheduler(Scheduler *sch) {
     while (current != NULL) {
         Task *temp = current;
         current = current->next;
+
+        // Free the task's context if it exists
+        if (temp->task_context != NULL) {
+            free(temp->task_context);
+        }
+
         free(temp);
     }
 
     free(sch);
 }
 
-Task *create_task(time_t execute_at, TaskFunction task_function, const char *detail) {
+Task *create_task(time_t execute_at, TaskFunction task_function, const char *detail, void *task_context) {
     Task *new_task = (Task *)malloc(sizeof(Task));
 
     // Handle memory allocation failure
@@ -48,14 +54,17 @@ Task *create_task(time_t execute_at, TaskFunction task_function, const char *det
     strncpy(new_task->detail, detail, sizeof(new_task->detail) - 1);
     new_task->detail[sizeof(new_task->detail) - 1] = '\0';
 
+    // Set task context
+    new_task->task_context = task_context;
+
     // Next node
     new_task->next = NULL;
 
     return new_task;
 }
 
-void schedule_task(Scheduler *sch, time_t execute_at, TaskFunction task_function, const char *detail) {
-    Task *new_task = create_task(execute_at, task_function, detail);
+void schedule_task(Scheduler *sch, time_t execute_at, TaskFunction task_function, const char *detail, void *task_context) {
+    Task *new_task = create_task(execute_at, task_function, detail, task_context);
     if (!new_task) {
         console(CONSOLE_ERROR, "Failed to create task");
         return;
@@ -144,7 +153,7 @@ void execute_tasks(Scheduler *sch) {
         sch->head = sch->head->next;
 
         // Execute the task's function
-        task->task_function(sch);
+        task->task_function(sch, task->task_context);
 
         // Free the task memory
         console(CONSOLE_DEBUG, "Freeing task memory for task with memory address: '%p'", (void *)task);

@@ -75,8 +75,8 @@ make defconfig
 # Compile
 echo -e "\nBuilding... 🏗️"
 echo "---------------------------------------"
-make -j"$(nproc)" package/wayru-os-services/compile || exit 1
-# make -j1 V=sc package/wayru-os-services/compile || exit 1
+# make -j"$(nproc)" package/wayru-os-services/compile || exit 1
+make -j1 V=sc package/wayru-os-services/compile || exit 1
 
 # Move the compiled package to the build directory
 echo -e "\nMoving compiled package... 📦"

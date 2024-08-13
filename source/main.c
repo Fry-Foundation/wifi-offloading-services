@@ -12,6 +12,7 @@
 #include "services/registration.h"
 #include "services/setup.h"
 #include "services/speedtest.h"
+#include "services/site-clients.h"
 #include <mosquitto.h>
 #include <stdbool.h>
 #include <unistd.h>
@@ -31,20 +32,25 @@ int main(int argc, char *argv[]) {
 
     // Start services and schedule future tasks on each
     access_service(sch, device_info);
+    access_token_service(sch, access_token, registration);
+    device_context_service(sch, device_context, registration, access_token);
     device_status_service(sch);
     setup_service(sch);
     accounting_service(sch);
     monitoring_service(sch, mosq, registration);
+    site_clients_service(mosq, device_context->site);
 
     speedtest_service(mosq, registration);
     run_tasks(sch);
 
     // Clean up
     clean_up_mosquitto(&mosq);
-    clean_scheduler(sch);
-    clean_device_info(device_info);
     clean_access_service();
+    clean_device_context(device_context);
+    clean_access_token(access_token);
     clean_registration(registration);
+    clean_device_info(device_info);
+    clean_scheduler(sch);
 
     return 0;
 }

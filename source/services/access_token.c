@@ -1,15 +1,21 @@
 #include "access_token.h"
 #include "lib/console.h"
+#include "lib/scheduler.h"
 #include "services/config.h"
 #include <json-c/json.h>
-#include <stdio.h>
 #include <lib/http-requests.h>
+#include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 
 #define ACCESS_TOKEN_ENDPOINT "access"
 #define ACCESS_TOKEN_FILE "access-token.json"
+
+typedef struct {
+    AccessToken *access_token;
+    Registration *registration;
+} AccessTokenTaskContext;
 
 bool save_access_token(char *access_token_json) {
     char access_token_file_path[256];
@@ -144,7 +150,8 @@ AccessToken *init_access_token(Registration *registration) {
 
     if (read_access_token()) {
         AccessToken parsed_access_token = parse_access_token(read_access_token());
-        if (parsed_access_token.token != NULL && parsed_access_token.issued_at_seconds != 0 && parsed_access_token.expires_at_seconds != 0) {
+        if (parsed_access_token.token != NULL && parsed_access_token.issued_at_seconds != 0 &&
+            parsed_access_token.expires_at_seconds != 0) {
             access_token->token = parsed_access_token.token;
             access_token->issued_at_seconds = parsed_access_token.issued_at_seconds;
             access_token->expires_at_seconds = parsed_access_token.expires_at_seconds;
@@ -178,6 +185,50 @@ AccessToken *init_access_token(Registration *registration) {
     access_token->expires_at_seconds = parsed_access_token.expires_at_seconds;
     console(CONSOLE_DEBUG, "token: %s", access_token->token);
     return access_token;
+}
+
+void access_token_task(Scheduler *sch, void *task_context) {
+    AccessTokenTaskContext *context = (AccessTokenTaskContext *)task_context;
+
+    char *access_token_json = request_access_token(context->registration);
+    if (access_token_json == NULL) {
+        console(CONSOLE_ERROR, "failed to request access token");
+        return;
+    }
+
+    if (!save_access_token(access_token_json)) {
+        console(CONSOLE_ERROR, "failed to save access token");
+        return;
+    }
+
+    AccessToken parsed_access_token = parse_access_token(access_token_json);
+    if (parsed_access_token.token == NULL) {
+        console(CONSOLE_ERROR, "failed to parse access token");
+        return;
+    }
+
+    free(access_token_json);
+    context->access_token->token = parsed_access_token.token;
+    context->access_token->issued_at_seconds = parsed_access_token.issued_at_seconds;
+    context->access_token->expires_at_seconds = parsed_access_token.expires_at_seconds;
+    console(CONSOLE_DEBUG, "token: %s", context->access_token->token);
+    console(CONSOLE_DEBUG, "issued at seconds: %ld", context->access_token->issued_at_seconds);
+    console(CONSOLE_DEBUG, "expires at seconds: %ld", context->access_token->expires_at_seconds);
+
+    schedule_task(sch, time(NULL) + config.access_interval, access_token_task, "access token task", context);
+}
+
+void access_token_service(Scheduler *sch, AccessToken *access_token, Registration *registration) {
+    AccessTokenTaskContext *context = (AccessTokenTaskContext *)malloc(sizeof(AccessTokenTaskContext));
+    if (context == NULL) {
+        console(CONSOLE_ERROR, "failed to allocate memory for access token task context");
+        return;
+    }
+
+    context->access_token = access_token;
+    context->registration = registration;
+
+    schedule_task(sch, time(NULL), access_token_task, "access token task", context);
 }
 
 void clean_access_token(AccessToken *access_token) {

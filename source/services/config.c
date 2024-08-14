@@ -18,7 +18,7 @@ void init_config(int argc, char *argv[]) {
     config.device_status_interval = 120;
     config.setup_interval = 120;
     config.monitoring_enabled = true;
-    config.monitoring_interval = 20;
+    config.monitoring_interval = 900;
 
     // Loop  through available daemon config parameters
     for (int i = 1; i < argc; i++) {

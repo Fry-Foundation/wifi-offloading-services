@@ -30,6 +30,8 @@ typedef struct {
     int speed_test_backhaul_attempts;
     int speed_test_latency_attempts;
 
+    int device_context_interval;
+
     char active_path[PATH_SIZE];
     char scripts_path[PATH_SIZE];
     char data_path[PATH_SIZE];

@@ -116,7 +116,7 @@ void device_context_task(Scheduler *sch, void *task_context) {
     }
 
     parse_and_update_device_context(context->device_context, device_context_json);
-    schedule_task(sch, time(NULL) + config.device_status_interval, device_context_task, "device context", context);
+    schedule_task(sch, time(NULL) + config.device_context_interval, device_context_task, "device context", context);
 }
 
 void device_context_service(Scheduler *sch,

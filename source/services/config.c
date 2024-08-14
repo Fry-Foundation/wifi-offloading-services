@@ -23,6 +23,7 @@ void init_config(int argc, char *argv[]) {
     config.speed_test_interval = 10800;
     config.speed_test_backhaul_attempts = 3;
     config.speed_test_latency_attempts = 4;
+    config.device_context_interval = 900;
 
     // Loop  through available daemon config parameters
     for (int i = 1; i < argc; i++) {
@@ -132,6 +133,12 @@ void init_config(int argc, char *argv[]) {
             config.speed_test_latency_attempts = atoi(argv[i + 1]);
             continue;
         }
+
+        // Device context interval
+        if (strcmp(argv[i], "--config-device-context-interval") == 0) {
+            config.device_context_interval = atoi(argv[i + 1]);
+            continue;
+        }
     }
 
     // Set active paths
@@ -164,4 +171,5 @@ void init_config(int argc, char *argv[]) {
     console(CONSOLE_DEBUG, "config.speed_test_interval: %d", config.speed_test_interval);
     console(CONSOLE_DEBUG, "config.speed_test_backhaul_attempts: %d", config.speed_test_backhaul_attempts);
     console(CONSOLE_DEBUG, "config.speed_test_latency_attempts: %d", config.speed_test_latency_attempts);
+    console(CONSOLE_DEBUG, "config.device_context_interval: %d", config.device_context_interval);
 }

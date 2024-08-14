@@ -22,6 +22,7 @@ typedef struct {
 
     int setup_interval;
 
+    bool monitoring_enabled;
     int monitoring_interval;
 
     char active_path[PATH_SIZE];

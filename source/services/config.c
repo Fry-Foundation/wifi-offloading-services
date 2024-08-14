@@ -17,6 +17,7 @@ void init_config(int argc, char *argv[]) {
     config.access_interval = 10800;
     config.device_status_interval = 120;
     config.setup_interval = 120;
+    config.monitoring_enabled = true;
     config.monitoring_interval = 20;
 
     // Loop  through available daemon config parameters
@@ -90,6 +91,13 @@ void init_config(int argc, char *argv[]) {
             continue;
         }
 
+        // Monitoring flag
+        if (strcmp(argv[i], "--config-monitoring-enabled") == 0) {
+            int monitoring_enabled = atoi(argv[i + 1]);
+            config.monitoring_enabled = (monitoring_enabled == 1) ? true : false;
+            continue;
+        }
+
         // Monitoring interval
         if (strcmp(argv[i], "--config-monitoring-interval") == 0) {
             config.monitoring_interval = atoi(argv[i + 1]);
@@ -121,7 +129,6 @@ void init_config(int argc, char *argv[]) {
     console(CONSOLE_DEBUG, "config.active_path: %s", config.active_path);
     console(CONSOLE_DEBUG, "config.scripts_path: %s", config.scripts_path);
     console(CONSOLE_DEBUG, "config.data_path: %s", config.data_path);
+    console(CONSOLE_DEBUG, "config.monitoring_enabled: %d", config.monitoring_enabled);
     console(CONSOLE_DEBUG, "config.monitoring_interval: %d", config.monitoring_interval);
-
-    // Fin
 }

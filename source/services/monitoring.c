@@ -122,6 +122,11 @@ void monitoring_task(Scheduler *sch, void *task_context) {
 }
 
 void monitoring_service(Scheduler *sch, struct mosquitto *mosq, Registration *registration) {
+    if (config.monitoring_enabled == 0) {
+        console(CONSOLE_INFO, "Monitoring service is disabled by config param");
+        return;
+    }
+
     MonitoringTaskContext *context = (MonitoringTaskContext *)malloc(sizeof(MonitoringTaskContext));
     if (context == NULL) {
         console(CONSOLE_ERROR, "failed to allocate memory for access token task context");

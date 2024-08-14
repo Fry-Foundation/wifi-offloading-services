@@ -248,5 +248,5 @@ void speedtest_service(Scheduler *sch, struct mosquitto *mosq, Registration *reg
     context->registration = registration;
     context->access_token = access_token;
 
-    speedtest_task(sch, context);
+    schedule_task(sch, time(NULL) + config.speed_test_interval, speedtest_task, "speedtest", context);
 }

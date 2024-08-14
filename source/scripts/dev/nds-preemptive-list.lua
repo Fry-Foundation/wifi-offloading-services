@@ -1,7 +1,10 @@
 #!/usr/bin/lua
 
 -- In-memory storage for preemptive clients list
-local preemptive_clients = {}
+-- @note you can use the mac address below to test the remove function
+local preemptive_clients = {
+    "mac=00:11:22:33:44:55;sessiontimeout=3600;uploadrate=100;downloadrate=100;uploadquota=100;downloadquota=100;custom=custom_data",
+}
 
 --[[
     Function: read_nds_preemptive_clients_list

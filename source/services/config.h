@@ -25,6 +25,11 @@ typedef struct {
     bool monitoring_enabled;
     int monitoring_interval;
 
+    bool speed_test_enabled;
+    int speed_test_interval;
+    int speed_test_backhaul_attempts;
+    int speed_test_latency_attempts;
+
     char active_path[PATH_SIZE];
     char scripts_path[PATH_SIZE];
     char data_path[PATH_SIZE];

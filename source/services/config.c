@@ -19,6 +19,10 @@ void init_config(int argc, char *argv[]) {
     config.setup_interval = 120;
     config.monitoring_enabled = true;
     config.monitoring_interval = 900;
+    config.speed_test_enabled = true;
+    config.speed_test_interval = 10800;
+    config.speed_test_backhaul_attempts = 3;
+    config.speed_test_latency_attempts = 4;
 
     // Loop  through available daemon config parameters
     for (int i = 1; i < argc; i++) {
@@ -103,6 +107,31 @@ void init_config(int argc, char *argv[]) {
             config.monitoring_interval = atoi(argv[i + 1]);
             continue;
         }
+
+        // Speed test flag
+        if (strcmp(argv[i], "--config-speed-test-enabled") == 0) {
+            int speed_test_enabled = atoi(argv[i + 1]);
+            config.speed_test_enabled = (speed_test_enabled == 1) ? true : false;
+            continue;
+        }
+
+        // Speed test interval
+        if (strcmp(argv[i], "--config-speed-test-interval") == 0) {
+            config.speed_test_interval = atoi(argv[i + 1]);
+            continue;
+        }
+
+        // Speed test backhaul attempts
+        if (strcmp(argv[i], "--config-speed-test-backhaul-attempts") == 0) {
+            config.speed_test_backhaul_attempts = atoi(argv[i + 1]);
+            continue;
+        }
+
+        // Speed test latency attempts
+        if (strcmp(argv[i], "--config-speed-test-latency-attempts") == 0) {
+            config.speed_test_latency_attempts = atoi(argv[i + 1]);
+            continue;
+        }
     }
 
     // Set active paths
@@ -131,4 +160,8 @@ void init_config(int argc, char *argv[]) {
     console(CONSOLE_DEBUG, "config.data_path: %s", config.data_path);
     console(CONSOLE_DEBUG, "config.monitoring_enabled: %d", config.monitoring_enabled);
     console(CONSOLE_DEBUG, "config.monitoring_interval: %d", config.monitoring_interval);
+    console(CONSOLE_DEBUG, "config.speed_test_enabled: %d", config.speed_test_enabled);
+    console(CONSOLE_DEBUG, "config.speed_test_interval: %d", config.speed_test_interval);
+    console(CONSOLE_DEBUG, "config.speed_test_backhaul_attempts: %d", config.speed_test_backhaul_attempts);
+    console(CONSOLE_DEBUG, "config.speed_test_latency_attempts: %d", config.speed_test_latency_attempts);
 }

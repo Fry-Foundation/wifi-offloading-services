@@ -17,7 +17,6 @@
 #include <time.h>
 
 #define MEMORY_PERCENTAGE 0.5
-#define NUM_PINGS 4
 #define SPEEDTEST_ENDPOINT "monitoring/speedtest"
 
 typedef struct {
@@ -32,7 +31,7 @@ typedef struct {
 
 float get_average_latency(const char *hostname) {
     char command[256];
-    snprintf(command, sizeof(command), "ping -c %d %s", NUM_PINGS, hostname);
+    snprintf(command, sizeof(command), "ping -c %d %s", config.speed_test_latency_attempts, hostname);
 
     FILE *fp = popen(command, "r");
     if (fp == NULL) {
@@ -200,7 +199,7 @@ void speedtest_task(Scheduler *sch, void *task_context) {
     double download_speed = 0.0;
     float latency = get_average_latency("www.google.com");
     console(CONSOLE_INFO, "Average latency: %.2f ms\n", latency);
-    while (interval < 5) {
+    while (interval < config.speed_test_backhaul_attempts) {
         SpeedTestResult result = speed_test(context->access_token->token);
         upload_speed += result.upload_speed_mbps;
         download_speed += result.download_speed_mbps;
@@ -230,10 +229,15 @@ void speedtest_task(Scheduler *sch, void *task_context) {
 
     json_object_put(speedtest_data);
 
-    schedule_task(sch, time(NULL) + config.device_status_interval, speedtest_task, "speedtest", context);
+    schedule_task(sch, time(NULL) + config.speed_test_interval, speedtest_task, "speedtest", context);
 }
 
 void speedtest_service(Scheduler *sch, struct mosquitto *mosq, Registration *registration, AccessToken *access_token) {
+    if (config.speed_test_enabled == 0) {
+        console(CONSOLE_INFO, "Speedtest service is disabled by config");
+        return;
+    }
+
     SpeedTestTaskContext *context = (SpeedTestTaskContext *)malloc(sizeof(SpeedTestTaskContext));
     if (context == NULL) {
         console(CONSOLE_ERROR, "failed to allocate memory for speedtest task context");

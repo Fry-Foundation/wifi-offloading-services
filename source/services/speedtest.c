@@ -1,5 +1,6 @@
 #include "lib/console.h"
 #include "lib/http-requests.h"
+#include "lib/scheduler.h"
 #include "services/config.h"
 #include "services/mqtt.h"
 #include "services/registration.h"
@@ -190,27 +191,17 @@ SpeedTestResult speed_test(char *bearer_token) {
     return result;
 }
 
-void speedtest_service(struct mosquitto *mosq, Registration *registration, AccessToken *access_token) {
-    SpeedTestTaskContext *context = (SpeedTestTaskContext *)malloc(sizeof(SpeedTestTaskContext));
-    if (context == NULL) {
-        console(CONSOLE_ERROR, "failed to allocate memory for speedtest task context");
-        return;
-    }
+void speedtest_task(Scheduler *sch, void *task_context) {
+    SpeedTestTaskContext *context = (SpeedTestTaskContext *)task_context;
 
-    context->mosq = mosq;
-    context->registration = registration;
-    context->access_token = access_token;
-
-    console(CONSOLE_DEBUG, "access_token: %s\n", access_token->token);
-
-    console(CONSOLE_INFO, "Starting speedtest service\n");
+    console(CONSOLE_INFO, "Starting speedtest task\n");
     int interval = 0;
     double upload_speed = 0.0;
     double download_speed = 0.0;
     float latency = get_average_latency("www.google.com");
     console(CONSOLE_INFO, "Average latency: %.2f ms\n", latency);
     while (interval < 5) {
-        SpeedTestResult result = speed_test(access_token->token);
+        SpeedTestResult result = speed_test(context->access_token->token);
         upload_speed += result.upload_speed_mbps;
         download_speed += result.download_speed_mbps;
         interval++;
@@ -227,7 +218,7 @@ void speedtest_service(struct mosquitto *mosq, Registration *registration, Acces
     time_t now;
     time(&now);
     json_object *speedtest_data = json_object_new_object();
-    json_object_object_add(speedtest_data, "device_id", json_object_new_string(registration->wayru_device_id));
+    json_object_object_add(speedtest_data, "device_id", json_object_new_string(context->registration->wayru_device_id));
     json_object_object_add(speedtest_data, "timestamp", json_object_new_int(now));
     json_object_object_add(speedtest_data, "upload_speed", json_object_new_double(result.upload_speed_mbps));
     json_object_object_add(speedtest_data, "download_speed", json_object_new_double(result.download_speed_mbps));
@@ -238,4 +229,20 @@ void speedtest_service(struct mosquitto *mosq, Registration *registration, Acces
     publish_mqtt(context->mosq, "monitoring/speedtest", speedtest_data_str);
 
     json_object_put(speedtest_data);
+
+    schedule_task(sch, time(NULL) + config.device_status_interval, speedtest_task, "speedtest", context);
+}
+
+void speedtest_service(Scheduler *sch, struct mosquitto *mosq, Registration *registration, AccessToken *access_token) {
+    SpeedTestTaskContext *context = (SpeedTestTaskContext *)malloc(sizeof(SpeedTestTaskContext));
+    if (context == NULL) {
+        console(CONSOLE_ERROR, "failed to allocate memory for speedtest task context");
+        return;
+    }
+
+    context->mosq = mosq;
+    context->registration = registration;
+    context->access_token = access_token;
+
+    speedtest_task(sch, context);
 }

@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
     accounting_service(sch);
     monitoring_service(sch, mosq, registration);
     site_clients_service(mosq, device_context->site);
-    speedtest_service(mosq, registration, access_token);
+    speedtest_service(sch, mosq, registration, access_token);
 
     run_tasks(sch);
 

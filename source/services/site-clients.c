@@ -84,12 +84,27 @@ void disconnect_callback(struct mosquitto *mosq, const struct mosquitto_message 
     json_object_put(parsed_json);
 }
 
+void configure_site_mac(char *mac) {
+    // Build the command
+    char command[512];
+    snprintf(command, sizeof(command), "%s/%s %s", config.scripts_path, "network-mac.lua", mac);
+
+    // Run the script
+    char *output = run_script(command);
+    console(CONSOLE_DEBUG, "Script output: %s", output);
+
+    // Clean up
+    free(output);
+}
+
 // @todo configure site mac
 void site_clients_service(struct mosquitto *mosq, Site *site) {
-    if (site == NULL || site->id == NULL) {
-        console(CONSOLE_INFO, "no site to subscribe to");
+    if (site == NULL || site->id == NULL || site->mac == NULL) {
+        console(CONSOLE_INFO, "no site to subscribe to or incomplete details");
         return;
     }
+
+    configure_site_mac(site->mac);
 
     char connect_topic[100];
     snprintf(connect_topic, sizeof(connect_topic), "site/%s/clients/connect", site->id);

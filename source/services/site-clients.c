@@ -6,14 +6,12 @@
 #include "services/device-context.h"
 #include "services/mqtt.h"
 #include <json-c/json.h>
+#include <json-c/json_types.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-void connect_callback(struct mosquitto *mosq, const struct mosquitto_message *message) {
-    console(CONSOLE_DEBUG, "client connected, payload: %s", (char *)message->payload);
-
-    // Parse the JSON payload
-    struct json_object *parsed_json;
+void handle_connect(struct json_object *parsed_json) {
     struct json_object *mac;
     struct json_object *sessiontimeout;
     struct json_object *uploadrate;
@@ -22,13 +20,7 @@ void connect_callback(struct mosquitto *mosq, const struct mosquitto_message *me
     struct json_object *downloadquota;
     struct json_object *custom;
 
-    parsed_json = json_tokener_parse((char *)message->payload);
-    if (!parsed_json) {
-        console(CONSOLE_ERROR, "Failed to parse JSON");
-        return;
-    }
-
-    // Extract values from the JSON object
+    // Extract the expected values from the JSON object
     json_object_object_get_ex(parsed_json, "mac", &mac);
     json_object_object_get_ex(parsed_json, "sessiontimeout", &sessiontimeout);
     json_object_object_get_ex(parsed_json, "uploadrate", &uploadrate);
@@ -38,49 +30,70 @@ void connect_callback(struct mosquitto *mosq, const struct mosquitto_message *me
     json_object_object_get_ex(parsed_json, "custom", &custom);
 
     // Build the command
-    char script_file_and_command[512];
-    snprintf(script_file_and_command, sizeof(script_file_and_command), "%s/%s add %s %s %s %s %s %s %s",
-             config.scripts_path, "nds-preemptive-list.lua", json_object_get_string(mac),
-             json_object_get_string(sessiontimeout), json_object_get_string(uploadrate),
+    char command[512];
+    snprintf(command, sizeof(command), "%s/%s add %s %s %s %s %s %s %s", config.scripts_path, "nds-preemptive-list.lua",
+             json_object_get_string(mac), json_object_get_string(sessiontimeout), json_object_get_string(uploadrate),
              json_object_get_string(downloadrate), json_object_get_string(uploadquota),
              json_object_get_string(downloadquota), json_object_get_string(custom));
 
     // Run the script
-    char *output = run_script(script_file_and_command);
+    char *output = run_script(command);
     console(CONSOLE_DEBUG, "Script output: %s", output);
 
     // Clean up
     free(output);
-    json_object_put(parsed_json);
 }
 
-void disconnect_callback(struct mosquitto *mosq, const struct mosquitto_message *message) {
-    console(CONSOLE_DEBUG, "client disconnected, payload: %s", (char *)message->payload);
-
-    // Parse the JSON payload
-    struct json_object *parsed_json;
+void handle_disconnect(struct json_object *parsed_json) {
     struct json_object *mac;
-
-    parsed_json = json_tokener_parse((char *)message->payload);
-    if (!parsed_json) {
-        console(CONSOLE_ERROR, "Failed to parse JSON");
-        return;
-    }
 
     // Extract values from the JSON object
     json_object_object_get_ex(parsed_json, "mac", &mac);
 
     // Build the command
-    char script_file_and_command[512];
-    snprintf(script_file_and_command, sizeof(script_file_and_command), "%s/%s remove %s", config.scripts_path,
-             "nds-preemptive-list.lua", json_object_get_string(mac));
+    char command[512];
+    snprintf(command, sizeof(command), "%s/%s remove %s", config.scripts_path, "nds-preemptive-list.lua",
+             json_object_get_string(mac));
 
     // Run the script
-    char *output = run_script(script_file_and_command);
+    char *output = run_script(command);
     console(CONSOLE_DEBUG, "Script output: %s", output);
 
     // Clean up
     free(output);
+}
+
+void site_clients_callback(struct mosquitto *mosq, const struct mosquitto_message *message) {
+    console(CONSOLE_DEBUG, "Received message on site clients topic, payload: %s", (char *)message->payload);
+
+    // Parse the JSON payload
+    struct json_object *parsed_json;
+    struct json_object *type;
+
+    parsed_json = json_tokener_parse((char *)message->payload);
+    if (!parsed_json) {
+        console(CONSOLE_ERROR, "Failed to parse clients topic payload JSON");
+        return;
+    }
+
+    if (!json_object_object_get_ex(parsed_json, "type", &type)) {
+        console(CONSOLE_ERROR, "Failed to extract type field from clients topic payload JSON");
+        json_object_put(parsed_json);
+        return;
+    }
+
+    const char *type_str = json_object_get_string(type);
+
+    // Handle the message based on the type
+    if (strcmp(type_str, "connect") == 0) {
+        handle_connect(parsed_json);
+    } else if (strcmp(type_str, "disconnect") == 0) {
+        handle_disconnect(parsed_json);
+    } else {
+        console(CONSOLE_ERROR, "Unknown clients topic type: %s", type_str);
+    }
+
+    // Clean up
     json_object_put(parsed_json);
 }
 
@@ -97,7 +110,6 @@ void configure_site_mac(char *mac) {
     free(output);
 }
 
-// @todo configure site mac
 void site_clients_service(struct mosquitto *mosq, Site *site) {
     if (site == NULL || site->id == NULL || site->mac == NULL) {
         console(CONSOLE_INFO, "no site to subscribe to or incomplete details");
@@ -106,11 +118,7 @@ void site_clients_service(struct mosquitto *mosq, Site *site) {
 
     configure_site_mac(site->mac);
 
-    char connect_topic[100];
-    snprintf(connect_topic, sizeof(connect_topic), "site/%s/clients/connect", site->id);
-    subscribe_mqtt(mosq, connect_topic, 1, connect_callback);
-
-    char disconnect_topic[100];
-    snprintf(disconnect_topic, sizeof(disconnect_topic), "site/%s/clients/disconnect", site->id);
-    subscribe_mqtt(mosq, disconnect_topic, 1, disconnect_callback);
+    char site_clients_topic[256];
+    snprintf(site_clients_topic, sizeof(site_clients_topic), "site/%s/clients", site->id);
+    subscribe_mqtt(mosq, site_clients_topic, 1, site_clients_callback);
 }

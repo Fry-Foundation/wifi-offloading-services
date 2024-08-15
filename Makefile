@@ -49,6 +49,7 @@ define Build/Compile
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/mqtt.o -c $(PKG_BUILD_DIR)/services/mqtt.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/monitoring.o -c $(PKG_BUILD_DIR)/services/monitoring.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/env.o -c $(PKG_BUILD_DIR)/services/env.c
+		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/speedtest.o -c $(PKG_BUILD_DIR)/services/speedtest.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/registration.o -c $(PKG_BUILD_DIR)/services/registration.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/access_token.o -c $(PKG_BUILD_DIR)/services/access_token.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/device-context.o -c $(PKG_BUILD_DIR)/services/device-context.c
@@ -74,6 +75,7 @@ define Build/Compile
 			$(PKG_BUILD_DIR)/services/mqtt.o \
 			$(PKG_BUILD_DIR)/services/monitoring.o \
 			$(PKG_BUILD_DIR)/services/env.o \
+			$(PKG_BUILD_DIR)/services/speedtest.o \
 			$(PKG_BUILD_DIR)/services/registration.o \
 			$(PKG_BUILD_DIR)/services/access_token.o \
 			$(PKG_BUILD_DIR)/services/device-context.o \

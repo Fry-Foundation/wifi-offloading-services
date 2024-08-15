@@ -157,6 +157,8 @@ define Package/wayru-os-services/install
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/get-osname.sh $(1)/etc/wayru-os-services/scripts/
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/sign_cert.sh $(1)/etc/wayru-os-services/scripts/
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/retrieve-data.lua $(1)/etc/wayru-os-services/scripts/
+		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/nds-preemptive-list.lua $(1)/etc/wayru-os-services/scripts/
+		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/network-mac.lua $(1)/etc/wayru-os-services/scripts/
 
 		$(INSTALL_DATA) certificates/ca.crt $(1)/etc/wayru-os-services/data/ca.crt
 		$(INSTALL_DATA) .env $(1)/etc/wayru-os-services/data/.env

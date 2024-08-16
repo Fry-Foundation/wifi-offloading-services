@@ -5,7 +5,7 @@ local uci = require("uci").cursor()
 -- Main script
 local args = { ... }
 if #args ~= 1 then
-    print("Usage: lua network-mac.lua <site_mac>")
+    print("Usage: lua network-set-mac.lua <site_mac>")
     os.exit(1)
 end
 

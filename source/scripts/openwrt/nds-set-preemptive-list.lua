@@ -199,20 +199,20 @@ end
 -- Main script
 local args = { ... }
 if #args == 0 then
-    print("Usage: lua configure-nds-list.lua <add|remove|read>")
+    print("Usage: lua nds-set-preemptive-list.lua <add|remove|read>")
     os.exit(1)
 end
 
 if args[1] == "add" then
     if #args ~= 8 then
         print(
-            "Usage: lua configure-nds-list.lua add <client_mac> <sessiontimeout> <uploadrate> <downloadrate> <uploadquota> <downloadquota> <custom>")
+            "Usage: lua nds-set-preemptive-list.lua add <client_mac> <sessiontimeout> <uploadrate> <downloadrate> <uploadquota> <downloadquota> <custom>")
         os.exit(1)
     end
     add_nds_preemptive_client(args[2], args[3], args[4], args[5], args[6], args[7], args[8])
 elseif args[1] == "remove" then
     if #args ~= 2 then
-        print("Usage: lua configure-nds-list.lua remove <client_mac>")
+        print("Usage: lua nds-set-preemptive-list.lua remove <client_mac>")
         os.exit(1)
     end
     remove_nds_preemptive_client(args[2])
@@ -229,6 +229,6 @@ elseif args[1] == "read" then
         print("---")
     end
 else
-    print("Usage: lua configure-nds-list.lua <add|remove|read>")
+    print("Usage: lua nds-set-preemptive-list.lua <add|remove|read>")
     os.exit(1)
 end

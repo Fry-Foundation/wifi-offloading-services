@@ -32,6 +32,8 @@ typedef struct {
 
     int device_context_interval;
 
+    int site_clients_interval;
+
     char active_path[PATH_SIZE];
     char scripts_path[PATH_SIZE];
     char data_path[PATH_SIZE];

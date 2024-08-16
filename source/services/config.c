@@ -24,6 +24,7 @@ void init_config(int argc, char *argv[]) {
     config.speed_test_backhaul_attempts = 3;
     config.speed_test_latency_attempts = 4;
     config.device_context_interval = 900;
+    config.site_clients_interval = 60;
 
     // Loop  through available daemon config parameters
     for (int i = 1; i < argc; i++) {
@@ -137,6 +138,12 @@ void init_config(int argc, char *argv[]) {
         // Device context interval
         if (strcmp(argv[i], "--config-device-context-interval") == 0) {
             config.device_context_interval = atoi(argv[i + 1]);
+            continue;
+        }
+
+        // Site clients interval
+        if (strcmp(argv[i], "--config-site-clients-interval") == 0) {
+            config.site_clients_interval = atoi(argv[i + 1]);
             continue;
         }
     }

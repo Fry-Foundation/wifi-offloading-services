@@ -29,6 +29,7 @@ int main(int argc, char *argv[]) {
     DeviceContext *device_context = init_device_context(registration, access_token);
     generate_and_sign_cert();
     struct mosquitto *mosq = init_mqtt(access_token);
+    int site_clients_fifo_fd = init_site_clients_fifo();
 
     // Start services and schedule future tasks on each
     access_service(sch, device_info);
@@ -38,12 +39,13 @@ int main(int argc, char *argv[]) {
     setup_service(sch);
     accounting_service(sch);
     monitoring_service(sch, mosq, registration);
-    site_clients_service(mosq, device_context->site);
+    site_clients_service(sch, mosq, site_clients_fifo_fd, device_context->site);
     speedtest_service(sch, mosq, registration, access_token);
 
     run_tasks(sch);
 
     // Clean up
+    clean_site_clients_fifo(site_clients_fifo_fd);
     clean_up_mosquitto(&mosq);
     clean_access_service();
     clean_device_context(device_context);

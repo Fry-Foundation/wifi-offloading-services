@@ -1,6 +1,6 @@
 #!/bin/sh
 
-FIFO_PATH="../data/site-clients-fifo"
+FIFO_PATH="../tmp/site-clients-fifo"
 
 #
 # Get the action method from NDS ie the first command line argument.

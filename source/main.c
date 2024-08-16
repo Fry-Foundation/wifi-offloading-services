@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
     AccessToken *access_token = init_access_token(registration);
     DeviceContext *device_context = init_device_context(registration, access_token);
     generate_and_sign_cert();
-    struct mosquitto *mosq = init_mqtt(access_token);
+    struct mosquitto *mosq = init_mqtt(registration, access_token);
     int site_clients_fifo_fd = init_site_clients_fifo();
 
     // Start services and schedule future tasks on each

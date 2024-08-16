@@ -292,10 +292,10 @@ download_quota=0
 exitlevel=0
 
 # Include custom binauth script
-custombinauthpath="/etc/wayru-os-services/scripts/nds-binauth-custom.sh"
+custom_binauth_path="/etc/wayru-os-services/scripts/nds-binauth-custom.sh"
 
-if [ -e "$custombinauthpath" ]; then
-	. $custombinauthpath $1 $2
+if [ -e "$custom_binauth_path" ]; then
+	$custom_binauth_path $1 $2
 fi
 
 # Finally before exiting, output the session length, upload rate, download rate, upload quota and download quota (only effective for auth_client).

@@ -16,6 +16,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#define SET_BINAUTH_SCRIPT "nds-set-binauth.lua"
 #define BINAUTH_SCRIPT "nds-binauth.sh"
 #define SITE_CLIENTS_FIFO "site-clients-fifo"
 #define SESSION_TIMEOUT "60"
@@ -135,8 +136,11 @@ void configure_site_mac(char *mac) {
 
 void configure_binauth() {
     // Build the command
+    char binauth_script_path[256];
+    snprintf(binauth_script_path, sizeof(binauth_script_path), "%s/%s", config.scripts_path, BINAUTH_SCRIPT);
+
     char command[512];
-    snprintf(command, sizeof(command), "%s/%s", config.scripts_path, BINAUTH_SCRIPT);
+    snprintf(command, sizeof(command), "%s/%s %s", config.scripts_path, SET_BINAUTH_SCRIPT, binauth_script_path);
 
     // Run the script
     char *output = run_script(command);
@@ -197,6 +201,8 @@ void site_clients_task(Scheduler *sch, void *task_context) {
                     char topic[256];
                     snprintf(topic, sizeof(topic), "site/%s/clients", context->site->id);
 
+                    console(CONSOLE_DEBUG, "Publishing to topic: %s, payload: %s", topic, payload_str);
+
                     publish_mqtt(context->mosq, topic, payload_str);
 
                     json_object_put(json_payload);
@@ -210,6 +216,8 @@ void site_clients_task(Scheduler *sch, void *task_context) {
 
                     char topic[256];
                     snprintf(topic, sizeof(topic), "site/%s/clients", context->site->id);
+
+                    console(CONSOLE_DEBUG, "Publishing to topic: %s, payload: %s", topic, payload_str);
 
                     publish_mqtt(context->mosq, topic, payload_str);
 
@@ -235,10 +243,36 @@ void site_clients_task(Scheduler *sch, void *task_context) {
 }
 
 int init_site_clients_fifo() {
-    // Create the FIFO if it doesn't already exist
-    char fifo_path[256];
-    snprintf(fifo_path, sizeof(fifo_path), "%s/%s", config.data_path, SITE_CLIENTS_FIFO);
-    if (mkfifo(fifo_path, 0666) == -1) {
+    // Create the dir within the /tmp folder and FIFO file if it doesn't already exist
+    struct stat st = {0};
+    char fifo_dir[256];
+    char fifo_file[256];
+
+    if (config.dev_env) {
+        snprintf(fifo_dir, sizeof(fifo_dir), "./tmp");
+        snprintf(fifo_file, sizeof(fifo_file), "%s/%s", "./tmp", SITE_CLIENTS_FIFO);
+    } else {
+        snprintf(fifo_dir, sizeof(fifo_dir), "/tmp/wayru-os-services");
+        snprintf(fifo_file, sizeof(fifo_file), "%s/%s", "/tmp/wayru-os-services", SITE_CLIENTS_FIFO);
+    }
+
+    // Check if directory exists
+    if (stat(fifo_dir, &st) == -1) {
+        // Directory does not exist, create it
+        if (mkdir(fifo_dir, 0700) == 0) {
+            printf("Directory created: %s\n", fifo_dir);
+            return 0;
+        } else {
+            // Handle error if directory creation failed
+            printf("Error creating directory: %s\n", strerror(errno));
+            return -1;
+        }
+    } else {
+        printf("Directory already exists: %s\n", fifo_dir);
+        return 0;
+    }
+
+    if (mkfifo(fifo_file, 0666) == -1) {
         if (errno != EEXIST) {
             console(CONSOLE_ERROR, "failed to create site clients fifo");
             perror("mkfifo");
@@ -246,7 +280,7 @@ int init_site_clients_fifo() {
         }
     }
 
-    int fifo_fd = open(fifo_path, O_RDONLY | O_NONBLOCK);
+    int fifo_fd = open(fifo_file, O_RDONLY | O_NONBLOCK);
     if (fifo_fd == -1) {
         console(CONSOLE_ERROR, "failed to open site clients fifo");
         perror("open");

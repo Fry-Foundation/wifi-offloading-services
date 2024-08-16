@@ -1,6 +1,7 @@
 #include "mqtt.h"
 #include "services/access_token.h"
 #include "services/env.h"
+#include "services/registration.h"
 #include <lib/console.h>
 #include <mosquitto.h>
 #include <services/config.h>
@@ -23,12 +24,18 @@ static TopicCallback topic_callbacks[MAX_TOPIC_CALLBACKS];
 static int topic_callbacks_count = 0;
 
 void on_connect(struct mosquitto *mosq, void *obj, int reason_code) {
+    console(CONSOLE_DEBUG, "MQTT client on_connect callback, reason_code: %d", reason_code);
+
     if (reason_code) {
-        console(CONSOLE_ERROR, "Error: Unable to connect to the broker. %s\n", mosquitto_connack_string(reason_code));
+        console(CONSOLE_ERROR, "Error: Unable to connect to the broker. %s", mosquitto_connack_string(reason_code));
         // exit (1);
     } else {
         console(CONSOLE_INFO, "Connected to the broker.");
     }
+}
+
+void on_disconnect(struct mosquitto *mosq, void *obj, int reason_code) {
+    console(CONSOLE_INFO, "Disconnected from the broker. Reason code: %d", reason_code);
 }
 
 void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg) {
@@ -69,7 +76,7 @@ void publish_mqtt(struct mosquitto *mosq, char *topic, const char *message) {
     }
 }
 
-struct mosquitto *init_mosquitto(AccessToken *access_token) {
+struct mosquitto *init_mosquitto(Registration *registration, AccessToken *access_token) {
     // Load user and password from env file
     // If present, these override the access token
     char env_file[256];
@@ -91,7 +98,7 @@ struct mosquitto *init_mosquitto(AccessToken *access_token) {
     mosquitto_lib_init();
 
     // Create a new Mosquitto client instance
-    mosq = mosquitto_new("client_id", true, NULL);
+    mosq = mosquitto_new(registration->wayru_device_id, true, NULL);
     if (!mosq) {
         console(CONSOLE_ERROR, "Error: Unable to create Mosquitto client instance.\n");
         mosquitto_lib_cleanup();
@@ -135,6 +142,7 @@ struct mosquitto *init_mosquitto(AccessToken *access_token) {
     }
     // Set callbacks
     mosquitto_connect_callback_set(mosq, on_connect);
+    mosquitto_disconnect_callback_set(mosq, on_disconnect);
     mosquitto_message_callback_set(mosq, on_message);
     mosquitto_publish_callback_set(mosq, on_publish);
     mosquitto_subscribe_callback_set(mosq, on_subscribe);
@@ -185,4 +193,6 @@ void clean_up_mosquitto(struct mosquitto **mosq) {
     mosquitto_lib_cleanup();
 }
 
-struct mosquitto *init_mqtt(AccessToken *access_token) { return init_mosquitto(access_token); }
+struct mosquitto *init_mqtt(Registration *registration, AccessToken *access_token) {
+    return init_mosquitto(registration, access_token);
+}

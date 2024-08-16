@@ -137,11 +137,11 @@ void print_tasks(Scheduler *sch) {
 void execute_tasks(Scheduler *sch) {
     time_t now = time(NULL);
 
-    console(CONSOLE_DEBUG, "-------------------------------------------------");
-    console(CONSOLE_DEBUG, "Executing tasks, time is now: %ld", now);
-    console(CONSOLE_DEBUG, "Task count: %d", get_task_count(sch));
-    print_tasks(sch);
-    console(CONSOLE_DEBUG, "-------------------------------------------------");
+    // console(CONSOLE_DEBUG, "-------------------------------------------------");
+    // console(CONSOLE_DEBUG, "Executing tasks, time is now: %ld", now);
+    // console(CONSOLE_DEBUG, "Task count: %d", get_task_count(sch));
+    // print_tasks(sch);
+    // console(CONSOLE_DEBUG, "-------------------------------------------------");
 
     while (sch->head && difftime(sch->head->execute_at, now) <= 0) {
         // Get the task at the head of the list

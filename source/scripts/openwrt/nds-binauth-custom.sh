@@ -2,7 +2,6 @@
 
 FIFO_PATH="/tmp/wayru-os-services/site-clients-fifo"
 
-
 #
 # Get the action method from NDS ie the first command line argument.
 #
@@ -21,11 +20,11 @@ FIFO_PATH="/tmp/wayru-os-services/site-clients-fifo"
 method=$1
 mac=$2
 
-if [ $method = "client_deauth" ] || [ $method = "idle_deauth" ] || [ $method = "timeout_deauth" ] || [ $method = "downquota_deauth" ] || [ $method = "upquota_deauth" ] || [ $method = "ndsctl_deauth" ] || [ $method = "shutdown_deauth" ]; then
-    echo "disconnect $mac" > $FIFO_PATH &
+if [ "$method" = "client_deauth" ] || [ "$method" = "idle_deauth" ] || [ "$method" = "timeout_deauth" ] || [ "$method" = "downquota_deauth" ] || [ "$method" = "upquota_deauth" ] || [ "$method" = "ndsctl_deauth" ] || [ "$method" = "shutdown_deauth" ]; then
+    echo "disconnect $mac" > "$FIFO_PATH" &
 else
     # either "client_auth" or "ndsctl_auth" or "auth_client"
-    echo "connect $mac" > $FIFO_PATH &
+    echo "connect $mac" > "$FIFO_PATH" &
 fi
 
 exit 0

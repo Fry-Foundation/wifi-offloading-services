@@ -259,19 +259,17 @@ int init_site_clients_fifo() {
     // Check if directory exists
     if (stat(fifo_dir, &st) == -1) {
         // Directory does not exist, create it
-        if (mkdir(fifo_dir, 0700) == 0) {
-            printf("Directory created: %s\n", fifo_dir);
-            return 0;
-        } else {
-            // Handle error if directory creation failed
-            printf("Error creating directory: %s\n", strerror(errno));
+        if (mkdir(fifo_dir, 0700) == -1) {
+            console(CONSOLE_ERROR, "failed to create site clients fifo directory");
             return -1;
         }
+        console(CONSOLE_INFO, "Directory created: %s", fifo_dir);
     } else {
         printf("Directory already exists: %s\n", fifo_dir);
-        return 0;
+        console(CONSOLE_INFO, "Directory already exists: %s", fifo_dir);
     }
 
+    // Create the FIFO file if it doesn't exist
     if (mkfifo(fifo_file, 0666) == -1) {
         if (errno != EEXIST) {
             console(CONSOLE_ERROR, "failed to create site clients fifo");

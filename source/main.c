@@ -10,6 +10,7 @@
 #include "services/registration.h"
 #include "services/access_token.h"
 #include "services/setup.h"
+#include "services/firmware_upgrade.h" 
 #include <mosquitto.h>
 #include <stdbool.h>
 #include <unistd.h>
@@ -23,6 +24,7 @@ int main(int argc, char *argv[]) {
     DeviceInfo *device_info = init_device_info();
     Registration *registration = init_registration(device_info->mac, device_info->model, device_info->brand);
     AccessToken *access_token = init_access_token(registration);
+    firmware_upgrade_on_boot(registration, device_info);
     generate_and_sign_cert();
     struct mosquitto *mosq = init_mqtt();
 
@@ -32,6 +34,7 @@ int main(int argc, char *argv[]) {
     setup_service(sch);
     accounting_service(sch);
     monitoring_service(sch, mosq, registration);
+    firmware_upgrade_check(sch, device_info, registration);
 
     run_tasks(sch);
 

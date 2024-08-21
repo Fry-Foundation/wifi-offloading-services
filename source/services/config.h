@@ -24,9 +24,12 @@ typedef struct {
 
     int monitoring_interval;
 
+    int firmware_upgrade_interval;
+
     char active_path[PATH_SIZE];
     char scripts_path[PATH_SIZE];
     char data_path[PATH_SIZE];
+    char temp_path[PATH_SIZE];
 } Config;
 
 extern Config config;

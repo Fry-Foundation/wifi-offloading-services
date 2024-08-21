@@ -17,7 +17,7 @@
 
 char *get_os_version() {
     if (config.dev_env) {
-        return strdup("2.0.0");
+        return strdup("23.0.4");
     }
 
     FILE *file = fopen(OS_VERSION_FILE, "r");
@@ -124,7 +124,7 @@ DeviceProfile get_device_profile() {
     DeviceProfile device_profile = {0};
 
     if (config.dev_env) {
-        device_profile.name = strdup("Genesis");
+        device_profile.name = strdup("Hemera");
         device_profile.brand = strdup("Wayru");
         device_profile.model = strdup("Genesis");
         return device_profile;

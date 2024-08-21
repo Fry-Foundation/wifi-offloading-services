@@ -27,4 +27,11 @@ typedef struct {
 
 HttpResult http_post(const HttpPostOptions *options);
 
+typedef struct {
+    const char *url;
+    const char *download_path;
+} HttpDownloadOptions;
+
+HttpResult http_download(const HttpDownloadOptions *options);
+
 #endif /* HTTP_REQUESTS_H */

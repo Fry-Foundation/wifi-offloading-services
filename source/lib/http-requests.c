@@ -176,3 +176,54 @@ HttpResult http_post(const HttpPostOptions *options) {
 
     return result;
 }
+
+static size_t write_callback(void *ptr, size_t size, size_t nmemb, void *data) {
+    size_t realsize = size * nmemb;
+    char **response_buffer = (char **)data;
+
+    *response_buffer = realloc(*response_buffer, strlen(*response_buffer) + realsize + 1);
+    if (*response_buffer == NULL) {
+        return 0;
+    }
+
+    strncat(*response_buffer, ptr, realsize);
+    return realsize;
+}
+
+// HTTP file download
+
+HttpResult http_download(const HttpDownloadOptions *options) {
+    CURL *curl;
+    CURLcode res;
+    FILE *fp;
+    HttpResult result = {0};
+
+    curl = curl_easy_init();
+    if (!curl) {
+        result.is_error = true;
+        result.error = strdup("Failed to initialize curl");
+        return result;
+    }
+
+    fp = fopen(options->download_path, "wb");
+    if (!fp) {
+        result.is_error = true;
+        result.error = strdup("Failed to open file for writing");
+        curl_easy_cleanup(curl);
+        return result;
+    }
+
+    curl_easy_setopt(curl, CURLOPT_URL, options->url);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
+    curl_easy_setopt(curl, CURLOPT_FAILONERROR, 1L);
+
+    res = curl_easy_perform(curl);
+    if (res != CURLE_OK) {
+        result.is_error = true;
+        result.error = strdup(curl_easy_strerror(res));
+    }
+
+    fclose(fp);
+    curl_easy_cleanup(curl);
+    return result;
+}

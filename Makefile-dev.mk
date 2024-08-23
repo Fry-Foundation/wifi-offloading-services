@@ -23,6 +23,7 @@ DIST_PATH := dist
 DIST_SCRIPTS_PATH := $(DIST_PATH)/scripts
 DIST_DATA_PATH := $(DIST_PATH)/data
 DIST_DID_KEY_PATH := $(DIST_DATA_PATH)/did-key
+DIST_DATA_PATH := $(DIST_PATH)/tmp
 
 # Define executable
 EXECUTABLE := wayru-os-services

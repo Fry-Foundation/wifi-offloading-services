@@ -52,6 +52,7 @@ define Build/Compile
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/speedtest.o -c $(PKG_BUILD_DIR)/services/speedtest.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/registration.o -c $(PKG_BUILD_DIR)/services/registration.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/access_token.o -c $(PKG_BUILD_DIR)/services/access_token.c
+		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/firmware_upgrade.o -c $(PKG_BUILD_DIR)/services/firmware_upgrade.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/device-context.o -c $(PKG_BUILD_DIR)/services/device-context.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/site-clients.o -c $(PKG_BUILD_DIR)/services/site-clients.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/console.o -c $(PKG_BUILD_DIR)/lib/console.c
@@ -78,6 +79,7 @@ define Build/Compile
 			$(PKG_BUILD_DIR)/services/speedtest.o \
 			$(PKG_BUILD_DIR)/services/registration.o \
 			$(PKG_BUILD_DIR)/services/access_token.o \
+			$(PKG_BUILD_DIR)/services/firmware_upgrade.o \
 			$(PKG_BUILD_DIR)/services/device-context.o \
 			$(PKG_BUILD_DIR)/services/site-clients.o \
 			$(PKG_BUILD_DIR)/lib/console.o \
@@ -157,6 +159,8 @@ define Package/wayru-os-services/install
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/get-osname.sh $(1)/etc/wayru-os-services/scripts/
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/sign_cert.sh $(1)/etc/wayru-os-services/scripts/
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/retrieve-data.lua $(1)/etc/wayru-os-services/scripts/
+		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/run_sysupgrade.sh.sh $(1)/etc/wayru-os-services/scripts/
+		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/verify_firmware.sh $(1)/etc/wayru-os-services/scripts/
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/nds-set-preemptive-list.lua $(1)/etc/wayru-os-services/scripts/
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/nds-set-binauth.lua $(1)/etc/wayru-os-services/scripts/
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/nds-binauth.sh $(1)/etc/wayru-os-services/scripts/

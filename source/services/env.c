@@ -23,16 +23,16 @@ void load_env(const char *filename) {
 
     char line[MAX_LINE_LENGTH];
     while (fgets(line, sizeof(line), file)) {
-        // Eliminar el salto de línea final
+        // Delete the newline character
         line[strcspn(line, "\n")] = 0;
 
-        // Buscar el signo '='
+        // look for the equals sign
         char *equals_sign = strchr(line, '=');
         if (equals_sign == NULL) {
-            continue; // Línea inválida, continuar con la siguiente
+            continue; // invalid line
         }
 
-        // Separar la clave y el valor
+        // separate the key and value
         size_t key_length = equals_sign - line;
         strncpy(env_variables[env_variable_count].key, line, key_length);
         env_variables[env_variable_count].key[key_length] = '\0';
@@ -54,5 +54,5 @@ const char *env(const char *key) {
             return env_variables[i].value;
         }
     }
-    return NULL; // Retornar NULL si la clave no se encuentra
+    return NULL; // return NULL if the key is not found
 }

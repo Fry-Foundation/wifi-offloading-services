@@ -20,7 +20,10 @@
 #define ACCESS_ENDPOINT "/api/nfnode/access-v2"
 #define SCRIPTS_PATH "/etc/wayru-os-services/scripts"
 
-static DeviceInfo *device_info;
+typedef struct {
+    DeviceInfo *device_info;
+} AccessTaskContext;
+
 AccessKey access_key = {.public_key = NULL, .issued_at_seconds = 0, .expires_at_seconds = 0};
 
 time_t convert_to_time_t(char *timestamp_str) {
@@ -111,7 +114,7 @@ bool check_access_key_near_expiration() {
     }
 }
 
-bool request_access_key() {
+bool request_access_key(DeviceInfo *device_info) {
     // Url
     char access_url[256];
     snprintf(access_url, sizeof(access_url), "%s%s", config.main_api, ACCESS_ENDPOINT);
@@ -206,35 +209,41 @@ bool request_access_key() {
     return true;
 };
 
-void access_task(Scheduler *sch) {
-    console(CONSOLE_DEBUG, "access task");
+void access_task(Scheduler *sch, void *task_context) {
+    AccessTaskContext *context = (AccessTaskContext *)task_context;
 
     if (check_access_key_near_expiration()) {
-        request_access_key();
+        request_access_key(context->device_info);
         write_access_key();
     } else {
         console(CONSOLE_DEBUG, "key is still valid");
     }
 
     // Schedule the next key request
-    schedule_task(sch, time(NULL) + config.access_interval, access_task, "access");
+    schedule_task(sch, time(NULL) + config.access_interval, access_task, "access", context);
 }
 
-void access_service(Scheduler *sch, DeviceInfo *_device_info) {
-    device_info = _device_info;
+void access_service(Scheduler *sch, DeviceInfo *device_info) {
+    AccessTaskContext *context = (AccessTaskContext *)malloc(sizeof(AccessTaskContext));
+    if (context == NULL) {
+        console(CONSOLE_ERROR, "failed to allocate memory for access token task context");
+        return;
+    }
+
+    context->device_info = device_info;
 
     if (read_access_key()) {
         if (check_access_key_near_expiration()) {
-            request_access_key();
+            request_access_key(context->device_info);
             write_access_key();
         }
     } else {
-        request_access_key();
+        request_access_key(context->device_info);
         write_access_key();
     }
 
     console(CONSOLE_DEBUG, "access service");
-    schedule_task(sch, time(NULL) + config.access_interval, access_task, "access");
+    schedule_task(sch, time(NULL) + config.access_interval, access_task, "access", context);
 }
 
 void clean_access_service() {

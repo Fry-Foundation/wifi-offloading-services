@@ -22,9 +22,19 @@ typedef struct {
 
     int setup_interval;
 
+    bool monitoring_enabled;
     int monitoring_interval;
 
     int firmware_upgrade_interval;
+
+    bool speed_test_enabled;
+    int speed_test_interval;
+    int speed_test_backhaul_attempts;
+    int speed_test_latency_attempts;
+
+    int device_context_interval;
+
+    int site_clients_interval;
 
     char active_path[PATH_SIZE];
     char scripts_path[PATH_SIZE];

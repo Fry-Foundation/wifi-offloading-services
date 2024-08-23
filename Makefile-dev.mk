@@ -8,7 +8,14 @@ CONFIG_ACCESS_INTERVAL = 10800
 CONFIG_DEVICE_STATUS_INTERVAL = 120
 CONFIG_SETUP_INTERVAL = 120
 CONFIG_LOG_LEVEL = 4
-CONFIG_MONITORING_INTERVAL = 20
+CONFIG_MONITORING_ENABLED = 1
+CONFIG_MONITORING_INTERVAL = 900
+CONFIG_SPEED_TEST_ENABLED = 1
+CONFIG_SPEED_TEST_INTERVAL = 10800
+CONFIG_SPEED_TEST_BACKHAUL_ATTEMPTS = 3
+CONFIG_SPEED_TEST_LATENCY_ATTEMPTS = 4
+CONFIG_DEVICE_CONTEXT_INTERVAL = 900
+CONFIG_SITE_CLIENTS_INTERVAL = 10
 
 # Define paths
 SOURCE_PATH := source
@@ -77,7 +84,14 @@ run:
 	--config-device-status-interval "$(CONFIG_DEVICE_STATUS_INTERVAL)" \
 	--config-setup-interval "$(CONFIG_SETUP_INTERVAL)" \
 	--config-console-log-level "$(CONFIG_LOG_LEVEL)" \
-	--config-monitoring-interval "$(CONFIG_MONITORING_INTERVAL)"
+	--config-monitoring-enabled "$(CONFIG_MONITORING_ENABLED)" \
+	--config-monitoring-interval "$(CONFIG_MONITORING_INTERVAL)" \
+	--config-speed-test-enabled "$(CONFIG_SPEED_TEST_ENABLED)" \
+	--config-speed-test-interval "$(CONFIG_SPEED_TEST_INTERVAL)" \
+	--config-speed-test-backhaul-attempts "$(CONFIG_SPEED_TEST_BACKHAUL_ATTEMPTS)" \
+	--config-speed-test-latency-attempts "$(CONFIG_SPEED_TEST_LATENCY_ATTEMPTS)" \
+	--config-device-context-interval "$(CONFIG_DEVICE_CONTEXT_INTERVAL)" \
+	--config-site-clients-interval "$(CONFIG_SITE_CLIENTS_INTERVAL)"
 
 # Clean the build
 clean:

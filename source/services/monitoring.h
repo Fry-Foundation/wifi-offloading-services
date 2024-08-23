@@ -5,6 +5,6 @@
 #include "services/registration.h"
 #include <mosquitto.h>
 
-void monitoring_service(Scheduler *sch, struct mosquitto *_mosq, Registration *_registration);
+void monitoring_service(Scheduler *sch, struct mosquitto *mosq, Registration *registration);
 
 #endif /* MONITORING_H */

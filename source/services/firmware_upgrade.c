@@ -1,11 +1,11 @@
-#include "lib/http-requests.h"
+#include "firmware_upgrade.h"
 #include "lib/console.h"
-#include "services/device_info.h"
+#include "lib/http-requests.h"
 #include "lib/scheduler.h"
-#include "services/firmware_upgrade.h"
+#include "lib/script_runner.h"
 #include "services/config.h"
+#include "services/device_info.h"
 #include "services/registration.h"
-#include "lib/script_runner.h" 
 #include <json-c/json.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,15 +18,145 @@
 #define VERIFY_STATUS_ENDPOINT "/firmware-updates/on-boot"
 #define REQUEST_BODY_BUFFER_SIZE 256
 
-static DeviceInfo *device_info;
-static Registration *registration;
+typedef struct {
+    DeviceInfo *device_info;
+    Registration *registration;
+} FirmwareUpgradeTaskContext;
+
+int run_sysupgrade() {
+
+    char script_path[256];
+    char image_path[256];
+
+    snprintf(script_path, sizeof(script_path), "%s/run_sysupgrade.sh", config.scripts_path);
+    snprintf(image_path, sizeof(image_path), "%s", config.temp_path);
+
+    char command[256];
+    snprintf(command, sizeof(command), "%s %s", script_path, image_path);
+    console(CONSOLE_DEBUG, "Running sysupgrade script: %s", command);
+
+    char *script_output = run_script(command);
+
+    if (script_output) {
+        console(CONSOLE_DEBUG, "Sysupgrade script output: %s", script_output);
+        int result = (*script_output == '1') ? 1 : -1;
+        free(script_output);
+        return result;
+    }
+
+    return -1;
+}
+
+void report_upgrade_status(int upgrade_attempt_id, const char *upgrade_status) {
+    char report_status_url[256];
+    // snprintf(report_status_url, sizeof(report_status_url), "%s%s", "config.accounting_api", REPORT_STATUS_ENDPOINT);
+    snprintf(report_status_url, sizeof(report_status_url), "%s%s", "http://localhost:4050", REPORT_STATUS_ENDPOINT);
+
+    json_object *json_body = json_object_new_object();
+    json_object_object_add(json_body, "upgrade_attempt_id", json_object_new_int(upgrade_attempt_id));
+    json_object_object_add(json_body, "upgrade_status", json_object_new_string(upgrade_status));
+    const char *body = json_object_to_json_string(json_body);
+
+    console(CONSOLE_DEBUG, "Reporting upgrade status with request body: %s", body);
+
+    HttpPostOptions options = {
+        .url = report_status_url,
+        .body_json_str = body,
+    };
+
+    HttpResult result = http_post(&options);
+
+    json_object_put(json_body);
+
+    if (result.is_error) {
+        console(CONSOLE_ERROR, "Failed to report upgrade status");
+        console(CONSOLE_ERROR, "Error: %s", result.error);
+        return;
+    }
+
+    if (result.response_buffer == NULL) {
+        console(CONSOLE_ERROR, "Failed to report upgrade status");
+        console(CONSOLE_ERROR, "No response received");
+        return;
+    }
+
+    console(CONSOLE_DEBUG, "Reported upgrade status successfully");
+    free(result.response_buffer);
+}
+
+
+// int execute_firmware_verification(const char *download_path) {
+int execute_firmware_verification() {
+    char script_path[256];
+    char image_path[256];
+
+    snprintf(script_path, sizeof(script_path), "%s/verify_firmware.sh", config.scripts_path);
+    snprintf(image_path, sizeof(image_path), "%s", config.temp_path);
+
+    char command[256];
+    snprintf(command, sizeof(command), "%s %s", script_path, image_path);
+    console(CONSOLE_DEBUG, "Running command: %s", command);
+
+    char *script_output = run_script(command);
+
+    if (script_output) {
+        console(CONSOLE_DEBUG, "Script output: %s", script_output);
+        int result = (*script_output == '1') ? 1 : -1;
+        free(script_output);
+        return result;
+    }
+
+    return -1;
+}
+
+void handle_download_result(int upgrade_attempt_id, const char *download_path, bool success) {
+    if (success) {
+        report_upgrade_status(upgrade_attempt_id, "download_confirmed");
+
+        int script_result = execute_firmware_verification(download_path);
+
+        if (script_result == 1) {
+            // Verification successful
+            console(CONSOLE_INFO, "The image is correct. The hashes match");
+            report_upgrade_status(upgrade_attempt_id, "hash_verification_confirmed");
+
+            int upgrade_result = run_sysupgrade();
+
+            if (upgrade_result == -1) {
+                report_upgrade_status(upgrade_attempt_id, "sysupgrade_failed");
+                // schedule_task(NULL, time(NULL) + 3600, firmware_upgrade_task, "sysupgrade_retry");
+                // Reschedule task
+            }
+
+            /*if (upgrade_result == 1) {
+                report_upgrade_status(upgrade_attempt_id, "upgrading");
+            } else {
+                report_upgrade_status(upgrade_attempt_id, "sysupgrade_failed");
+                // Reschedule task
+                // schedule_task(NULL, time(NULL) + 3600, firmware_upgrade_task, "sysupgrade_retry");
+            }*/
+
+        } else {
+            // Verification failed
+            console(CONSOLE_INFO, "TThe image is incorrect. The hashes do not match");
+            report_upgrade_status(upgrade_attempt_id, "hash_verification_failed");
+            // Reschedule verification in an hour
+            // schedule_task(NULL, time(NULL) + 3600, firmware_upgrade_task, "hash_verification_retry");
+        }
+
+    } else {
+        report_upgrade_status(upgrade_attempt_id, "download_failed");
+        // Schedule a retry in one hour
+        // schedule_task(sch, time(NULL) + 3600, firmware_upgrade_task, "firmware_upgrade_retry");
+    }
+}
 
 void send_firmware_check_request(const char *codename, const char *version, const char *wayru_device_id) {
     // Url
     char firmware_upgrade_url[256];
-    //snprintf(firmware_upgrade_url, sizeof(firmware_upgrade_url), "%s%s", config.accounting_api, FIRMWARE_ENDPOINT);
+    // snprintf(firmware_upgrade_url, sizeof(firmware_upgrade_url), "%s%s", config.accounting_api, FIRMWARE_ENDPOINT);
     snprintf(firmware_upgrade_url, sizeof(firmware_upgrade_url), "%s%s", "http://localhost:4050", FIRMWARE_ENDPOINT);
-    
+
     console(CONSOLE_DEBUG, "Firmware endpoint: %s", firmware_upgrade_url);
 
     // Request body
@@ -126,8 +256,8 @@ void send_firmware_check_request(const char *codename, const char *version, cons
         };
 
         HttpResult download_result = http_download(&download_options);
-        handle_download_result(upgrade_attempt_id , download_options.download_path, !download_result.is_error);
-        
+        handle_download_result(upgrade_attempt_id, download_options.download_path, !download_result.is_error);
+
     } else if (update_available == 1) {
         console(CONSOLE_DEBUG, "New version available: %s. Update pending.", latest_version);
         // Retask
@@ -139,147 +269,29 @@ void send_firmware_check_request(const char *codename, const char *version, cons
 
     json_object_put(parsed_response);
     free(result.response_buffer);
-    
 }
 
-void report_upgrade_status(int upgrade_attempt_id, const char *upgrade_status) {
-    char report_status_url[256];
-    // snprintf(report_status_url, sizeof(report_status_url), "%s%s", "config.accounting_api", REPORT_STATUS_ENDPOINT);
-    snprintf(report_status_url, sizeof(report_status_url), "%s%s", "http://localhost:4050", REPORT_STATUS_ENDPOINT);
+void firmware_upgrade_task(Scheduler *sch, void *task_context) {
+    FirmwareUpgradeTaskContext *context = (FirmwareUpgradeTaskContext *)task_context;
 
-    json_object *json_body = json_object_new_object();
-    json_object_object_add(json_body, "upgrade_attempt_id", json_object_new_int(upgrade_attempt_id));
-    json_object_object_add(json_body, "upgrade_status", json_object_new_string(upgrade_status));
-    const char *body = json_object_to_json_string(json_body);
-
-    console(CONSOLE_DEBUG, "Reporting upgrade status with request body: %s", body);
-
-    HttpPostOptions options = {
-        .url = report_status_url,
-        .body_json_str = body,
-    };
-
-    HttpResult result = http_post(&options);
-
-    json_object_put(json_body);
-
-    if (result.is_error) {
-        console(CONSOLE_ERROR, "Failed to report upgrade status");
-        console(CONSOLE_ERROR, "Error: %s", result.error);
-        return;
-    }
-
-    if (result.response_buffer == NULL) {
-        console(CONSOLE_ERROR, "Failed to report upgrade status");
-        console(CONSOLE_ERROR, "No response received");
-        return;
-    }
-
-    console(CONSOLE_DEBUG, "Reported upgrade status successfully");
-    free(result.response_buffer);
-}
-
-void handle_download_result(int upgrade_attempt_id, const char *download_path, bool success) {
-    if (success) {
-        report_upgrade_status(upgrade_attempt_id, "download_confirmed");
-
-        int script_result = execute_firmware_verification(download_path);
-
-        if (script_result == 1) {
-            // Verification successful
-            console(CONSOLE_INFO, "The image is correct. The hashes match");
-            report_upgrade_status(upgrade_attempt_id, "hash_verification_confirmed");
-
-            int upgrade_result = run_sysupgrade();
-
-            if (upgrade_result == -1) {
-                report_upgrade_status(upgrade_attempt_id, "sysupgrade_failed");
-                // schedule_task(NULL, time(NULL) + 3600, firmware_upgrade_task, "sysupgrade_retry");
-                // Reschedule task 
-            }
-
-            /*if (upgrade_result == 1) {
-                report_upgrade_status(upgrade_attempt_id, "upgrading");
-            } else {
-                report_upgrade_status(upgrade_attempt_id, "sysupgrade_failed");
-                // Reschedule task 
-                // schedule_task(NULL, time(NULL) + 3600, firmware_upgrade_task, "sysupgrade_retry");
-            }*/
-
-        } else {
-            // Verification failed
-            console(CONSOLE_INFO, "TThe image is incorrect. The hashes do not match");
-            report_upgrade_status(upgrade_attempt_id, "hash_verification_failed");
-            // Reschedule verification in an hour
-            //schedule_task(NULL, time(NULL) + 3600, firmware_upgrade_task, "hash_verification_retry");
-        }
-
-    } else {
-        report_upgrade_status(upgrade_attempt_id, "download_failed");
-        // Schedule a retry in one hour
-        //schedule_task(sch, time(NULL) + 3600, firmware_upgrade_task, "firmware_upgrade_retry");
-    }
-}
-
-int execute_firmware_verification(const char *download_path) {
-
-    char script_path[256];
-    char image_path[256];
-
-    snprintf(script_path, sizeof(script_path), "%s/verify_firmware.sh", config.scripts_path);    
-    snprintf(image_path, sizeof(image_path), "%s", config.temp_path);
-
-    char command[256];
-    snprintf(command, sizeof(command), "%s %s", script_path, image_path);
-    console(CONSOLE_DEBUG, "Running command: %s", command);
-
-    char *script_output = run_script(command);
-
-    if (script_output) {
-        console(CONSOLE_DEBUG, "Script output: %s", script_output);
-        int result = (*script_output == '1') ? 1 : -1;
-        free(script_output);
-        return result;
-    }
-
-    return -1; 
-}
-
-int run_sysupgrade() {
-
-    char script_path[256];
-    char image_path[256];
-
-    snprintf(script_path, sizeof(script_path), "%s/run_sysupgrade.sh", config.scripts_path);
-    snprintf(image_path, sizeof(image_path), "%s", config.temp_path);
-
-    char command[256];
-    snprintf(command, sizeof(command), "%s %s", script_path, image_path);
-    console(CONSOLE_DEBUG, "Running sysupgrade script: %s", command);
-
-    char *script_output = run_script(command);
-
-    if (script_output) {
-        console(CONSOLE_DEBUG, "Sysupgrade script output: %s", script_output);
-        int result = (*script_output == '1') ? 1 : -1;
-        free(script_output);
-        return result;           
-    }
-
-    return -1;
-}
-
-void firmware_upgrade_task(Scheduler *sch) {
     console(CONSOLE_DEBUG, "Firmware upgrade task");
-    send_firmware_check_request(device_info->name, device_info->os_version, registration->wayru_device_id);
-    schedule_task(sch, time(NULL) + config.firmware_upgrade_interval, firmware_upgrade_task, "firmware_upgrade");
+    send_firmware_check_request(context->device_info->name, context->device_info->os_version,
+                                context->registration->wayru_device_id);
+    schedule_task(sch, time(NULL) + config.firmware_upgrade_interval, firmware_upgrade_task, "firmware_upgrade", context);
 }
 
-void firmware_upgrade_check(Scheduler *scheduler, const DeviceInfo *_device_info, const Registration *_registration) {
-    device_info = _device_info;
-    registration = _registration;
+void firmware_upgrade_check(Scheduler *scheduler, DeviceInfo *device_info, Registration *registration) {
+    FirmwareUpgradeTaskContext *context = (FirmwareUpgradeTaskContext *)malloc(sizeof(FirmwareUpgradeTaskContext));
+    if (context == NULL) {
+        console(CONSOLE_ERROR, "Failed to allocate memory for firmware upgrade task context");
+        return;
+    }
+
+    context->device_info = device_info;
+    context->registration = registration;
+
     console(CONSOLE_DEBUG, "scheduling firmware upgrade check");
-    firmware_upgrade_task(scheduler);
+    firmware_upgrade_task(scheduler, context);
 }
 
 void clean_firmware_upgrade_service() {
@@ -289,14 +301,14 @@ void clean_firmware_upgrade_service() {
 void firmware_upgrade_on_boot(Registration *registration, DeviceInfo *device_info) {
     console(CONSOLE_DEBUG, "Starting firmware_upgrade_on_boot");
     char verify_status_url[256];
-    //snprintf(verify_status_url, sizeof(verify_status_url), "%s%s", config.accounting_api, VERIFY_STATUS_ENDPOINT);
+    // snprintf(verify_status_url, sizeof(verify_status_url), "%s%s", config.accounting_api, VERIFY_STATUS_ENDPOINT);
     snprintf(verify_status_url, sizeof(verify_status_url), "%s%s", "http://localhost:4050", VERIFY_STATUS_ENDPOINT);
 
     if (registration == NULL || registration->wayru_device_id == NULL) {
         console(CONSOLE_ERROR, "Registration or wayru_device_id is NULL");
         return;
     }
-    
+
     if (device_info == NULL || device_info->os_version == NULL) {
         console(CONSOLE_ERROR, "DeviceInfo or os_version is NULL");
         return;

@@ -9,7 +9,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <json-c/json.h>
-#include <json-c/json_types.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

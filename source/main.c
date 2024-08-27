@@ -11,7 +11,7 @@
 #include "services/mqtt.h"
 #include "services/registration.h"
 #include "services/setup.h"
-#include "services/firmware_upgrade.h" 
+#include "services/firmware_upgrade.h"
 #include "services/site-clients.h"
 #include "services/speedtest.h"
 #include <mosquitto.h>
@@ -28,8 +28,9 @@ int main(int argc, char *argv[]) {
     Registration *registration = init_registration(device_info->mac, device_info->model, device_info->brand);
     AccessToken *access_token = init_access_token(registration);
     firmware_upgrade_on_boot(registration, device_info);
+    get_ca_cert(access_token);
+    generate_and_sign_cert(access_token);
     DeviceContext *device_context = init_device_context(registration, access_token);
-    generate_and_sign_cert();
     struct mosquitto *mosq = init_mqtt(registration, access_token);
     int site_clients_fifo_fd = init_site_clients_fifo();
 

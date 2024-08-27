@@ -1,8 +1,7 @@
 #include "mqtt-cert.h"
 #include "lib/console.h"
 #include "lib/key_pair.h"
-#include "lib/script_runner.h"
-#include "services/access.h"
+#include "services/access_token.h"
 #include "services/config.h"
 #include <lib/http-requests.h>
 #include <stdbool.h>
@@ -13,7 +12,29 @@
 #define CSR_FILE_NAME "device.csr"
 #define CERT_FILE_NAME "device.crt"
 #define CA_CERT_FILE_NAME "ca.crt"
+#define CA_ENDPOINT "/certificate-signing/ca"
 #define BACKEND_ENDPOINT "/certificate-signing/sign"
+
+void get_ca_cert(AccessToken *access_token) {
+    char url[256];
+    snprintf(url, sizeof(url), "%s%s", config.accounting_api, CA_ENDPOINT);
+    console(CONSOLE_DEBUG, "Getting CA certificate from: %s", url);
+
+    char ca_cert_path[256];
+    snprintf(ca_cert_path, sizeof(ca_cert_path), "%s/%s", config.data_path, CA_CERT_FILE_NAME);
+
+    HttpDownloadOptions get_ca_options = {
+        .url = url,
+        .bearer_token = access_token->token,
+        .download_path = ca_cert_path,
+    };
+
+    HttpResult result = http_download(&get_ca_options);
+    if (result.is_error) {
+        console(CONSOLE_ERROR, "Failed to download CA certificate: %s", result.error);
+        return;
+    }
+}
 
 // char backend_url[256] = "https://wifi.api.internal.wayru.tech/certificate-signing/sign";
 
@@ -30,7 +51,7 @@
     return result;
 }*/
 
-void generate_and_sign_cert() {
+void generate_and_sign_cert(AccessToken *access_token) {
     char key_path[256];
     char csr_path[256];
     char cert_path[256];
@@ -76,6 +97,7 @@ void generate_and_sign_cert() {
     HttpPostOptions post_cert_sign_options = {
         .url = backend_url,
         .upload_file_path = csr_path,
+        .bearer_token = access_token->token,
     };
 
     HttpResult result = http_post(&post_cert_sign_options);

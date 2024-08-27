@@ -3,7 +3,7 @@ CONFIG_ENABLED = 1
 CONFIG_MAIN_API = https://api.internal.wayru.tech
 CONFIG_ACCOUNTING_ENABLED = 1
 CONFIG_ACCOUNTING_INTERVAL = 300
-CONFIG_ACCOUNTING_API = https://wifi.api.internal.wayru.tech
+CONFIG_ACCOUNTING_API = http://localhost:4050
 CONFIG_ACCESS_INTERVAL = 10800
 CONFIG_DEVICE_STATUS_INTERVAL = 120
 CONFIG_SETUP_INTERVAL = 120
@@ -68,7 +68,6 @@ copy-scripts:
 	mkdir -p $(DIST_DATA_PATH)
 	mkdir -p $(DIST_DID_KEY_PATH)
 
-	cp certificates/ca.crt $(DIST_DATA_PATH)/ca.crt
 	cp .env $(DIST_DATA_PATH)/.env
 	cp VERSION $(DIST_PATH)/VERSION
 

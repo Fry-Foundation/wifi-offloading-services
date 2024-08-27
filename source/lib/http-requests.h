@@ -35,6 +35,7 @@ HttpResult http_post(const HttpPostOptions *options);
 
 typedef struct {
     const char *url;
+    const char *bearer_token;
     const char *download_path;
 } HttpDownloadOptions;
 

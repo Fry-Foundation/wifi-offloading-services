@@ -122,7 +122,7 @@ HttpResult http_post(const HttpPostOptions *options) {
     if (options->body_json_str != NULL) {
         headers = curl_slist_append(headers, "Content-Type: application/json");
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, options->body_json_str);
-    } else if (options->upload_data == NULL){
+    } else if (options->upload_data == NULL) {
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "");
     }
 
@@ -138,7 +138,7 @@ HttpResult http_post(const HttpPostOptions *options) {
         curl_easy_setopt(curl, CURLOPT_MIMEPOST, form);
     }
 
-    if(options->upload_data != NULL) {
+    if (options->upload_data != NULL) {
         form = curl_mime_init(curl);
         field = curl_mime_addpart(form);
         curl_mime_name(field, "file");
@@ -150,7 +150,6 @@ HttpResult http_post(const HttpPostOptions *options) {
         curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, options->upload_data_size);
     }
 
-    
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, save_to_buffer_callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &result);
 
@@ -177,21 +176,7 @@ HttpResult http_post(const HttpPostOptions *options) {
     return result;
 }
 
-static size_t write_callback(void *ptr, size_t size, size_t nmemb, void *data) {
-    size_t realsize = size * nmemb;
-    char **response_buffer = (char **)data;
-
-    *response_buffer = realloc(*response_buffer, strlen(*response_buffer) + realsize + 1);
-    if (*response_buffer == NULL) {
-        return 0;
-    }
-
-    strncat(*response_buffer, ptr, realsize);
-    return realsize;
-}
-
 // HTTP file download
-
 HttpResult http_download(const HttpDownloadOptions *options) {
     CURL *curl;
     CURLcode res;
@@ -213,9 +198,17 @@ HttpResult http_download(const HttpDownloadOptions *options) {
         return result;
     }
 
+    struct curl_slist *headers = NULL;
+    if (options->bearer_token != NULL) {
+        char auth_header[1024];
+        snprintf(auth_header, 1024, "Authorization: Bearer %s", options->bearer_token);
+        headers = curl_slist_append(headers, auth_header);
+    }
+
     curl_easy_setopt(curl, CURLOPT_URL, options->url);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
     curl_easy_setopt(curl, CURLOPT_FAILONERROR, 1L);
+    if (headers != NULL) curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
     res = curl_easy_perform(curl);
     if (res != CURLE_OK) {

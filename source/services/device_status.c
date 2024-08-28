@@ -8,6 +8,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "services/device_info.h"
 
 #define DEVICE_STATUS_ENDPOINT "/api/nfnode/device-status"
 
@@ -15,7 +16,7 @@ DeviceStatus device_status = Unknown;
 
 bool on_boot = true;
 
-DeviceStatus request_device_status() {
+DeviceStatus request_device_status(DeviceInfo *device_info) {
     // Url
     char device_status_url[256];
     snprintf(device_status_url, sizeof(device_status_url), "%s%s", config.main_api, DEVICE_STATUS_ENDPOINT);
@@ -23,6 +24,16 @@ DeviceStatus request_device_status() {
     // Request body
     json_object *json_body = json_object_new_object();
     json_object_object_add(json_body, "on_boot", json_object_new_boolean(on_boot));
+    json_object_object_add(json_body, "device_id", json_object_new_string(device_info->device_id));
+    json_object_object_add(json_body, "mac", json_object_new_string(device_info->mac));
+    json_object_object_add(json_body, "name", json_object_new_string(device_info->name));
+    json_object_object_add(json_body, "brand", json_object_new_string(device_info->brand));
+    json_object_object_add(json_body, "model", json_object_new_string(device_info->model));
+    json_object_object_add(json_body, "public_ip", json_object_new_string(device_info->public_ip));
+    json_object_object_add(json_body, "os_name", json_object_new_string(device_info->os_name));
+    json_object_object_add(json_body, "os_version", json_object_new_string(device_info->os_version));
+    json_object_object_add(json_body, "os_services_version", json_object_new_string(device_info->os_services_version));
+    json_object_object_add(json_body, "did_public_key", json_object_new_string(device_info->did_public_key));
     const char *body = json_object_to_json_string(json_body);
     console(CONSOLE_DEBUG, "device status request body %s", body);
 
@@ -79,18 +90,18 @@ DeviceStatus request_device_status() {
     return response_device_status;
 }
 
-void device_status_task(Scheduler *sch, void *task_context) {
+void device_status_task(Scheduler *sch, void *task_context, DeviceInfo *device_info) {
     (void)task_context;
 
-    device_status = request_device_status();
+    device_status = request_device_status(device_info);
     console(CONSOLE_DEBUG, "device status: %d", device_status);
     console(CONSOLE_DEBUG, "device status interval: %d", config.device_status_interval);
     console(CONSOLE_DEBUG, "device status interval time: %ld", time(NULL) + config.device_status_interval);
     schedule_task(sch, time(NULL) + config.device_status_interval, device_status_task, "device status", NULL);
 }
 
-void device_status_service(Scheduler *sch) {
-    device_status_task(sch, NULL);
+void device_status_service(Scheduler *sch, DeviceInfo *device_info) {
+    device_status_task(sch, NULL, device_info);
 
     // Side effects
     // Make sure wayru operator is running (all status codes but 6)

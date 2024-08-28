@@ -35,11 +35,10 @@ int main(int argc, char *argv[]) {
     int site_clients_fifo_fd = init_site_clients_fifo();
 
     // Start services and schedule future tasks on each
-    access_service(sch, device_info);
     access_token_service(sch, access_token, registration);
     device_context_service(sch, device_context, registration, access_token);
-    device_status_service(sch);
-    setup_service(sch);
+    device_status_service(sch, device_info);
+    setup_service(sch, device_info);
     accounting_service(sch);
     monitoring_service(sch, mosq, registration);
     firmware_upgrade_check(sch, device_info, registration);

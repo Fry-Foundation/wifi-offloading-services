@@ -17,6 +17,6 @@ typedef enum {
 
 extern DeviceStatus device_status;
 
-void device_status_service(Scheduler *sch, DeviceInfo *device_info);
+void device_status_service(Scheduler *sch, DeviceInfo *device_info, char *wayru_device_id);
 
 #endif /* DEVICE_STATUS_H */

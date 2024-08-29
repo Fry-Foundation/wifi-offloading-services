@@ -45,6 +45,7 @@ int main(int argc, char *argv[]) {
     firmware_upgrade_check(sch, device_info, registration);
     site_clients_service(sch, mosq, site_clients_fifo_fd, device_context->site);
     speedtest_service(sch, mosq, registration, access_token);
+    commands_service(mosq, device_info, registration);
 
     run_tasks(sch);
 

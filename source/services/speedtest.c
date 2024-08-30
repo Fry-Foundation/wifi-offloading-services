@@ -16,7 +16,6 @@
 #include <sys/time.h>
 #include <time.h>
 
-#define MEMORY_PERCENTAGE 0.5
 #define SPEEDTEST_ENDPOINT "monitoring/speedtest"
 
 typedef struct {
@@ -70,7 +69,7 @@ char *get_available_memory_str() {
         return NULL;
     }
     sysinfo(&si);
-    size_t half_free_memory = (size_t)(si.freeram * MEMORY_PERCENTAGE);
+    size_t half_free_memory = (size_t)(si.freeram * config.speed_test_file_size);
     size_t buf_size = 20;
     char *mem_str = (char *)malloc(buf_size * sizeof(char));
     if (mem_str == NULL) {

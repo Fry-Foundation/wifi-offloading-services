@@ -14,6 +14,7 @@ CONFIG_SPEED_TEST_ENABLED = 1
 CONFIG_SPEED_TEST_INTERVAL = 10800
 CONFIG_SPEED_TEST_BACKHAUL_ATTEMPTS = 3
 CONFIG_SPEED_TEST_LATENCY_ATTEMPTS = 4
+CONFIG_SPEED_TEST_FILE_SIZE = 0.3
 CONFIG_DEVICE_CONTEXT_INTERVAL = 900
 CONFIG_SITE_CLIENTS_INTERVAL = 10
 
@@ -89,6 +90,7 @@ run:
 	--config-speed-test-interval "$(CONFIG_SPEED_TEST_INTERVAL)" \
 	--config-speed-test-backhaul-attempts "$(CONFIG_SPEED_TEST_BACKHAUL_ATTEMPTS)" \
 	--config-speed-test-latency-attempts "$(CONFIG_SPEED_TEST_LATENCY_ATTEMPTS)" \
+	--config-speed-test-file-size "$(CONFIG_SPEED_TEST_FILE_SIZE)" \
 	--config-device-context-interval "$(CONFIG_DEVICE_CONTEXT_INTERVAL)" \
 	--config-site-clients-interval "$(CONFIG_SITE_CLIENTS_INTERVAL)"
 

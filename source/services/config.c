@@ -24,6 +24,7 @@ void init_config(int argc, char *argv[]) {
     config.speed_test_interval = 10800;
     config.speed_test_backhaul_attempts = 3;
     config.speed_test_latency_attempts = 4;
+    config.speed_test_file_size = 0.3;
     config.device_context_interval = 900;
     config.site_clients_interval = 60;
 
@@ -141,6 +142,12 @@ void init_config(int argc, char *argv[]) {
             config.speed_test_latency_attempts = atoi(argv[i + 1]);
             continue;
         }
+        
+        // Speed test file size
+        if (strcmp(argv[i], "--config-speed-test-file-size") == 0) {
+            config.speed_test_file_size = atof(argv[i + 1]);
+            continue;
+        }
 
         // Device context interval
         if (strcmp(argv[i], "--config-device-context-interval") == 0) {
@@ -189,5 +196,6 @@ void init_config(int argc, char *argv[]) {
     console(CONSOLE_DEBUG, "config.speed_test_interval: %d", config.speed_test_interval);
     console(CONSOLE_DEBUG, "config.speed_test_backhaul_attempts: %d", config.speed_test_backhaul_attempts);
     console(CONSOLE_DEBUG, "config.speed_test_latency_attempts: %d", config.speed_test_latency_attempts);
+    console(CONSOLE_DEBUG, "config.speed_test_file_size: %f", config.speed_test_file_size);
     console(CONSOLE_DEBUG, "config.device_context_interval: %d", config.device_context_interval);
 }

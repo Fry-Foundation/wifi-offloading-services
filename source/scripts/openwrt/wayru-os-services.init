@@ -26,6 +26,7 @@ start_service() {
 	local speed_test_interval
 	local speed_test_backhaul_attempts
 	local speed_test_latency_attempts
+	local speed_test_file_size
 	local device_context_interval
 	local site_clients_interval
 
@@ -44,6 +45,7 @@ start_service() {
 	config_get speed_test_interval wayru_os_services1 speed_test_interval
 	config_get speed_test_backhaul_attempts wayru_os_services1 speed_test_backhaul_attempts
 	config_get speed_test_latency_attempts wayru_os_services1 speed_test_latency_attempts
+	config_get speed_test_file_size wayru_os_services1 speed_test_file_size
 	config_get device_context_interval wayru_os_services1 device_context_interval
 	config_get site_clients_interval wayru_os_services1 site_clients_interval
 
@@ -62,6 +64,7 @@ start_service() {
 	logger -t "wayru-os-services" "Speed Test Interval: $speed_test_interval"
 	logger -t "wayru-os-services" "Speed Test Backhaul Attempts: $speed_test_backhaul_attempts"
 	logger -t "wayru-os-services" "Speed Test Latency Attempts: $speed_test_latency_attempts"
+	logger -t "wayru-os-services" "Speed Test File Size: $speed_test_file_size"
 	logger -t "wayru-os-services" "Device Context Interval: $device_context_interval"
 	logger -t "wayru-os-services" "Site Clients Interval: $site_clients_interval"
 
@@ -83,6 +86,7 @@ start_service() {
 		--config-speed-test-interval "$speed_test_interval" \
 		--config-speed-test-backhaul-attempts "$speed_test_backhaul_attempts" \
 		--config-speed-test-latency-attempts "$speed_test_latency_attempts" \
+		--config-speed-test-file-size "$speed_test_file_size" \
 		--config-device-context-interval "$device_context_interval" \
 		--config-site-clients-interval "$site_clients_interval"
 	procd_set_param file /etc/config/wayru-os-services

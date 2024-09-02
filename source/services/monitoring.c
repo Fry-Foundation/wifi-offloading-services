@@ -113,7 +113,7 @@ void monitoring_task(Scheduler *sch, void *task_context) {
     const char *device_data_str = json_object_to_json_string(json_device_data);
 
     console(CONSOLE_INFO, "Device data: %s", device_data_str);
-    publish_mqtt(context->mosq, "monitoring/device-data", device_data_str, 0);
+    publish_mqtt(context->mosq, "monitoring/device-data", device_data_str, 2);
 
     json_object_put(json_device_data);
 

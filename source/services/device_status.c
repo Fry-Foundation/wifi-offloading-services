@@ -103,7 +103,7 @@ void device_status_task(Scheduler *sch, void *task_context) {
     console(CONSOLE_DEBUG, "device status: %d", device_status);
     console(CONSOLE_DEBUG, "device status interval: %d", config.device_status_interval);
     console(CONSOLE_DEBUG, "device status interval time: %ld", time(NULL) + config.device_status_interval);
-    schedule_task(sch, time(NULL) + config.device_status_interval, device_status_task, "device status", NULL);
+    schedule_task(sch, time(NULL) + config.device_status_interval, device_status_task, "device status", context);
 }
 
 void device_status_service(Scheduler *sch, DeviceInfo *device_info, char *wayru_device_id) {

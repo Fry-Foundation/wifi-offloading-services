@@ -69,8 +69,8 @@ void subscribe_mqtt(struct mosquitto *mosq, char *topic, int qos, MessageCallbac
     }
 }
 
-void publish_mqtt(struct mosquitto *mosq, char *topic, const char *message) {
-    int rc = mosquitto_publish(mosq, NULL, topic, strlen(message), message, 0, false);
+void publish_mqtt(struct mosquitto *mosq, char *topic, const char *message, int qos) {
+    int rc = mosquitto_publish(mosq, NULL, topic, strlen(message), message, qos, false);
     if (rc != MOSQ_ERR_SUCCESS) {
         console(CONSOLE_ERROR, "Error: Unable to publish message. %s\n", mosquitto_strerror(rc));
     }
@@ -169,7 +169,7 @@ struct mosquitto *init_mosquitto(Registration *registration, AccessToken *access
         return NULL;
     }
 
-    publish_mqtt(mosq, "wayru", "Hola desde una conexion segura!");
+    publish_mqtt(mosq, "wayru", "Hola desde una conexion segura!", 0);
     // Keep the program running to listen for messages
     // printf("Press Enter to exit...\n");
     // getchar();

@@ -202,7 +202,7 @@ void site_clients_task(Scheduler *sch, void *task_context) {
 
                     console(CONSOLE_DEBUG, "Publishing to topic: %s, payload: %s", topic, payload_str);
 
-                    publish_mqtt(context->mosq, topic, payload_str);
+                    publish_mqtt(context->mosq, topic, payload_str, 0);
 
                     json_object_put(json_payload);
                 } else if (strcmp(event_type, "disconnect") == 0) {
@@ -218,7 +218,7 @@ void site_clients_task(Scheduler *sch, void *task_context) {
 
                     console(CONSOLE_DEBUG, "Publishing to topic: %s, payload: %s", topic, payload_str);
 
-                    publish_mqtt(context->mosq, topic, payload_str);
+                    publish_mqtt(context->mosq, topic, payload_str, 0);
 
                     json_object_put(json_payload);
                 } else {

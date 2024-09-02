@@ -224,7 +224,7 @@ void speedtest_task(Scheduler *sch, void *task_context) {
     const char *speedtest_data_str = json_object_to_json_string(speedtest_data);
 
     console(CONSOLE_INFO, "Publishing speedtest results\n");
-    publish_mqtt(context->mosq, "monitoring/speedtest", speedtest_data_str);
+    publish_mqtt(context->mosq, "monitoring/speedtest", speedtest_data_str, 2);
 
     json_object_put(speedtest_data);
 

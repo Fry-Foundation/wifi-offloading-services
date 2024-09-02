@@ -49,8 +49,8 @@ int run_sysupgrade() {
 
 void report_upgrade_status(int upgrade_attempt_id, const char *upgrade_status) {
     char report_status_url[256];
-    // snprintf(report_status_url, sizeof(report_status_url), "%s%s", "config.accounting_api", REPORT_STATUS_ENDPOINT);
-    snprintf(report_status_url, sizeof(report_status_url), "%s%s", "http://localhost:4050", REPORT_STATUS_ENDPOINT);
+    snprintf(report_status_url, sizeof(report_status_url), "%s%s", "config.accounting_api", REPORT_STATUS_ENDPOINT);
+    //snprintf(report_status_url, sizeof(report_status_url), "%s%s", "http://localhost:4050", REPORT_STATUS_ENDPOINT);
 
     json_object *json_body = json_object_new_object();
     json_object_object_add(json_body, "upgrade_attempt_id", json_object_new_int(upgrade_attempt_id));
@@ -154,8 +154,8 @@ void handle_download_result(int upgrade_attempt_id, const char *download_path, b
 void send_firmware_check_request(const char *codename, const char *version, const char *wayru_device_id) {
     // Url
     char firmware_upgrade_url[256];
-    // snprintf(firmware_upgrade_url, sizeof(firmware_upgrade_url), "%s%s", config.accounting_api, FIRMWARE_ENDPOINT);
-    snprintf(firmware_upgrade_url, sizeof(firmware_upgrade_url), "%s%s", "http://localhost:4050", FIRMWARE_ENDPOINT);
+    snprintf(firmware_upgrade_url, sizeof(firmware_upgrade_url), "%s%s", config.accounting_api, FIRMWARE_ENDPOINT);
+    //snprintf(firmware_upgrade_url, sizeof(firmware_upgrade_url), "%s%s", "http://localhost:4050", FIRMWARE_ENDPOINT);
 
     console(CONSOLE_DEBUG, "Firmware endpoint: %s", firmware_upgrade_url);
 
@@ -301,8 +301,8 @@ void clean_firmware_upgrade_service() {
 void firmware_upgrade_on_boot(Registration *registration, DeviceInfo *device_info) {
     console(CONSOLE_DEBUG, "Starting firmware_upgrade_on_boot");
     char verify_status_url[256];
-    // snprintf(verify_status_url, sizeof(verify_status_url), "%s%s", config.accounting_api, VERIFY_STATUS_ENDPOINT);
-    snprintf(verify_status_url, sizeof(verify_status_url), "%s%s", "http://localhost:4050", VERIFY_STATUS_ENDPOINT);
+    snprintf(verify_status_url, sizeof(verify_status_url), "%s%s", config.accounting_api, VERIFY_STATUS_ENDPOINT);
+    //snprintf(verify_status_url, sizeof(verify_status_url), "%s%s", "http://localhost:4050", VERIFY_STATUS_ENDPOINT);
 
     if (registration == NULL || registration->wayru_device_id == NULL) {
         console(CONSOLE_ERROR, "Registration or wayru_device_id is NULL");

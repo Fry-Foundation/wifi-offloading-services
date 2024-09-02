@@ -8,7 +8,8 @@ TEMP_FEEDS_DIR="$CURRENT_DIR/feed"
 TEMP_FEEDS_NAME="wayru_custom"
 BUILD_DIR="$CURRENT_DIR/build"
 VERSIONED_DIR="$BUILD_DIR/$START_TIME"
-OPENWRT_DIR="../wayru-os"
+#OPENWRT_DIR="../wayru-os"
+OPENWRT_DIR="$CURRENT_DIR/wayru-os-services/openwrt"
 
 # Clean up previous temp dirs
 rm -rf "$TEMP_FEEDS_DIR"
@@ -17,14 +18,23 @@ mkdir -p "$BUILD_DIR"
 mkdir -p "$VERSIONED_DIR"
 mkdir -p "$TEMP_FEEDS_DIR/admin/wayru-os-services"
 
-# Check if the build system repo exists
-echo -e "\nChecking required repositories... 🕵️"
+# Clone OpenWrt repository in a temporary location
+echo -e "\nCloning OpenWrt repository"
 echo "---------------------------------------"
-if [ ! -d "$OPENWRT_DIR/.git" ]; then
-	echo "Error: The wayru-os repo does not exist"
-	echo "Make sure to read the README.md file"
-	exit 1
-fi
+git clone https://git.openwrt.org/openwrt/openwrt.git "$OPENWRT_DIR"
+cd "$OPENWRT_DIR"
+git checkout v23.05.4  # Cambiar a la rama/tag deseada
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+echo "Current branch is '$CURRENT_BRANCH'"
+
+# Check if the build system repo exists
+#echo -e "\nChecking required repositories... 🕵️"
+#echo "---------------------------------------"
+#if [ ! -d "$OPENWRT_DIR/.git" ]; then
+#	echo "Error: The wayru-os repo does not exist"
+#	echo "Make sure to read the README.md file"
+#	exit 1
+#fi
 
 # Copy relevant files to the temp feed directory
 cp -r "$CURRENT_DIR/Makefile" "$TEMP_FEEDS_DIR/admin/wayru-os-services/"
@@ -34,16 +44,31 @@ cp -r "$CURRENT_DIR/certificates" "$TEMP_FEEDS_DIR/admin/wayru-os-services/"
 cp $CURRENT_DIR/.env "$TEMP_FEEDS_DIR/admin/wayru-os-services/"
 
 # Move to the build system repo and get the current branch
-cd "$OPENWRT_DIR"
-CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-echo "Current branch is '$CURRENT_BRANCH'"
+#cd "$OPENWRT_DIR"
+#CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+#echo "Current branch is '$CURRENT_BRANCH'"
+
+# Set up target in .config
+echo -e "\nConfiguring build target... ⚙️"
+echo "---------------------------------------"
+
+cat <<EOT >> .config
+CONFIG_TARGET_ath79=y
+CONFIG_TARGET_ath79_generic=y
+CONFIG_TARGET_ath79_generic_DEVICE_comfast_cf-e375ac=y
+CONFIG_PACKAGE_wayru-os-services=y
+EOT
+
+echo -e "\nApplying configuration with make defconfig... 🔧"
+make defconfig
 
 # Read the compile target
+
 CONFIG_LINE=$(grep 'CONFIG_TARGET_ARCH_PACKAGES=' '.config')
 
 if [ -z "$CONFIG_LINE" ]; then
 	echo "Error: Compile target not found in the configuration file"
-	echo "Please make sure the wayru-os repo is set up correctly"
+	echo "Please make sure the wayru-os repo/openwrt is set up correctly"
 	exit 1
 fi
 
@@ -75,6 +100,8 @@ make defconfig
 # Compile
 echo -e "\nBuilding... 🏗️"
 echo "---------------------------------------"
+make toolchain/install
+make tools/install
 make -j"$(nproc)" package/wayru-os-services/compile || exit 1
 # make -j1 V=sc package/wayru-os-services/compile || exit 1
 

@@ -44,25 +44,16 @@ The script `compile` automates the process, **but the build system needs to be s
 
 ### Requirements
 - Meet the [OpenWrt build system requirements](https://openwrt.org/docs/guide-developer/toolchain/install-buildsystem) on your local machine or VM 
-- Clone the [wayru-os](https://github.com/Wayru-Network/wayru-os.git) repository
-
-Note that your directory structure should look like this:
-```
-/path/to/
-├── wayru-os/
-└── wayru-os-services/
 ```
 
 ### Build system setup
-Install the tools and toolchain, and select your desired architecture in the `wayru-os` repo:
+Install the tools and toolchain, and select your desired architecture in the `openwrt` repo:
 
 ```bash
 # Install tools and toolchain
 make tools/install
 make toolchain/install
 
-# Select your desired architecture and target device
-make menuconfig
 ```
 
 ### Build the package

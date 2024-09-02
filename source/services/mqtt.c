@@ -84,6 +84,13 @@ struct mosquitto *init_mosquitto(Registration *registration, AccessToken *access
     load_env(env_file);
     const char *env_mqtt_user = env("MQTT_USER");
     const char *env_mqtt_password = env("MQTT_PASS");
+    const char *mqtt_broker_url = env("MQTT_BROKER_URL");
+    if (!mqtt_broker_url) {
+    console(CONSOLE_ERROR, "Error: MQTT_BROKER_URL is not set in the environment.");
+    mosquitto_destroy(mosq);
+    mosquitto_lib_cleanup();
+    return NULL;
+}
     const char *mqtt_user = (env_mqtt_user && strlen(env_mqtt_user) > 0) ? env_mqtt_user : access_token->token;
     const char *mqtt_password = (env_mqtt_password && strlen(env_mqtt_password) > 0) ? env_mqtt_password : "any";
     console(CONSOLE_DEBUG, "user is %s", mqtt_user);
@@ -148,7 +155,7 @@ struct mosquitto *init_mosquitto(Registration *registration, AccessToken *access
     mosquitto_subscribe_callback_set(mosq, on_subscribe);
 
     // Connect to an MQTT broker
-    rc = mosquitto_connect(mosq, "broker.internal.wayru.tech", 8883, 60);
+    rc = mosquitto_connect(mosq, mqtt_broker_url, 8883, 60);
     if (rc != MOSQ_ERR_SUCCESS) {
         console(CONSOLE_ERROR, "Error: Unable to connect to broker. %s\n", mosquitto_strerror(rc));
         mosquitto_destroy(mosq);

@@ -29,6 +29,7 @@ start_service() {
 	local speed_test_file_size
 	local device_context_interval
 	local site_clients_interval
+	local mqtt_broker_url
 
 	config_get enabled wayru_os_services1 enabled
 	config_get main_api wayru_os_services1 main_api
@@ -48,6 +49,7 @@ start_service() {
 	config_get speed_test_file_size wayru_os_services1 speed_test_file_size
 	config_get device_context_interval wayru_os_services1 device_context_interval
 	config_get site_clients_interval wayru_os_services1 site_clients_interval
+	config_get mqtt_broker_url wayru_os_services1 mqtt_broker_url
 
 	logger -t "wayru-os-services" "Enabled: $enabled"
 	logger -t "wayru-os-services" "Main API: $main_api"
@@ -67,6 +69,8 @@ start_service() {
 	logger -t "wayru-os-services" "Speed Test File Size: $speed_test_file_size"
 	logger -t "wayru-os-services" "Device Context Interval: $device_context_interval"
 	logger -t "wayru-os-services" "Site Clients Interval: $site_clients_interval"
+	logger -t "wayru-os-services" "MQTT Broker URL: $mqtt_broker_url"
+
 
 	procd_open_instance
 
@@ -88,7 +92,9 @@ start_service() {
 		--config-speed-test-latency-attempts "$speed_test_latency_attempts" \
 		--config-speed-test-file-size "$speed_test_file_size" \
 		--config-device-context-interval "$device_context_interval" \
-		--config-site-clients-interval "$site_clients_interval"
+		--config-site-clients-interval "$site_clients_interval" \
+		--config-mqtt-broker-url "$mqtt_broker_url"
+
 	procd_set_param file /etc/config/wayru-os-services
 	procd_set_param respawn 150 10 10
 	procd_set_param term_timeout 60

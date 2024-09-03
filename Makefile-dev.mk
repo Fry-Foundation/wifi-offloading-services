@@ -17,6 +17,7 @@ CONFIG_SPEED_TEST_LATENCY_ATTEMPTS = 4
 CONFIG_SPEED_TEST_FILE_SIZE = 0.3
 CONFIG_DEVICE_CONTEXT_INTERVAL = 900
 CONFIG_SITE_CLIENTS_INTERVAL = 10
+CONFIG_MQTT_BROKER_URL = broker.internal.wayru.tech
 
 # Define paths
 SOURCE_PATH := source
@@ -92,7 +93,8 @@ run:
 	--config-speed-test-latency-attempts "$(CONFIG_SPEED_TEST_LATENCY_ATTEMPTS)" \
 	--config-speed-test-file-size "$(CONFIG_SPEED_TEST_FILE_SIZE)" \
 	--config-device-context-interval "$(CONFIG_DEVICE_CONTEXT_INTERVAL)" \
-	--config-site-clients-interval "$(CONFIG_SITE_CLIENTS_INTERVAL)"
+	--config-site-clients-interval "$(CONFIG_SITE_CLIENTS_INTERVAL)" \
+	--config-mqtt-broker-url "$(CONFIG_MQTT_BROKER_URL)" \
 
 # Clean the build
 clean:

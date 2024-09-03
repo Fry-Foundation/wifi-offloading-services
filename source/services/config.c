@@ -27,6 +27,7 @@ void init_config(int argc, char *argv[]) {
     config.speed_test_file_size = 0.3;
     config.device_context_interval = 900;
     config.site_clients_interval = 60;
+    strcpy(config.mqtt_broker_url, "broker.internal.wayru.tech");
 
     // Loop  through available daemon config parameters
     for (int i = 1; i < argc; i++) {
@@ -160,6 +161,12 @@ void init_config(int argc, char *argv[]) {
             config.site_clients_interval = atoi(argv[i + 1]);
             continue;
         }
+
+        //Broker url
+        if (strcmp(argv[i], "--mqtt-broker-url") == 0) {
+            snprintf(config.mqtt_broker_url, sizeof(config.mqtt_broker_url), "%s", argv[i + 1]);
+            continue;
+        }
     }
 
     // Set active paths
@@ -198,4 +205,5 @@ void init_config(int argc, char *argv[]) {
     console(CONSOLE_DEBUG, "config.speed_test_latency_attempts: %d", config.speed_test_latency_attempts);
     console(CONSOLE_DEBUG, "config.speed_test_file_size: %f", config.speed_test_file_size);
     console(CONSOLE_DEBUG, "config.device_context_interval: %d", config.device_context_interval);
+    console(CONSOLE_DEBUG, "config.mqtt_broker_url: %s", config.mqtt_broker_url);
 }

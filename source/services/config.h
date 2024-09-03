@@ -13,6 +13,7 @@ typedef struct {
     char main_api[API_SIZE];
 
     char accounting_api[API_SIZE];
+    
     bool accounting_enabled;
     int accounting_interval;
 
@@ -36,6 +37,8 @@ typedef struct {
     int device_context_interval;
 
     int site_clients_interval;
+
+    char mqtt_broker_url[API_SIZE];
 
     char active_path[PATH_SIZE];
     char scripts_path[PATH_SIZE];

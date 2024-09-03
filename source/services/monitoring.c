@@ -4,6 +4,7 @@
 #include "services/config.h"
 #include "services/mqtt.h"
 #include "services/registration.h"
+#include "services/gen_id.h"
 #include <json-c/json.h>
 #include <lib/console.h>
 #include <mosquitto.h>
@@ -70,7 +71,8 @@ void parse_output(const char *output, DeviceData *info) {
     }
 }
 
-json_object *createjson(DeviceData *device_data, json_object *jobj, int timestamp, Registration *registration) {
+json_object *createjson(DeviceData *device_data, json_object *jobj, int timestamp, Registration *registration, char *measurementid) {
+    json_object_object_add(jobj, "measurement_id", json_object_new_string(measurementid));
     json_object_object_add(jobj, "device_id", json_object_new_string(registration->wayru_device_id));
     json_object_object_add(jobj, "timestamp", json_object_new_int(timestamp));
     json_object_object_add(jobj, "wifi_clients", json_object_new_int(device_data->wifi_clients));
@@ -108,12 +110,15 @@ void monitoring_task(Scheduler *sch, void *task_context) {
     free(output);
 
     json_object *json_device_data = json_object_new_object();
-    createjson(&device_data, json_device_data, now, context->registration);
+    char measurementid[256];
+    generate_id(measurementid, sizeof(measurementid), context->registration->wayru_device_id, now);
+    console(CONSOLE_INFO, "Measurement ID for deviceData: %s", measurementid);
+    createjson(&device_data, json_device_data, now, context->registration, measurementid);
 
     const char *device_data_str = json_object_to_json_string(json_device_data);
 
     console(CONSOLE_INFO, "Device data: %s", device_data_str);
-    publish_mqtt(context->mosq, "monitoring/device-data", device_data_str, 2);
+    publish_mqtt(context->mosq, "monitoring/device-data", device_data_str, 0);
 
     json_object_put(json_device_data);
 

@@ -4,6 +4,7 @@
 #include "services/config.h"
 #include "services/mqtt.h"
 #include "services/registration.h"
+#include "services/gen_id.h"
 #include <curl/curl.h>
 #include <json-c/json.h>
 #include <mosquitto.h>
@@ -215,7 +216,11 @@ void speedtest_task(Scheduler *sch, void *task_context) {
 
     time_t now;
     time(&now);
+    char measurementid[256];
+    generate_id(measurementid, sizeof(measurementid), context->registration->wayru_device_id, now);
+    console(CONSOLE_INFO, "Measurement ID for speedtest: %s\n", measurementid);
     json_object *speedtest_data = json_object_new_object();
+    json_object_object_add(speedtest_data, "measurement_id", json_object_new_string(measurementid));
     json_object_object_add(speedtest_data, "device_id", json_object_new_string(context->registration->wayru_device_id));
     json_object_object_add(speedtest_data, "timestamp", json_object_new_int(now));
     json_object_object_add(speedtest_data, "upload_speed", json_object_new_double(result.upload_speed_mbps));
@@ -223,8 +228,8 @@ void speedtest_task(Scheduler *sch, void *task_context) {
     json_object_object_add(speedtest_data, "latency", json_object_new_double(latency));
     const char *speedtest_data_str = json_object_to_json_string(speedtest_data);
 
-    console(CONSOLE_INFO, "Publishing speedtest results\n");
-    publish_mqtt(context->mosq, "monitoring/speedtest", speedtest_data_str, 2);
+    console(CONSOLE_INFO, "Publishing speedtest results");
+    publish_mqtt(context->mosq, "monitoring/speedtest", speedtest_data_str, 0);
 
     json_object_put(speedtest_data);
 

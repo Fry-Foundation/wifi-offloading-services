@@ -27,7 +27,7 @@ void init_config(int argc, char *argv[]) {
     config.speed_test_file_size = 0.3;
     config.device_context_interval = 900;
     config.site_clients_interval = 60;
-    strcpy(config.mqtt_broker_url, "broker.internal.wayru.tech");
+    strcpy(config.mqtt_broker_url, "mqtt.wayru.tech");
 
     // Loop  through available daemon config parameters
     for (int i = 1; i < argc; i++) {
@@ -118,7 +118,7 @@ void init_config(int argc, char *argv[]) {
             config.firmware_upgrade_interval = atoi(argv[i + 1]);
             continue;
         }
-          
+
         // Speed test flag
         if (strcmp(argv[i], "--config-speed-test-enabled") == 0) {
             int speed_test_enabled = atoi(argv[i + 1]);
@@ -143,7 +143,7 @@ void init_config(int argc, char *argv[]) {
             config.speed_test_latency_attempts = atoi(argv[i + 1]);
             continue;
         }
-        
+
         // Speed test file size
         if (strcmp(argv[i], "--config-speed-test-file-size") == 0) {
             config.speed_test_file_size = atof(argv[i + 1]);
@@ -163,7 +163,7 @@ void init_config(int argc, char *argv[]) {
         }
 
         //Broker url
-        if (strcmp(argv[i], "--mqtt-broker-url") == 0) {
+        if (strcmp(argv[i], "--config-mqtt-broker-url") == 0) {
             snprintf(config.mqtt_broker_url, sizeof(config.mqtt_broker_url), "%s", argv[i + 1]);
             continue;
         }

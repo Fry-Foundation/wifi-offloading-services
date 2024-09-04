@@ -4,6 +4,7 @@
 #include "lib/scheduler.h"
 #include "services/access.h"
 #include "services/config.h"
+#include "services/access_token.h"
 #include <json-c/json.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -19,6 +20,7 @@ bool on_boot = true;
 typedef struct {
     char *wayru_device_id;
     DeviceInfo *device_info;
+    AccessToken *access_token;
 } DeviceStatusTaskContext;
 
 DeviceStatus request_device_status(void *task_context) {
@@ -46,7 +48,7 @@ DeviceStatus request_device_status(void *task_context) {
 
     HttpPostOptions options = {
         .url = device_status_url,
-        .legacy_key = access_key.public_key,
+        .bearer_token = context->access_token->token,
         .body_json_str = body,
     };
 
@@ -106,10 +108,11 @@ void device_status_task(Scheduler *sch, void *task_context) {
     schedule_task(sch, time(NULL) + config.device_status_interval, device_status_task, "device status", context);
 }
 
-void device_status_service(Scheduler *sch, DeviceInfo *device_info, char *wayru_device_id) {
+void device_status_service(Scheduler *sch, DeviceInfo *device_info, char *wayru_device_id, AccessToken *access_token) {
     DeviceStatusTaskContext *context = (DeviceStatusTaskContext *)malloc(sizeof(DeviceStatusTaskContext));
     context->wayru_device_id = wayru_device_id;
     context->device_info = device_info;
+    context->access_token = access_token;
     device_status_task(sch, context);
 
     // Side effects

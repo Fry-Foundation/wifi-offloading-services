@@ -4,6 +4,7 @@
 #include "lib/scheduler.h"
 #include <stdbool.h>
 #include "services/device_info.h"
+#include "services/access_token.h"
 
 typedef enum {
     Unknown = -1,
@@ -17,6 +18,6 @@ typedef enum {
 
 extern DeviceStatus device_status;
 
-void device_status_service(Scheduler *sch, DeviceInfo *device_info, char *wayru_device_id);
+void device_status_service(Scheduler *sch, DeviceInfo *device_info, char *wayru_device_id, AccessToken *access_token);
 
 #endif /* DEVICE_STATUS_H */

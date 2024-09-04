@@ -36,7 +36,6 @@ endef
 # Package build instructions; invoke the target-specific compiler to first compile the source file, and then to link the file into the final executable
 define Build/Compile
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/main.o -c $(PKG_BUILD_DIR)/main.c
-		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/access.o -c $(PKG_BUILD_DIR)/services/access.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/accounting.o -c $(PKG_BUILD_DIR)/services/accounting.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/config.o -c $(PKG_BUILD_DIR)/services/config.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/device_info.o -c $(PKG_BUILD_DIR)/services/device_info.c
@@ -65,7 +64,6 @@ define Build/Compile
 
 		$(TARGET_CC) $(TARGET_LDFLAGS) \
 			$(PKG_BUILD_DIR)/main.o \
-			$(PKG_BUILD_DIR)/services/access.o \
 			$(PKG_BUILD_DIR)/services/accounting.o \
 			$(PKG_BUILD_DIR)/services/config.o \
 			$(PKG_BUILD_DIR)/services/device_info.o \

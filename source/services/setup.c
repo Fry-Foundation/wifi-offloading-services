@@ -1,7 +1,6 @@
 #include "setup.h"
 #include "lib/console.h"
 #include "lib/http-requests.h"
-#include "services/access.h"
 #include "services/config.h"
 #include "services/device_status.h"
 #include <stdio.h>
@@ -16,6 +15,7 @@
 typedef struct {
     DeviceInfo *device_info;
     char *wayru_device_id;
+    AccessToken *access_token;
 } SetupTaskContext;
 
 // Backend should handle setup requests that have already been created for this access key
@@ -23,7 +23,6 @@ typedef struct {
 void request_setup(void *task_context) {
     SetupTaskContext *context = (SetupTaskContext *)task_context;
     console(CONSOLE_DEBUG, "Request setup");
-    console(CONSOLE_DEBUG, "Access key: %s", access_key.public_key);
 
     // Build setup URL
     char setup_url[256];
@@ -47,7 +46,7 @@ void request_setup(void *task_context) {
     const char *body = json_object_to_json_string(json_body);
     HttpPostOptions setup_options = {
         .url = setup_url,
-        .legacy_key = access_key.public_key,
+        .bearer_token = context->access_token->token,
         .body_json_str = body,
     };
 
@@ -82,9 +81,10 @@ void setup_task(Scheduler *sch, void *task_context) {
     }
 }
 
-void setup_service(Scheduler *sch, DeviceInfo *device_info, char *wayru_device_id) {
+void setup_service(Scheduler *sch, DeviceInfo *device_info, char *wayru_device_id, AccessToken *access_token) {
     SetupTaskContext *context = (SetupTaskContext *)malloc(sizeof(SetupTaskContext));
     context->device_info = device_info;
     context->wayru_device_id = wayru_device_id;
+    context->access_token = access_token;
     setup_task(sch, context); 
 }

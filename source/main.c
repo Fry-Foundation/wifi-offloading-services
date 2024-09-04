@@ -1,5 +1,4 @@
 #include "lib/scheduler.h"
-#include "services/access.h"
 #include "services/access_token.h"
 #include "services/accounting.h"
 #include "services/config.h"
@@ -38,7 +37,7 @@ int main(int argc, char *argv[]) {
     access_token_service(sch, access_token, registration);
     device_context_service(sch, device_context, registration, access_token);
     device_status_service(sch, device_info, registration->wayru_device_id, access_token);
-    setup_service(sch, device_info, registration->wayru_device_id);
+    setup_service(sch, device_info, registration->wayru_device_id, access_token);
     accounting_service(sch);
     monitoring_service(sch, mosq, registration);
     firmware_upgrade_check(sch, device_info, registration);
@@ -51,7 +50,6 @@ int main(int argc, char *argv[]) {
     // Clean up
     clean_site_clients_fifo(site_clients_fifo_fd);
     clean_up_mosquitto(&mosq);
-    clean_access_service();
     clean_device_context(device_context);
     clean_access_token(access_token);
     clean_registration(registration);

@@ -28,7 +28,6 @@ endef
 # Package preparation instructions; create the build directory and copy the source code.
 # The last command is necessary to ensure our preparation instructions remain compatible with the patching system.
 define Build/Prepare
-
 		mkdir -p $(PKG_BUILD_DIR)
 		cp -r $(SOURCE_DIR)/* $(PKG_BUILD_DIR)
 		$(Build/Patch)
@@ -56,6 +55,7 @@ define Build/Compile
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/device-context.o -c $(PKG_BUILD_DIR)/services/device-context.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/site-clients.o -c $(PKG_BUILD_DIR)/services/site-clients.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/commands.o -c $(PKG_BUILD_DIR)/services/commands.c
+		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/gen_id.o -c $(PKG_BUILD_DIR)/services/gen_id.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/console.o -c $(PKG_BUILD_DIR)/lib/console.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/curl_helpers.o -c $(PKG_BUILD_DIR)/lib/curl_helpers.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/key_pair.o -c $(PKG_BUILD_DIR)/lib/key_pair.c
@@ -84,6 +84,7 @@ define Build/Compile
 			$(PKG_BUILD_DIR)/services/device-context.o \
 			$(PKG_BUILD_DIR)/services/site-clients.o \
 			$(PKG_BUILD_DIR)/services/commands.o \
+			$(PKG_BUILD_DIR)/services/gen_id.o \
 			$(PKG_BUILD_DIR)/lib/console.o \
 			$(PKG_BUILD_DIR)/lib/curl_helpers.o \
 			$(PKG_BUILD_DIR)/lib/key_pair.o \
@@ -169,7 +170,6 @@ define Package/wayru-os-services/install
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/nds-binauth-custom.sh $(1)/etc/wayru-os-services/scripts/
 		$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/network-set-mac.lua $(1)/etc/wayru-os-services/scripts/
 
-		$(INSTALL_DATA) .env $(1)/etc/wayru-os-services/data/.env
 		$(INSTALL_DATA) VERSION $(1)/etc/wayru-os-services/VERSION
 endef
 

@@ -70,7 +70,7 @@ copy-scripts:
 	mkdir -p $(DIST_DATA_PATH)
 	mkdir -p $(DIST_DID_KEY_PATH)
 
-	cp .env $(DIST_DATA_PATH)/.env
+	cp .env $(DIST_DATA_PATH)/.env || true
 	cp VERSION $(DIST_PATH)/VERSION
 
 # Run the program

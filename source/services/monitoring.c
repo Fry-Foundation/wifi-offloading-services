@@ -5,6 +5,7 @@
 #include "services/mqtt.h"
 #include "services/registration.h"
 #include "services/gen_id.h"
+#include "services/device_info.h"
 #include <json-c/json.h>
 #include <lib/console.h>
 #include <mosquitto.h>
@@ -15,6 +16,10 @@
 typedef struct {
     struct mosquitto *mosq;
     Registration *registration;
+    char *os_name;
+    char *os_version;
+    char *os_services_version;
+    char *public_ip;
 } MonitoringTaskContext;
 
 typedef struct {
@@ -71,7 +76,12 @@ void parse_output(const char *output, DeviceData *info) {
     }
 }
 
-json_object *createjson(DeviceData *device_data, json_object *jobj, int timestamp, Registration *registration, char *measurementid) {
+json_object *createjson(DeviceData *device_data, json_object *jobj, int timestamp, Registration *registration,
+                        char *measurementid, char *os_name, char *os_version, char *os_services_version,char *public_ip) {
+    json_object_object_add(jobj, "os_name", json_object_new_string(os_name));
+    json_object_object_add(jobj, "os_version", json_object_new_string(os_version));                            
+    json_object_object_add(jobj, "os_services_version", json_object_new_string(os_services_version));
+    json_object_object_add(jobj, "public_ip", json_object_new_string(public_ip));
     json_object_object_add(jobj, "measurement_id", json_object_new_string(measurementid));
     json_object_object_add(jobj, "device_id", json_object_new_string(registration->wayru_device_id));
     json_object_object_add(jobj, "timestamp", json_object_new_int(timestamp));
@@ -109,11 +119,17 @@ void monitoring_task(Scheduler *sch, void *task_context) {
     parse_output(output, &device_data);
     free(output);
 
+    context->os_name = get_os_name();
+    context->os_version = get_os_version();
+    context->os_services_version = get_os_services_version();
+    context->public_ip = get_public_ip();
+    
     json_object *json_device_data = json_object_new_object();
     char measurementid[256];
     generate_id(measurementid, sizeof(measurementid), context->registration->wayru_device_id, now);
     console(CONSOLE_INFO, "Measurement ID for deviceData: %s", measurementid);
-    createjson(&device_data, json_device_data, now, context->registration, measurementid);
+    createjson(&device_data, json_device_data, now, context->registration, measurementid,
+               context->os_name, context->os_version, context->os_services_version, context->public_ip);
 
     const char *device_data_str = json_object_to_json_string(json_device_data);
 
@@ -121,6 +137,10 @@ void monitoring_task(Scheduler *sch, void *task_context) {
     publish_mqtt(context->mosq, "monitoring/device-data", device_data_str, 0);
 
     json_object_put(json_device_data);
+    free(context->os_name);
+    free(context->os_version);
+    free(context->os_services_version);
+    free(context->public_ip);
 
     // Schedule monitoring_task to rerun later
     schedule_task(sch, time(NULL) + config.monitoring_interval, monitoring_task, "monitoring", context);

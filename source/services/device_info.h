@@ -22,5 +22,9 @@ typedef struct {
 
 DeviceInfo *init_device_info();
 void clean_device_info(DeviceInfo *device_info);
+char *get_os_version();
+char *get_os_services_version();
+char *get_os_name();
+char *get_public_ip();
 
 #endif // DEVICE_INFO_H

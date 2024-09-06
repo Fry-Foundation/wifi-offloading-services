@@ -6,13 +6,14 @@
 #include "services/config.h"
 #include "services/device_info.h"
 #include "services/registration.h"
+#include "services/access_token.h"
 #include <json-c/json.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
-#define FIRMWARE_ENDPOINT "/firmware-updates"
+#define FIRMWARE_ENDPOINT "/firmware-updates/check-updates"
 #define START_UPGRADE_ENDPOINT "/firmware-updates/start"
 #define REPORT_STATUS_ENDPOINT "/firmware-updates/report-status"
 #define VERIFY_STATUS_ENDPOINT "/firmware-updates/on-boot"
@@ -47,10 +48,10 @@ int run_sysupgrade() {
     return -1;
 }
 
-void report_upgrade_status(int upgrade_attempt_id, const char *upgrade_status) {
+void report_upgrade_status(AccessToken *access_token, int upgrade_attempt_id, const char *upgrade_status) {
     char report_status_url[256];
-    snprintf(report_status_url, sizeof(report_status_url), "%s%s", "config.accounting_api", REPORT_STATUS_ENDPOINT);
-    //snprintf(report_status_url, sizeof(report_status_url), "%s%s", "http://localhost:4050", REPORT_STATUS_ENDPOINT);
+    //snprintf(report_status_url, sizeof(report_status_url), "%s%s", "config.accounting_api", REPORT_STATUS_ENDPOINT);
+    snprintf(report_status_url, sizeof(report_status_url), "%s%s", "http://localhost:4050", REPORT_STATUS_ENDPOINT);
 
     json_object *json_body = json_object_new_object();
     json_object_object_add(json_body, "upgrade_attempt_id", json_object_new_int(upgrade_attempt_id));
@@ -62,6 +63,7 @@ void report_upgrade_status(int upgrade_attempt_id, const char *upgrade_status) {
     HttpPostOptions options = {
         .url = report_status_url,
         .body_json_str = body,
+        .bearer_token = access_token->token,
     };
 
     HttpResult result = http_post(&options);
@@ -109,21 +111,21 @@ int execute_firmware_verification() {
     return -1;
 }
 
-void handle_download_result(int upgrade_attempt_id, const char *download_path, bool success) {
+void handle_download_result(AccessToken *access_token, int upgrade_attempt_id, const char *download_path, bool success) {
     if (success) {
-        report_upgrade_status(upgrade_attempt_id, "download_confirmed");
+        report_upgrade_status(access_token, upgrade_attempt_id, "download_confirmed");
 
         int script_result = execute_firmware_verification(download_path);
 
         if (script_result == 1) {
             // Verification successful
             console(CONSOLE_INFO, "The image is correct. The hashes match");
-            report_upgrade_status(upgrade_attempt_id, "hash_verification_confirmed");
+            report_upgrade_status(access_token, upgrade_attempt_id, "hash_verification_confirmed");
 
             int upgrade_result = run_sysupgrade();
 
             if (upgrade_result == -1) {
-                report_upgrade_status(upgrade_attempt_id, "sysupgrade_failed");
+                report_upgrade_status(access_token, upgrade_attempt_id, "sysupgrade_failed");
                 // schedule_task(NULL, time(NULL) + 3600, firmware_upgrade_task, "sysupgrade_retry");
                 // Reschedule task
             }
@@ -139,23 +141,23 @@ void handle_download_result(int upgrade_attempt_id, const char *download_path, b
         } else {
             // Verification failed
             console(CONSOLE_INFO, "TThe image is incorrect. The hashes do not match");
-            report_upgrade_status(upgrade_attempt_id, "hash_verification_failed");
+            report_upgrade_status(access_token, upgrade_attempt_id, "hash_verification_failed");
             // Reschedule verification in an hour
             // schedule_task(NULL, time(NULL) + 3600, firmware_upgrade_task, "hash_verification_retry");
         }
 
     } else {
-        report_upgrade_status(upgrade_attempt_id, "download_failed");
+        report_upgrade_status(access_token, upgrade_attempt_id, "download_failed");
         // Schedule a retry in one hour
         // schedule_task(sch, time(NULL) + 3600, firmware_upgrade_task, "firmware_upgrade_retry");
     }
 }
 
-void send_firmware_check_request(const char *codename, const char *version, const char *wayru_device_id) {
+void send_firmware_check_request(const char *codename, const char *version, const char *wayru_device_id, AccessToken *access_token) {
     // Url
     char firmware_upgrade_url[256];
-    snprintf(firmware_upgrade_url, sizeof(firmware_upgrade_url), "%s%s", config.accounting_api, FIRMWARE_ENDPOINT);
-    //snprintf(firmware_upgrade_url, sizeof(firmware_upgrade_url), "%s%s", "http://localhost:4050", FIRMWARE_ENDPOINT);
+    //snprintf(firmware_upgrade_url, sizeof(firmware_upgrade_url), "%s%s", config.accounting_api, FIRMWARE_ENDPOINT);
+    snprintf(firmware_upgrade_url, sizeof(firmware_upgrade_url), "%s%s", "http://localhost:4050", FIRMWARE_ENDPOINT);
 
     console(CONSOLE_DEBUG, "Firmware endpoint: %s", firmware_upgrade_url);
 
@@ -171,6 +173,7 @@ void send_firmware_check_request(const char *codename, const char *version, cons
     HttpPostOptions options = {
         .url = firmware_upgrade_url,
         .body_json_str = body,
+        .bearer_token = access_token->token, 
     };
 
     HttpResult result = http_post(&options);
@@ -256,7 +259,7 @@ void send_firmware_check_request(const char *codename, const char *version, cons
         };
 
         HttpResult download_result = http_download(&download_options);
-        handle_download_result(upgrade_attempt_id, download_options.download_path, !download_result.is_error);
+        handle_download_result(access_token, upgrade_attempt_id, download_options.download_path, !download_result.is_error);
 
     } else if (update_available == 1) {
         console(CONSOLE_DEBUG, "New version available: %s. Update pending.", latest_version);
@@ -271,16 +274,16 @@ void send_firmware_check_request(const char *codename, const char *version, cons
     free(result.response_buffer);
 }
 
-void firmware_upgrade_task(Scheduler *sch, void *task_context) {
+void firmware_upgrade_task(Scheduler *sch, void *task_context, AccessToken *access_token) {
     FirmwareUpgradeTaskContext *context = (FirmwareUpgradeTaskContext *)task_context;
 
     console(CONSOLE_DEBUG, "Firmware upgrade task");
     send_firmware_check_request(context->device_info->name, context->device_info->os_version,
-                                context->registration->wayru_device_id);
+                                context->registration->wayru_device_id, access_token);
     schedule_task(sch, time(NULL) + config.firmware_upgrade_interval, firmware_upgrade_task, "firmware_upgrade", context);
 }
 
-void firmware_upgrade_check(Scheduler *scheduler, DeviceInfo *device_info, Registration *registration) {
+void firmware_upgrade_check(Scheduler *scheduler, DeviceInfo *device_info, Registration *registration, AccessToken *access_token) {
     FirmwareUpgradeTaskContext *context = (FirmwareUpgradeTaskContext *)malloc(sizeof(FirmwareUpgradeTaskContext));
     if (context == NULL) {
         console(CONSOLE_ERROR, "Failed to allocate memory for firmware upgrade task context");
@@ -291,18 +294,18 @@ void firmware_upgrade_check(Scheduler *scheduler, DeviceInfo *device_info, Regis
     context->registration = registration;
 
     console(CONSOLE_DEBUG, "scheduling firmware upgrade check");
-    firmware_upgrade_task(scheduler, context);
+    firmware_upgrade_task(scheduler, context, access_token);
 }
 
 void clean_firmware_upgrade_service() {
     // Clean up if necessary
 }
 
-void firmware_upgrade_on_boot(Registration *registration, DeviceInfo *device_info) {
+void firmware_upgrade_on_boot(Registration *registration, DeviceInfo *device_info, AccessToken *access_token) {
     console(CONSOLE_DEBUG, "Starting firmware_upgrade_on_boot");
     char verify_status_url[256];
-    snprintf(verify_status_url, sizeof(verify_status_url), "%s%s", config.accounting_api, VERIFY_STATUS_ENDPOINT);
-    //snprintf(verify_status_url, sizeof(verify_status_url), "%s%s", "http://localhost:4050", VERIFY_STATUS_ENDPOINT);
+    //snprintf(verify_status_url, sizeof(verify_status_url), "%s%s", config.accounting_api, VERIFY_STATUS_ENDPOINT);
+    snprintf(verify_status_url, sizeof(verify_status_url), "%s%s", "http://localhost:4050", VERIFY_STATUS_ENDPOINT);
 
     if (registration == NULL || registration->wayru_device_id == NULL) {
         console(CONSOLE_ERROR, "Registration or wayru_device_id is NULL");
@@ -324,6 +327,7 @@ void firmware_upgrade_on_boot(Registration *registration, DeviceInfo *device_inf
     HttpPostOptions options = {
         .url = verify_status_url,
         .body_json_str = body,
+        .bearer_token = access_token->token,
     };
 
     HttpResult result = http_post(&options);

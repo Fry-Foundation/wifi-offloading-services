@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
     DeviceInfo *device_info = init_device_info();
     Registration *registration = init_registration(device_info->mac, device_info->model, device_info->brand);
     AccessToken *access_token = init_access_token(registration);
-    firmware_upgrade_on_boot(registration, device_info);
+    firmware_upgrade_on_boot(registration, device_info, access_token);
     get_ca_cert(access_token);
     generate_and_sign_cert(access_token);
     DeviceContext *device_context = init_device_context(registration, access_token);
@@ -40,10 +40,10 @@ int main(int argc, char *argv[]) {
     setup_service(sch, device_info, registration->wayru_device_id, access_token);
     accounting_service(sch);
     monitoring_service(sch, mosq, registration);
-    firmware_upgrade_check(sch, device_info, registration);
+    firmware_upgrade_check(sch, device_info, registration, access_token);
     site_clients_service(sch, mosq, site_clients_fifo_fd, device_context->site);
     speedtest_service(sch, mosq, registration, access_token);
-    commands_service(mosq, device_info, registration);
+    commands_service(mosq, device_info, registration,access_token);
 
     run_tasks(sch);
 

@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
     Scheduler *sch = init_scheduler();
     init_config(argc, argv);
     DeviceInfo *device_info = init_device_info();
-    Registration *registration = init_registration(device_info->mac, device_info->model, device_info->brand);
+    Registration *registration = init_registration(device_info->mac, device_info->model, device_info->brand, device_info->device_id);
     AccessToken *access_token = init_access_token(registration);
     firmware_upgrade_on_boot(registration, device_info, access_token);
     get_ca_cert(access_token);
@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
     firmware_upgrade_check(sch, device_info, registration, access_token);
     site_clients_service(sch, mosq, site_clients_fifo_fd, device_context->site);
     speedtest_service(sch, mosq, registration, access_token);
-    commands_service(mosq, device_info, registration,access_token);
+    commands_service(mosq, device_info, registration, access_token);
 
     run_tasks(sch);
 

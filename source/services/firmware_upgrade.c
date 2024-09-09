@@ -22,6 +22,7 @@
 typedef struct {
     DeviceInfo *device_info;
     Registration *registration;
+    AccessToken *access_token;
 } FirmwareUpgradeTaskContext;
 
 int run_sysupgrade() {
@@ -87,7 +88,6 @@ void report_upgrade_status(AccessToken *access_token, int upgrade_attempt_id, co
 }
 
 
-// int execute_firmware_verification(const char *download_path) {
 int execute_firmware_verification() {
     char script_path[256];
     char image_path[256];
@@ -111,11 +111,11 @@ int execute_firmware_verification() {
     return -1;
 }
 
-void handle_download_result(AccessToken *access_token, int upgrade_attempt_id, const char *download_path, bool success) {
+void handle_download_result(AccessToken *access_token, int upgrade_attempt_id, bool success) {
     if (success) {
         report_upgrade_status(access_token, upgrade_attempt_id, "download_confirmed");
 
-        int script_result = execute_firmware_verification(download_path);
+        int script_result = execute_firmware_verification();
 
         if (script_result == 1) {
             // Verification successful
@@ -173,7 +173,7 @@ void send_firmware_check_request(const char *codename, const char *version, cons
     HttpPostOptions options = {
         .url = firmware_upgrade_url,
         .body_json_str = body,
-        .bearer_token = access_token->token, 
+        .bearer_token = access_token->token,
     };
 
     HttpResult result = http_post(&options);
@@ -259,7 +259,7 @@ void send_firmware_check_request(const char *codename, const char *version, cons
         };
 
         HttpResult download_result = http_download(&download_options);
-        handle_download_result(access_token, upgrade_attempt_id, download_options.download_path, !download_result.is_error);
+        handle_download_result(access_token, upgrade_attempt_id, !download_result.is_error);
 
     } else if (update_available == 1) {
         console(CONSOLE_DEBUG, "New version available: %s. Update pending.", latest_version);
@@ -274,12 +274,12 @@ void send_firmware_check_request(const char *codename, const char *version, cons
     free(result.response_buffer);
 }
 
-void firmware_upgrade_task(Scheduler *sch, void *task_context, AccessToken *access_token) {
+void firmware_upgrade_task(Scheduler *sch, void *task_context) {
     FirmwareUpgradeTaskContext *context = (FirmwareUpgradeTaskContext *)task_context;
 
     console(CONSOLE_DEBUG, "Firmware upgrade task");
     send_firmware_check_request(context->device_info->name, context->device_info->os_version,
-                                context->registration->wayru_device_id, access_token);
+                                context->registration->wayru_device_id, context->access_token);
     schedule_task(sch, time(NULL) + config.firmware_upgrade_interval, firmware_upgrade_task, "firmware_upgrade", context);
 }
 
@@ -292,9 +292,10 @@ void firmware_upgrade_check(Scheduler *scheduler, DeviceInfo *device_info, Regis
 
     context->device_info = device_info;
     context->registration = registration;
+    context->access_token = access_token;
 
     console(CONSOLE_DEBUG, "scheduling firmware upgrade check");
-    firmware_upgrade_task(scheduler, context, access_token);
+    firmware_upgrade_task(scheduler, context);
 }
 
 void clean_firmware_upgrade_service() {

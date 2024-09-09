@@ -13,6 +13,7 @@
 #include "services/firmware_upgrade.h"
 #include "services/site-clients.h"
 #include "services/speedtest.h"
+#include "services/commands.h"
 #include <mosquitto.h>
 #include <stdbool.h>
 #include <unistd.h>

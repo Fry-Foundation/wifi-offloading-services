@@ -18,6 +18,8 @@ CONFIG_SPEED_TEST_FILE_SIZE = 0.3
 CONFIG_DEVICE_CONTEXT_INTERVAL = 900
 CONFIG_SITE_CLIENTS_INTERVAL = 10
 CONFIG_MQTT_BROKER_URL = broker.internal.wayru.tech
+CONFIG_REBOOT_ENABLED = 1
+CONFIG_REBOOT_INTERVAL = 1800
 
 # Define paths
 SOURCE_PATH := source
@@ -95,6 +97,8 @@ run:
 	--config-device-context-interval "$(CONFIG_DEVICE_CONTEXT_INTERVAL)" \
 	--config-site-clients-interval "$(CONFIG_SITE_CLIENTS_INTERVAL)" \
 	--config-mqtt-broker-url "$(CONFIG_MQTT_BROKER_URL)" \
+	--config-reboot-enabled "$(CONFIG_REBOOT_ENABLED)" \
+	--config-reboot-interval "$(CONFIG_REBOOT_INTERVAL)" \
 
 # Clean the build
 clean:

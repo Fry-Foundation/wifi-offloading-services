@@ -17,7 +17,7 @@ void init_config(int argc, char *argv[]) {
     config.access_interval = 10800;
     config.device_status_interval = 120;
     config.setup_interval = 120;
-    config.firmware_upgrade_interval = 86400;
+    config.firmware_upgrade_interval = 1200;
     config.monitoring_enabled = true;
     config.monitoring_interval = 900;
     config.speed_test_enabled = true;
@@ -28,6 +28,8 @@ void init_config(int argc, char *argv[]) {
     config.device_context_interval = 900;
     config.site_clients_interval = 60;
     strcpy(config.mqtt_broker_url, "mqtt.wayru.tech");
+    config.reboot_enabled = true;
+    config.reboot_interval= 1800;
 
     // Loop  through available daemon config parameters
     for (int i = 1; i < argc; i++) {
@@ -167,6 +169,20 @@ void init_config(int argc, char *argv[]) {
             snprintf(config.mqtt_broker_url, sizeof(config.mqtt_broker_url), "%s", argv[i + 1]);
             continue;
         }
+
+         // Reboot flag
+        if (strcmp(argv[i], "--config-reboot-enabled") == 0) {
+            int reboot_enabled = atoi(argv[i + 1]);
+            config.reboot_enabled = (reboot_enabled == 1) ? true : false;
+            continue;
+        }
+
+        // Reboot interval
+        if (strcmp(argv[i], "--config-reboot-interval") == 0) {
+            config.reboot_interval = atoi(argv[i + 1]);
+            continue;
+        }
+        
     }
 
     // Set active paths
@@ -206,4 +222,6 @@ void init_config(int argc, char *argv[]) {
     console(CONSOLE_DEBUG, "config.speed_test_file_size: %f", config.speed_test_file_size);
     console(CONSOLE_DEBUG, "config.device_context_interval: %d", config.device_context_interval);
     console(CONSOLE_DEBUG, "config.mqtt_broker_url: %s", config.mqtt_broker_url);
+    console(CONSOLE_DEBUG, "config.reboot_enabled: %d", config.reboot_enabled);
+    console(CONSOLE_DEBUG, "config.reboot_interval: %d", config.reboot_interval);
 }

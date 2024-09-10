@@ -14,6 +14,7 @@
 #include "services/site-clients.h"
 #include "services/speedtest.h"
 #include "services/commands.h"
+#include "services/reboot.h"
 #include <mosquitto.h>
 #include <stdbool.h>
 #include <unistd.h>
@@ -41,10 +42,13 @@ int main(int argc, char *argv[]) {
     setup_service(sch, device_info, registration->wayru_device_id, access_token);
     accounting_service(sch);
     monitoring_service(sch, mosq, registration);
-    firmware_upgrade_check(sch, device_info, registration, access_token);
+    firmware_upgrade_check(sch, device_info, registration, access_token);   
+    
     site_clients_service(sch, mosq, site_clients_fifo_fd, device_context->site);
     speedtest_service(sch, mosq, registration, access_token);
     commands_service(mosq, device_info, registration, access_token);
+    reboot_service(sch);
+    
 
     run_tasks(sch);
 

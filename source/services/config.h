@@ -40,6 +40,9 @@ typedef struct {
 
     char mqtt_broker_url[API_SIZE];
 
+    bool reboot_enabled;
+    int reboot_interval;
+
     char active_path[PATH_SIZE];
     char scripts_path[PATH_SIZE];
     char data_path[PATH_SIZE];

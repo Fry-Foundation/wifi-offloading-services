@@ -17,7 +17,7 @@ void init_config(int argc, char *argv[]) {
     config.access_interval = 10800;
     config.device_status_interval = 120;
     config.setup_interval = 120;
-    config.firmware_upgrade_interval = 1200;
+    config.firmware_upgrade_interval = 86400;
     config.monitoring_enabled = true;
     config.monitoring_interval = 900;
     config.speed_test_enabled = true;
@@ -29,7 +29,7 @@ void init_config(int argc, char *argv[]) {
     config.site_clients_interval = 60;
     strcpy(config.mqtt_broker_url, "mqtt.wayru.tech");
     config.reboot_enabled = true;
-    config.reboot_interval= 1800;
+    config.reboot_interval= 88200;
 
     // Loop  through available daemon config parameters
     for (int i = 1; i < argc; i++) {

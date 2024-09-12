@@ -181,7 +181,12 @@ HttpResult http_download(const HttpDownloadOptions *options) {
     CURL *curl;
     CURLcode res;
     FILE *fp;
-    HttpResult result = {0};
+    HttpResult result = {
+        .is_error = false,
+        .error = NULL,
+        .response_buffer = NULL,
+        .response_size = 0,
+    };
 
     curl = curl_easy_init();
     if (!curl) {

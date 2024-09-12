@@ -154,6 +154,12 @@ void handle_download_result(AccessToken *access_token, int upgrade_attempt_id, b
 }
 
 void send_firmware_check_request(const char *codename, const char *version, const char *wayru_device_id, AccessToken *access_token) {
+
+    if (config.firmware_update_enabled == 0) {
+        console(CONSOLE_DEBUG, "Firmware update is disabled by configuration; will not proceed");
+        return;
+    }
+
     // Url
     char firmware_upgrade_url[256];
     snprintf(firmware_upgrade_url, sizeof(firmware_upgrade_url), "%s%s", config.accounting_api, FIRMWARE_ENDPOINT);
@@ -277,10 +283,15 @@ void send_firmware_check_request(const char *codename, const char *version, cons
 void firmware_upgrade_task(Scheduler *sch, void *task_context) {
     FirmwareUpgradeTaskContext *context = (FirmwareUpgradeTaskContext *)task_context;
 
+    if (config.firmware_update_enabled == 0) {
+        console(CONSOLE_DEBUG, "Firmware update is disabled by configuration; will not reschedule reboot task");
+        return;
+    }
+
     console(CONSOLE_DEBUG, "Firmware upgrade task");
     send_firmware_check_request(context->device_info->name, context->device_info->os_version,
                                 context->registration->wayru_device_id, context->access_token);
-    schedule_task(sch, time(NULL) + config.firmware_upgrade_interval, firmware_upgrade_task, "firmware_upgrade", context);
+    schedule_task(sch, time(NULL) + config.firmware_update_interval, firmware_upgrade_task, "firmware_upgrade", context);
 }
 
 void firmware_upgrade_check(Scheduler *scheduler, DeviceInfo *device_info, Registration *registration, AccessToken *access_token) {
@@ -303,6 +314,12 @@ void clean_firmware_upgrade_service() {
 }
 
 void firmware_upgrade_on_boot(Registration *registration, DeviceInfo *device_info, AccessToken *access_token) {
+
+    if (!config.firmware_update_enabled) {
+        console(CONSOLE_DEBUG, "Firmware upgrade on boot is disabled by configuration; will not proceed.");
+        return;
+    }
+
     console(CONSOLE_DEBUG, "Starting firmware_upgrade_on_boot");
     char verify_status_url[256];
     snprintf(verify_status_url, sizeof(verify_status_url), "%s%s", config.accounting_api, VERIFY_STATUS_ENDPOINT);

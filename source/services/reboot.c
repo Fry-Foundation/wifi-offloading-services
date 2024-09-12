@@ -34,7 +34,6 @@ void reboot_task(Scheduler *sch, void *task_context) {
 void reboot_service(Scheduler *sch) {
     if (config.reboot_enabled) {
         console(CONSOLE_DEBUG, "Scheduling reboot task.");
-        //schedule_task(sch, time(NULL) + config.firmware_upgrade_interval+20, reboot_task, "reboot", NULL);
 
         schedule_task(sch, time(NULL) + config.reboot_interval, reboot_task, "reboot", NULL);
     } else {

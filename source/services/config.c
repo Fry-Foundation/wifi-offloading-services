@@ -17,7 +17,6 @@ void init_config(int argc, char *argv[]) {
     config.access_interval = 10800;
     config.device_status_interval = 120;
     config.setup_interval = 120;
-    config.firmware_upgrade_interval = 86400;
     config.monitoring_enabled = true;
     config.monitoring_interval = 900;
     config.speed_test_enabled = true;
@@ -30,6 +29,8 @@ void init_config(int argc, char *argv[]) {
     strcpy(config.mqtt_broker_url, "mqtt.wayru.tech");
     config.reboot_enabled = true;
     config.reboot_interval= 88200;
+    config.firmware_update_enabled = true;
+    config.firmware_update_interval = 86400;
 
     // Loop  through available daemon config parameters
     for (int i = 1; i < argc; i++) {
@@ -115,12 +116,6 @@ void init_config(int argc, char *argv[]) {
             continue;
         }
 
-        // Firmware upgrade interval
-        if (strcmp(argv[i], "--config-firmware-upgrade-interval") == 0) {
-            config.firmware_upgrade_interval = atoi(argv[i + 1]);
-            continue;
-        }
-
         // Speed test flag
         if (strcmp(argv[i], "--config-speed-test-enabled") == 0) {
             int speed_test_enabled = atoi(argv[i + 1]);
@@ -182,6 +177,19 @@ void init_config(int argc, char *argv[]) {
             config.reboot_interval = atoi(argv[i + 1]);
             continue;
         }
+
+        // Firmware update flag
+        if (strcmp(argv[i], "--config-firmware-update-enabled") == 0) {
+            int firmware_update_enabled = atoi(argv[i + 1]);
+            config.firmware_update_enabled = (firmware_update_enabled == 1) ? true : false;
+            continue;
+        }
+
+        // Firmware upgrade interval
+        if (strcmp(argv[i], "--config-firmware-upgrade-interval") == 0) {
+            config.firmware_update_interval = atoi(argv[i + 1]);
+            continue;
+        }
         
     }
 
@@ -212,7 +220,6 @@ void init_config(int argc, char *argv[]) {
     console(CONSOLE_DEBUG, "config.scripts_path: %s", config.scripts_path);
     console(CONSOLE_DEBUG, "config.data_path: %s", config.data_path);
     console(CONSOLE_DEBUG, "config.temp_path: %s", config.temp_path);
-    console(CONSOLE_DEBUG, "config.firmware_upgrade_interval: %d", config.firmware_upgrade_interval);
     console(CONSOLE_DEBUG, "config.monitoring_enabled: %d", config.monitoring_enabled);
     console(CONSOLE_DEBUG, "config.monitoring_interval: %d", config.monitoring_interval);
     console(CONSOLE_DEBUG, "config.speed_test_enabled: %d", config.speed_test_enabled);
@@ -224,4 +231,6 @@ void init_config(int argc, char *argv[]) {
     console(CONSOLE_DEBUG, "config.mqtt_broker_url: %s", config.mqtt_broker_url);
     console(CONSOLE_DEBUG, "config.reboot_enabled: %d", config.reboot_enabled);
     console(CONSOLE_DEBUG, "config.reboot_interval: %d", config.reboot_interval);
+    console(CONSOLE_DEBUG, "config.firmware_update_enabled: %d", config.firmware_update_enabled);
+    console(CONSOLE_DEBUG, "config.firmware_update_interval: %d", config.firmware_update_interval);
 }

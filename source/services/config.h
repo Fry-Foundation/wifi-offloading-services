@@ -26,7 +26,8 @@ typedef struct {
     bool monitoring_enabled;
     int monitoring_interval;
 
-    int firmware_upgrade_interval;
+    bool firmware_update_enabled;
+    int firmware_update_interval;
 
     bool speed_test_enabled;
     int speed_test_interval;

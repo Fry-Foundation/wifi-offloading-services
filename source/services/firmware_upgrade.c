@@ -315,7 +315,7 @@ void clean_firmware_upgrade_service() {
 
 void firmware_upgrade_on_boot(Registration *registration, DeviceInfo *device_info, AccessToken *access_token) {
 
-    if (!config.firmware_update_enabled) {
+    if (config.firmware_update_enabled == 0) {
         console(CONSOLE_DEBUG, "Firmware upgrade on boot is disabled by configuration; will not proceed.");
         return;
     }

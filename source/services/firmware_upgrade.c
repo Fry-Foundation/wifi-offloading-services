@@ -51,7 +51,7 @@ int run_sysupgrade() {
 
 void report_upgrade_status(AccessToken *access_token, int upgrade_attempt_id, const char *upgrade_status) {
     char report_status_url[256];
-    snprintf(report_status_url, sizeof(report_status_url), "%s%s", "config.accounting_api", REPORT_STATUS_ENDPOINT);
+    snprintf(report_status_url, sizeof(report_status_url), "%s%s", config.accounting_api, REPORT_STATUS_ENDPOINT);
     //snprintf(report_status_url, sizeof(report_status_url), "%s%s", "http://localhost:4050", REPORT_STATUS_ENDPOINT);
 
     json_object *json_body = json_object_new_object();

@@ -16,6 +16,7 @@
 #include <sys/sysinfo.h>
 #include <sys/time.h>
 #include <time.h>
+#include <stdbool.h>
 
 #define SPEEDTEST_ENDPOINT "monitoring/speedtest"
 
@@ -26,7 +27,9 @@ typedef struct {
 } SpeedTestTaskContext;
 
 typedef struct {
-    double upload_speed_mbps, download_speed_mbps;
+    bool is_error;
+    double upload_speed_mbps;
+    double download_speed_mbps;
 } SpeedTestResult;
 
 float get_average_latency(const char *hostname) {
@@ -146,7 +149,13 @@ HttpResult upload_test(char *url, char *bearer_token, char *upload_data, size_t 
 }
 
 SpeedTestResult speed_test(char *bearer_token) {
-    console(CONSOLE_INFO, "Starting speed test\n");
+    SpeedTestResult result = {
+        .is_error = false,
+        .upload_speed_mbps = 0.0,
+        .download_speed_mbps = 0.0,
+    };
+
+    console(CONSOLE_INFO, "Starting speed test");
 
     char *freeram_str = get_available_memory_str();
     char get_url[256];
@@ -155,32 +164,33 @@ SpeedTestResult speed_test(char *bearer_token) {
     strcat(get_url, SPEEDTEST_ENDPOINT);
     strcat(get_url, "/");
     strcat(get_url, freeram_str);
-    console(CONSOLE_DEBUG, "GET URL: %s\n", get_url);
+    console(CONSOLE_DEBUG, "GET URL: %s", get_url);
 
     HttpResult download_result = download_test(get_url, bearer_token);
     if (download_result.is_error) {
-        console(CONSOLE_ERROR, "Download test failed\n");
-        return;
+        console(CONSOLE_ERROR, "Download test failed");
+        result.is_error = true;
+        return result;
     }
 
     char post_url[256];
     strcpy(post_url, config.accounting_api);
     strcat(post_url, "/");
     strcat(post_url, SPEEDTEST_ENDPOINT);
-    console(CONSOLE_DEBUG, "POST URL: %s\n", post_url);
+    console(CONSOLE_DEBUG, "POST URL: %s", post_url);
 
     HttpResult upload_result =
         upload_test(post_url, bearer_token, download_result.response_buffer, download_result.response_size);
     if (upload_result.is_error) {
         console(CONSOLE_ERROR, "Upload test failed\n");
         free(download_result.response_buffer);
-        return;
+        result.is_error = true;
+        return result;
     }
 
-    SpeedTestResult result = {
-        .upload_speed_mbps = upload_result.upload_speed_mbps,
-        .download_speed_mbps = download_result.download_speed_mbps,
-    };
+    result.is_error = false;
+    result.upload_speed_mbps = upload_result.upload_speed_mbps;
+    result.download_speed_mbps = download_result.download_speed_mbps;
 
     free(download_result.response_buffer);
     free(upload_result.response_buffer);
@@ -205,14 +215,12 @@ void speedtest_task(Scheduler *sch, void *task_context) {
         download_speed += result.download_speed_mbps;
         interval++;
     }
+    
+    double upload_speed_mbps = upload_speed / interval;
+    double download_speed_mbps = download_speed / interval;
 
-    SpeedTestResult result = {
-        .upload_speed_mbps = upload_speed / interval,
-        .download_speed_mbps = download_speed / interval,
-    };
-
-    console(CONSOLE_INFO, "Average upload speed: %.2f Mbps\n", result.upload_speed_mbps);
-    console(CONSOLE_INFO, "Average download speed: %.2f Mbps\n", result.download_speed_mbps);
+    console(CONSOLE_INFO, "Average upload speed: %.2f Mbps\n", upload_speed_mbps);
+    console(CONSOLE_INFO, "Average download speed: %.2f Mbps\n", download_speed_mbps);
 
     time_t now;
     time(&now);
@@ -223,8 +231,8 @@ void speedtest_task(Scheduler *sch, void *task_context) {
     json_object_object_add(speedtest_data, "measurement_id", json_object_new_string(measurementid));
     json_object_object_add(speedtest_data, "device_id", json_object_new_string(context->registration->wayru_device_id));
     json_object_object_add(speedtest_data, "timestamp", json_object_new_int(now));
-    json_object_object_add(speedtest_data, "upload_speed", json_object_new_double(result.upload_speed_mbps));
-    json_object_object_add(speedtest_data, "download_speed", json_object_new_double(result.download_speed_mbps));
+    json_object_object_add(speedtest_data, "upload_speed", json_object_new_double(upload_speed_mbps));
+    json_object_object_add(speedtest_data, "download_speed", json_object_new_double(download_speed_mbps));
     json_object_object_add(speedtest_data, "latency", json_object_new_double(latency));
     const char *speedtest_data_str = json_object_to_json_string(speedtest_data);
 

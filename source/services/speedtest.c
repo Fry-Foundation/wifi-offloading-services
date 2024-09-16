@@ -38,7 +38,7 @@ float get_average_latency(const char *hostname) {
 
     FILE *fp = popen(command, "r");
     if (fp == NULL) {
-        console(CONSOLE_ERROR, "Failed to run ping command\n");
+        console(CONSOLE_ERROR, "Failed to run ping command");
         return -1;
     }
 
@@ -77,7 +77,7 @@ char *get_available_memory_str() {
     size_t buf_size = 20;
     char *mem_str = (char *)malloc(buf_size * sizeof(char));
     if (mem_str == NULL) {
-        fprintf(stderr, "Memory allocation failed\n");
+        fprintf(stderr, "Memory allocation failed");
         exit(EXIT_FAILURE);
     }
 
@@ -101,15 +101,15 @@ HttpResult download_test(char *url, char *bearer_token) {
     time_taken = (time_taken + (end.tv_usec - start.tv_usec)) * 1e-6;
 
     if (result.is_error) {
-        console(CONSOLE_ERROR, "HTTP GET request failed: %s\n", result.error);
+        console(CONSOLE_ERROR, "HTTP GET request failed: %s", result.error);
         free(result.error);
         free(result.response_buffer);
     } else {
         size_t total_bytes = result.response_size;
         double speed_bps = total_bytes / time_taken;
         double speed_mbps = (speed_bps * 8) / 1e6;
-        console(CONSOLE_DEBUG, "Downloaded %zu bytes in %.2f seconds\n", total_bytes, time_taken);
-        console(CONSOLE_DEBUG, "Download speed: %.2f Mbps\n", speed_mbps);
+        console(CONSOLE_DEBUG, "Downloaded %zu bytes in %.2f seconds", total_bytes, time_taken);
+        console(CONSOLE_DEBUG, "Download speed: %.2f Mbps", speed_mbps);
         result.download_speed_mbps = speed_mbps;
     }
 
@@ -134,14 +134,14 @@ HttpResult upload_test(char *url, char *bearer_token, char *upload_data, size_t 
     time_taken = (time_taken + (end.tv_usec - start.tv_usec)) * 1e-6;
 
     if (result.is_error) {
-        console(CONSOLE_ERROR, "HTTP POST request failed: %s\n", result.error);
+        console(CONSOLE_ERROR, "HTTP POST request failed: %s", result.error);
         free(result.error);
         free(result.response_buffer);
     } else {
         double speed_bps = upload_data_size / time_taken;
         double speed_mbps = (speed_bps * 8) / 1e6;
-        console(CONSOLE_DEBUG, "Uploaded %zu bytes in %.2f seconds\n", upload_data_size, time_taken);
-        console(CONSOLE_DEBUG, "Upload speed: %.2f Mbps\n", speed_mbps);
+        console(CONSOLE_DEBUG, "Uploaded %zu bytes in %.2f seconds", upload_data_size, time_taken);
+        console(CONSOLE_DEBUG, "Upload speed: %.2f Mbps", speed_mbps);
         result.upload_speed_mbps = speed_mbps;
     }
 
@@ -182,7 +182,7 @@ SpeedTestResult speed_test(char *bearer_token) {
     HttpResult upload_result =
         upload_test(post_url, bearer_token, download_result.response_buffer, download_result.response_size);
     if (upload_result.is_error) {
-        console(CONSOLE_ERROR, "Upload test failed\n");
+        console(CONSOLE_ERROR, "Upload test failed");
         free(download_result.response_buffer);
         result.is_error = true;
         return result;
@@ -203,12 +203,13 @@ SpeedTestResult speed_test(char *bearer_token) {
 void speedtest_task(Scheduler *sch, void *task_context) {
     SpeedTestTaskContext *context = (SpeedTestTaskContext *)task_context;
 
-    console(CONSOLE_INFO, "Starting speedtest task\n");
+    console(CONSOLE_INFO, "Starting speedtest task");
     int interval = 0;
+    int failed = 0;
     double upload_speed = 0.0;
     double download_speed = 0.0;
     float latency = get_average_latency("www.google.com");
-    console(CONSOLE_INFO, "Average latency: %.2f ms\n", latency);
+    console(CONSOLE_INFO, "Average latency: %.2f ms", latency);
     while (interval < config.speed_test_backhaul_attempts) {
         SpeedTestResult result = speed_test(context->access_token->token);
         upload_speed += result.upload_speed_mbps;
@@ -219,14 +220,14 @@ void speedtest_task(Scheduler *sch, void *task_context) {
     double upload_speed_mbps = upload_speed / interval;
     double download_speed_mbps = download_speed / interval;
 
-    console(CONSOLE_INFO, "Average upload speed: %.2f Mbps\n", upload_speed_mbps);
-    console(CONSOLE_INFO, "Average download speed: %.2f Mbps\n", download_speed_mbps);
+    console(CONSOLE_INFO, "Average upload speed: %.2f Mbps", upload_speed_mbps);
+    console(CONSOLE_INFO, "Average download speed: %.2f Mbps", download_speed_mbps);
 
     time_t now;
     time(&now);
     char measurementid[256];
     generate_id(measurementid, sizeof(measurementid), context->registration->wayru_device_id, now);
-    console(CONSOLE_INFO, "Measurement ID for speedtest: %s\n", measurementid);
+    console(CONSOLE_INFO, "Measurement ID for speedtest: %s", measurementid);
     json_object *speedtest_data = json_object_new_object();
     json_object_object_add(speedtest_data, "measurement_id", json_object_new_string(measurementid));
     json_object_object_add(speedtest_data, "device_id", json_object_new_string(context->registration->wayru_device_id));

@@ -196,7 +196,7 @@ void init_config(int argc, char *argv[]) {
         // Use -n in sysupgrade flag
         if (strcmp(argv[i], "--config-use-n-sysupgrade") == 0) {
             int use_n_sysupgrade = atoi(argv[i + 1]);
-            config.use_n_sysupgrade = (use_n_sysupgrade == 0) ? true : false;
+            config.use_n_sysupgrade = (use_n_sysupgrade == 0) ? false : true;
             continue;
         }
         

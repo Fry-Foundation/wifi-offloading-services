@@ -44,6 +44,8 @@ typedef struct {
     bool reboot_enabled;
     int reboot_interval;
 
+    bool use_n_sysupgrade;
+
     char active_path[PATH_SIZE];
     char scripts_path[PATH_SIZE];
     char data_path[PATH_SIZE];

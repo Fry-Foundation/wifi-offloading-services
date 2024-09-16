@@ -31,6 +31,7 @@ void init_config(int argc, char *argv[]) {
     config.reboot_interval= 88200;
     config.firmware_update_enabled = true;
     config.firmware_update_interval = 86400;
+    config.use_n_sysupgrade = false;
 
     // Loop  through available daemon config parameters
     for (int i = 1; i < argc; i++) {
@@ -190,6 +191,14 @@ void init_config(int argc, char *argv[]) {
             config.firmware_update_interval = atoi(argv[i + 1]);
             continue;
         }
+
+
+        // Use -n in sysupgrade flag
+        if (strcmp(argv[i], "--config-use-n-sysupgrade") == 0) {
+            int use_n_sysupgrade = atoi(argv[i + 1]);
+            config.use_n_sysupgrade = (use_n_sysupgrade == 0) ? true : false;
+            continue;
+        }
         
     }
 
@@ -233,4 +242,5 @@ void init_config(int argc, char *argv[]) {
     console(CONSOLE_DEBUG, "config.reboot_interval: %d", config.reboot_interval);
     console(CONSOLE_DEBUG, "config.firmware_update_enabled: %d", config.firmware_update_enabled);
     console(CONSOLE_DEBUG, "config.firmware_update_interval: %d", config.firmware_update_interval);
+    console(CONSOLE_DEBUG, "config.use_n_sysupgrade: %d", config.use_n_sysupgrade);
 }

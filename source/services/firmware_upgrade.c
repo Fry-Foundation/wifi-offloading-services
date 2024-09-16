@@ -29,13 +29,20 @@ int run_sysupgrade() {
 
     char script_path[256];
     char image_path[256];
+    char option[4];
 
     snprintf(script_path, sizeof(script_path), "%s/run_sysupgrade.sh", config.scripts_path);
     snprintf(image_path, sizeof(image_path), "%s", config.temp_path);
+    snprintf(option, sizeof(option), config.use_n_sysupgrade ? "-n" : "");
 
     char command[256];
-    snprintf(command, sizeof(command), "%s %s", script_path, image_path);
-    console(CONSOLE_DEBUG, "Running sysupgrade script: %s", command);
+    snprintf(command, sizeof(command), "%s %s %s", script_path, image_path, option);
+
+    if (config.use_n_sysupgrade) {
+        console(CONSOLE_DEBUG, "Running sysupgrade script: %s (with -n)", command);
+    } else {
+        console(CONSOLE_DEBUG, "Running sysupgrade script: %s (without -n)", command);
+    }
 
     char *script_output = run_script(command);
 
@@ -284,7 +291,7 @@ void firmware_upgrade_task(Scheduler *sch, void *task_context) {
     FirmwareUpgradeTaskContext *context = (FirmwareUpgradeTaskContext *)task_context;
 
     if (config.firmware_update_enabled == 0) {
-        console(CONSOLE_DEBUG, "Firmware update is disabled by configuration; will not reschedule reboot task");
+        console(CONSOLE_DEBUG, "Firmware update is disabled by configuration; will not reschedule firmware update task");
         return;
     }
 

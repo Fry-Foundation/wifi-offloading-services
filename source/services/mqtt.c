@@ -46,10 +46,12 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
     }
 }
 
-void on_publish(struct mosquitto *mosq, void *obj, int mid) { console(CONSOLE_INFO, "Message has been published.\n"); }
+void on_publish(struct mosquitto *mosq, void *obj, int mid) {
+    console(CONSOLE_INFO, "Message has been published, mid %d", mid);
+}
 
 void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos, const int *granted_qos) {
-    console(CONSOLE_INFO, "Subscribed to a topic.\n");
+    console(CONSOLE_INFO, "Subscribed to a topic, mid %d", mid);
 }
 
 void subscribe_mqtt(struct mosquitto *mosq, char *topic, int qos, MessageCallback callback) {
@@ -179,21 +181,13 @@ struct mosquitto *init_mosquitto(Registration *registration, AccessToken *access
 
 // @todo should probably exit the program if refresh fails
 void refresh_mosquitto_access_token(struct mosquitto *mosq, AccessToken *access_token) {
-    mosquitto_disconnect(mosq);
-
     int pw_set = mosquitto_username_pw_set(mosq, access_token->token, "any");
     if (pw_set != MOSQ_ERR_SUCCESS) {
         console(CONSOLE_ERROR, "Unable to set username and password. %s\n", mosquitto_strerror(pw_set));
         return;
     }
 
-    int rc = mosquitto_connect(mosq, config.mqtt_broker_url, 8883, 60);
-    if (rc != MOSQ_ERR_SUCCESS) {
-        console(CONSOLE_ERROR, "Unable to reconnect to broker. %s\n", mosquitto_strerror(rc));
-        return;
-    }
-
-    console(CONSOLE_INFO, "Reconnected to the broker with new access token.");
+    console(CONSOLE_INFO, "Mosquitto client access token refreshed.");
 }
 
 void clean_up_mosquitto(struct mosquitto **mosq) {

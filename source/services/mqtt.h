@@ -8,6 +8,7 @@
 typedef void (*MessageCallback)(struct mosquitto *mosq, const struct mosquitto_message *message);
 
 struct mosquitto *init_mqtt(Registration *registration, AccessToken *access_token);
+void refresh_mosquitto_access_token(struct mosquitto *mosq, AccessToken *access_token);
 void publish_mqtt(struct mosquitto *mosq, char *topic, const char *message, int qos);
 void subscribe_mqtt(struct mosquitto *mosq, char *topic, int qos, MessageCallback callback);
 void clean_up_mosquitto(struct mosquitto **mosq);

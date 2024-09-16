@@ -1,9 +1,11 @@
 #include "access_token.h"
 #include "lib/console.h"
 #include "lib/scheduler.h"
+#include "mosquitto.h"
 #include "services/config.h"
 #include <json-c/json.h>
 #include <lib/http-requests.h>
+#include <mqtt.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,6 +17,7 @@
 typedef struct {
     AccessToken *access_token;
     Registration *registration;
+    struct mosquitto *mosq;
 } AccessTokenTaskContext;
 
 bool save_access_token(char *access_token_json) {
@@ -140,6 +143,7 @@ char *request_access_token(Registration *registration) {
     return result.response_buffer;
 }
 
+// @todo request token if saved token is expired
 AccessToken *init_access_token(Registration *registration) {
     AccessToken *access_token = (AccessToken *)malloc(sizeof(AccessToken));
     if (access_token != NULL) {
@@ -215,10 +219,13 @@ void access_token_task(Scheduler *sch, void *task_context) {
     console(CONSOLE_DEBUG, "issued at seconds: %ld", context->access_token->issued_at_seconds);
     console(CONSOLE_DEBUG, "expires at seconds: %ld", context->access_token->expires_at_seconds);
 
+    // Refresh mosquitto client
+    refresh_mosquitto_access_token(context->mosq, context->access_token);
+
     schedule_task(sch, time(NULL) + config.access_interval, access_token_task, "access token task", context);
 }
 
-void access_token_service(Scheduler *sch, AccessToken *access_token, Registration *registration) {
+void access_token_service(Scheduler *sch, AccessToken *access_token, Registration *registration, struct mosquitto *mosq) {
     AccessTokenTaskContext *context = (AccessTokenTaskContext *)malloc(sizeof(AccessTokenTaskContext));
     if (context == NULL) {
         console(CONSOLE_ERROR, "failed to allocate memory for access token task context");
@@ -227,6 +234,7 @@ void access_token_service(Scheduler *sch, AccessToken *access_token, Registratio
 
     context->access_token = access_token;
     context->registration = registration;
+    context->mosq = mosq;
 
     schedule_task(sch, time(NULL), access_token_task, "access token task", context);
 }

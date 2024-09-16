@@ -3,6 +3,7 @@
 
 #include "lib/scheduler.h"
 #include "services/registration.h"
+#include <mosquitto.h>
 #include <time.h>
 
 typedef struct {
@@ -12,7 +13,10 @@ typedef struct {
 } AccessToken;
 
 AccessToken *init_access_token(Registration *registration);
-void access_token_service(Scheduler *sch, AccessToken *_access_token, Registration *_registration);
+void access_token_service(Scheduler *sch,
+                          AccessToken *access_token,
+                          Registration *registration,
+                          struct mosquitto *mosq);
 void clean_access_token(AccessToken *access_token);
 
 #endif /* ACCESS_TOKEN_H */

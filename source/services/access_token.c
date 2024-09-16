@@ -5,7 +5,7 @@
 #include "services/config.h"
 #include <json-c/json.h>
 #include <lib/http-requests.h>
-#include <mqtt.h>
+#include <services/mqtt.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>

@@ -2,12 +2,12 @@
 #include "lib/console.h"
 #include "lib/http-requests.h"
 #include "services/config.h"
+#include "services/device_info.h"
 #include "services/device_status.h"
+#include <json-c/json.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "services/device_info.h"
-#include <json-c/json.h>
 
 #define SETUP_ENDPOINT "/api/nfNode/setup-v2"
 #define SETUP_COMPLETE_ENDPOINT "/api/nfNode/setup/complete"
@@ -29,9 +29,9 @@ void request_setup(void *task_context) {
     snprintf(setup_url, sizeof(setup_url), "%s%s", config.main_api, SETUP_ENDPOINT);
     console(CONSOLE_DEBUG, "setup_url: %s", setup_url);
 
-    //Request body
+    // Request body
     json_object *json_body = json_object_new_object();
-    json_object_object_add(json_body, "device_id", json_object_new_string(context->device_info->device_id)); 
+    json_object_object_add(json_body, "device_id", json_object_new_string(context->device_info->device_id));
     json_object_object_add(json_body, "mac", json_object_new_string(context->device_info->mac));
     json_object_object_add(json_body, "name", json_object_new_string(context->device_info->name));
     json_object_object_add(json_body, "brand", json_object_new_string(context->device_info->brand));
@@ -39,10 +39,11 @@ void request_setup(void *task_context) {
     json_object_object_add(json_body, "public_ip", json_object_new_string(context->device_info->public_ip));
     json_object_object_add(json_body, "os_name", json_object_new_string(context->device_info->os_name));
     json_object_object_add(json_body, "os_version", json_object_new_string(context->device_info->os_version));
-    json_object_object_add(json_body, "os_services_version", json_object_new_string(context->device_info->os_services_version));
+    json_object_object_add(json_body, "os_services_version",
+                           json_object_new_string(context->device_info->os_services_version));
     json_object_object_add(json_body, "did_public_key", json_object_new_string(context->device_info->did_public_key));
     json_object_object_add(json_body, "wayru_device_id", json_object_new_string(context->wayru_device_id));
-    
+
     const char *body = json_object_to_json_string(json_body);
     HttpPostOptions setup_options = {
         .url = setup_url,
@@ -52,7 +53,7 @@ void request_setup(void *task_context) {
 
     HttpResult result = http_post(&setup_options);
     json_object_put(json_body);
-    
+
     if (result.is_error) {
         console(CONSOLE_ERROR, "setup request failed: %s", result.error);
         return;
@@ -86,5 +87,5 @@ void setup_service(Scheduler *sch, DeviceInfo *device_info, char *wayru_device_i
     context->device_info = device_info;
     context->wayru_device_id = wayru_device_id;
     context->access_token = access_token;
-    setup_task(sch, context); 
+    setup_task(sch, context);
 }

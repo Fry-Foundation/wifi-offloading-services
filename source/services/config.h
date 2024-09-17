@@ -13,7 +13,7 @@ typedef struct {
     char main_api[API_SIZE];
 
     char accounting_api[API_SIZE];
-    
+
     bool accounting_enabled;
     int accounting_interval;
 

@@ -63,7 +63,11 @@ Task *create_task(time_t execute_at, TaskFunction task_function, const char *det
     return new_task;
 }
 
-void schedule_task(Scheduler *sch, time_t execute_at, TaskFunction task_function, const char *detail, void *task_context) {
+void schedule_task(Scheduler *sch,
+                   time_t execute_at,
+                   TaskFunction task_function,
+                   const char *detail,
+                   void *task_context) {
     Task *new_task = create_task(execute_at, task_function, detail, task_context);
     if (!new_task) {
         console(CONSOLE_ERROR, "Failed to create task");

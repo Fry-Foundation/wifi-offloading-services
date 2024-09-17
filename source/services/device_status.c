@@ -2,13 +2,13 @@
 #include "lib/console.h"
 #include "lib/http-requests.h"
 #include "lib/scheduler.h"
-#include "services/config.h"
 #include "services/access_token.h"
+#include "services/config.h"
+#include "services/device_info.h"
 #include <json-c/json.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "services/device_info.h"
 
 #define DEVICE_STATUS_ENDPOINT "/api/nfnode/device-status"
 
@@ -39,7 +39,8 @@ DeviceStatus request_device_status(void *task_context) {
     json_object_object_add(json_body, "public_ip", json_object_new_string(context->device_info->public_ip));
     json_object_object_add(json_body, "os_name", json_object_new_string(context->device_info->os_name));
     json_object_object_add(json_body, "os_version", json_object_new_string(context->device_info->os_version));
-    json_object_object_add(json_body, "os_services_version", json_object_new_string(context->device_info->os_services_version));
+    json_object_object_add(json_body, "os_services_version",
+                           json_object_new_string(context->device_info->os_services_version));
     json_object_object_add(json_body, "did_public_key", json_object_new_string(context->device_info->did_public_key));
     json_object_object_add(json_body, "wayru_device_id", json_object_new_string(context->wayru_device_id));
     const char *body = json_object_to_json_string(json_body);

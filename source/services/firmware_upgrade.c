@@ -3,10 +3,10 @@
 #include "lib/http-requests.h"
 #include "lib/scheduler.h"
 #include "lib/script_runner.h"
+#include "services/access_token.h"
 #include "services/config.h"
 #include "services/device_info.h"
 #include "services/registration.h"
-#include "services/access_token.h"
 #include <json-c/json.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -59,7 +59,7 @@ int run_sysupgrade() {
 void report_upgrade_status(AccessToken *access_token, int upgrade_attempt_id, const char *upgrade_status) {
     char report_status_url[256];
     snprintf(report_status_url, sizeof(report_status_url), "%s%s", config.accounting_api, REPORT_STATUS_ENDPOINT);
-    //snprintf(report_status_url, sizeof(report_status_url), "%s%s", "http://localhost:4050", REPORT_STATUS_ENDPOINT);
+    // snprintf(report_status_url, sizeof(report_status_url), "%s%s", "http://localhost:4050", REPORT_STATUS_ENDPOINT);
 
     json_object *json_body = json_object_new_object();
     json_object_object_add(json_body, "upgrade_attempt_id", json_object_new_int(upgrade_attempt_id));
@@ -93,7 +93,6 @@ void report_upgrade_status(AccessToken *access_token, int upgrade_attempt_id, co
     console(CONSOLE_DEBUG, "Reported upgrade status successfully");
     free(result.response_buffer);
 }
-
 
 int execute_firmware_verification() {
     char script_path[256];
@@ -160,7 +159,10 @@ void handle_download_result(AccessToken *access_token, int upgrade_attempt_id, b
     }
 }
 
-void send_firmware_check_request(const char *codename, const char *version, const char *wayru_device_id, AccessToken *access_token) {
+void send_firmware_check_request(const char *codename,
+                                 const char *version,
+                                 const char *wayru_device_id,
+                                 AccessToken *access_token) {
 
     if (config.firmware_update_enabled == 0) {
         console(CONSOLE_DEBUG, "Firmware update is disabled by configuration; will not proceed");
@@ -170,7 +172,7 @@ void send_firmware_check_request(const char *codename, const char *version, cons
     // Url
     char firmware_upgrade_url[256];
     snprintf(firmware_upgrade_url, sizeof(firmware_upgrade_url), "%s%s", config.accounting_api, FIRMWARE_ENDPOINT);
-    //snprintf(firmware_upgrade_url, sizeof(firmware_upgrade_url), "%s%s", "http://localhost:4050", FIRMWARE_ENDPOINT);
+    // snprintf(firmware_upgrade_url, sizeof(firmware_upgrade_url), "%s%s", "http://localhost:4050", FIRMWARE_ENDPOINT);
 
     console(CONSOLE_DEBUG, "Firmware endpoint: %s", firmware_upgrade_url);
 
@@ -291,17 +293,22 @@ void firmware_upgrade_task(Scheduler *sch, void *task_context) {
     FirmwareUpgradeTaskContext *context = (FirmwareUpgradeTaskContext *)task_context;
 
     if (config.firmware_update_enabled == 0) {
-        console(CONSOLE_DEBUG, "Firmware update is disabled by configuration; will not reschedule firmware update task");
+        console(CONSOLE_DEBUG,
+                "Firmware update is disabled by configuration; will not reschedule firmware update task");
         return;
     }
 
     console(CONSOLE_DEBUG, "Firmware upgrade task");
     send_firmware_check_request(context->device_info->name, context->device_info->os_version,
                                 context->registration->wayru_device_id, context->access_token);
-    schedule_task(sch, time(NULL) + config.firmware_update_interval, firmware_upgrade_task, "firmware_upgrade", context);
+    schedule_task(sch, time(NULL) + config.firmware_update_interval, firmware_upgrade_task, "firmware_upgrade",
+                  context);
 }
 
-void firmware_upgrade_check(Scheduler *scheduler, DeviceInfo *device_info, Registration *registration, AccessToken *access_token) {
+void firmware_upgrade_check(Scheduler *scheduler,
+                            DeviceInfo *device_info,
+                            Registration *registration,
+                            AccessToken *access_token) {
     FirmwareUpgradeTaskContext *context = (FirmwareUpgradeTaskContext *)malloc(sizeof(FirmwareUpgradeTaskContext));
     if (context == NULL) {
         console(CONSOLE_ERROR, "Failed to allocate memory for firmware upgrade task context");
@@ -330,7 +337,7 @@ void firmware_upgrade_on_boot(Registration *registration, DeviceInfo *device_inf
     console(CONSOLE_DEBUG, "Starting firmware_upgrade_on_boot");
     char verify_status_url[256];
     snprintf(verify_status_url, sizeof(verify_status_url), "%s%s", config.accounting_api, VERIFY_STATUS_ENDPOINT);
-    //snprintf(verify_status_url, sizeof(verify_status_url), "%s%s", "http://localhost:4050", VERIFY_STATUS_ENDPOINT);
+    // snprintf(verify_status_url, sizeof(verify_status_url), "%s%s", "http://localhost:4050", VERIFY_STATUS_ENDPOINT);
 
     if (registration == NULL || registration->wayru_device_id == NULL) {
         console(CONSOLE_ERROR, "Registration or wayru_device_id is NULL");

@@ -1,9 +1,9 @@
 #include "lib/console.h"
+#include "lib/http-requests.h"
 #include <curl/curl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "lib/http-requests.h"
 
 char *init_response_buffer() {
     char *response = malloc(1);

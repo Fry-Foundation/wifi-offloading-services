@@ -62,13 +62,13 @@ char *read_access_token() {
     }
 
     // Ensure the file fits in size_t and prevent integer overflow
-    if ((unsigned long) file_size_long + 1 > SIZE_MAX) {
+    if ((unsigned long)file_size_long + 1 > SIZE_MAX) {
         console(CONSOLE_ERROR, "access token file is too large");
         fclose(file);
         return NULL;
     }
 
-    size_t file_size = (size_t) file_size_long;
+    size_t file_size = (size_t)file_size_long;
 
     // Reset the file position to the beginning
     if (fseek(file, 0, SEEK_SET) != 0) {
@@ -317,7 +317,6 @@ void access_token_service(Scheduler *sch,
     context->access_token = access_token;
     context->registration = registration;
     context->mosq = mosq;
-
 
     // Schedule the task
     time_t next_run = calculate_next_run(access_token->expires_at_seconds, config.access_interval);

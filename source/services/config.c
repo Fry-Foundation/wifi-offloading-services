@@ -28,7 +28,7 @@ void init_config(int argc, char *argv[]) {
     config.site_clients_interval = 60;
     strcpy(config.mqtt_broker_url, "mqtt.wayru.tech");
     config.reboot_enabled = true;
-    config.reboot_interval= 88200;
+    config.reboot_interval = 88200;
     config.firmware_update_enabled = true;
     config.firmware_update_interval = 86400;
     config.use_n_sysupgrade = false;
@@ -160,13 +160,13 @@ void init_config(int argc, char *argv[]) {
             continue;
         }
 
-        //Broker url
+        // Broker url
         if (strcmp(argv[i], "--config-mqtt-broker-url") == 0) {
             snprintf(config.mqtt_broker_url, sizeof(config.mqtt_broker_url), "%s", argv[i + 1]);
             continue;
         }
 
-         // Reboot flag
+        // Reboot flag
         if (strcmp(argv[i], "--config-reboot-enabled") == 0) {
             int reboot_enabled = atoi(argv[i + 1]);
             config.reboot_enabled = (reboot_enabled == 1) ? true : false;
@@ -192,14 +192,12 @@ void init_config(int argc, char *argv[]) {
             continue;
         }
 
-
         // Use -n in sysupgrade flag
         if (strcmp(argv[i], "--config-use-n-sysupgrade") == 0) {
             int use_n_sysupgrade = atoi(argv[i + 1]);
             config.use_n_sysupgrade = (use_n_sysupgrade == 0) ? false : true;
             continue;
         }
-        
     }
 
     // Set active paths

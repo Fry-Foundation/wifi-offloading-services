@@ -228,7 +228,7 @@ char *get_os_name() {
     return os_name;
 }
 
-DeviceInfo* init_device_info() {
+DeviceInfo *init_device_info() {
     DeviceInfo *device_info = malloc(sizeof(DeviceInfo));
     device_info->os_version = get_os_version();
     device_info->os_services_version = get_os_services_version();
@@ -247,7 +247,7 @@ DeviceInfo* init_device_info() {
     return device_info;
 }
 
-void clean_device_info(DeviceInfo* device_info) {
+void clean_device_info(DeviceInfo *device_info) {
     free(device_info->mac);
     free(device_info->name);
     free(device_info->brand);

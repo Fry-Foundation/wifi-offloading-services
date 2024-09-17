@@ -2,9 +2,9 @@
 #define DEVICE_STATUS_H
 
 #include "lib/scheduler.h"
-#include <stdbool.h>
-#include "services/device_info.h"
 #include "services/access_token.h"
+#include "services/device_info.h"
+#include <stdbool.h>
 
 typedef enum {
     Unknown = -1,

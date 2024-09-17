@@ -27,7 +27,8 @@ int main(int argc, char *argv[]) {
     Scheduler *sch = init_scheduler();
     init_config(argc, argv);
     DeviceInfo *device_info = init_device_info();
-    Registration *registration = init_registration(device_info->mac, device_info->model, device_info->brand, device_info->device_id);
+    Registration *registration =
+        init_registration(device_info->mac, device_info->model, device_info->brand, device_info->device_id);
 
     AccessToken *access_token = init_access_token(registration);
     if (access_token == NULL) {

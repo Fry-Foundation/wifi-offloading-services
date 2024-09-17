@@ -2,21 +2,21 @@
 #include "lib/http-requests.h"
 #include "lib/scheduler.h"
 #include "services/config.h"
+#include "services/gen_id.h"
 #include "services/mqtt.h"
 #include "services/registration.h"
-#include "services/gen_id.h"
 #include <curl/curl.h>
 #include <json-c/json.h>
 #include <mosquitto.h>
 #include <services/access_token.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/sysinfo.h>
 #include <sys/time.h>
 #include <time.h>
-#include <stdbool.h>
 
 #define SPEEDTEST_ENDPOINT "monitoring/speedtest"
 
@@ -216,7 +216,7 @@ void speedtest_task(Scheduler *sch, void *task_context) {
         download_speed += result.download_speed_mbps;
         interval++;
     }
-    
+
     double upload_speed_mbps = upload_speed / interval;
     double download_speed_mbps = download_speed / interval;
 

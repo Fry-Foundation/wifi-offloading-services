@@ -2,13 +2,19 @@
 #define FIRMWARE_UPGRADE_H
 
 #include "lib/scheduler.h"
+#include "services/access_token.h"
 #include "services/device_info.h"
 #include "services/registration.h"
-#include "services/access_token.h"
 
 void firmware_upgrade_on_boot(Registration *registration, DeviceInfo *device_info, AccessToken *access_token);
-void firmware_upgrade_check(Scheduler *scheduler, DeviceInfo *device_info, Registration *registration, AccessToken *access_token);
-void send_firmware_check_request(const char *codename, const char *version, const char *wayru_device_id, AccessToken *access_token);
+void firmware_upgrade_check(Scheduler *scheduler,
+                            DeviceInfo *device_info,
+                            Registration *registration,
+                            AccessToken *access_token);
+void send_firmware_check_request(const char *codename,
+                                 const char *version,
+                                 const char *wayru_device_id,
+                                 AccessToken *access_token);
 void clean_firmware_upgrade_service();
 
 #endif // FIRMWARE_UPGRADE_H

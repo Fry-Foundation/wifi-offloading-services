@@ -1,9 +1,9 @@
 #ifndef MQTT_H
 #define MQTT_H
 
-#include <mosquitto.h>
-#include "services/registration.h"
 #include "services/access_token.h"
+#include "services/registration.h"
+#include <mosquitto.h>
 
 typedef void (*MessageCallback)(struct mosquitto *mosq, const struct mosquitto_message *message);
 

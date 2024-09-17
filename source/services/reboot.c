@@ -11,7 +11,7 @@
 void execute_reboot() {
     if (config.dev_env)
         console(CONSOLE_DEBUG, "Running reboot command...but not");
-    else{
+    else {
         console(CONSOLE_DEBUG, "Running reboot command");
         run_script("reboot now");
     }
@@ -28,7 +28,7 @@ void reboot_task(Scheduler *sch, void *task_context) {
     console(CONSOLE_DEBUG, "Executing scheduled reboot task.");
     execute_reboot();
 
-    //schedule_task(sch, time(NULL) + config.reboot_interval, reboot_task, "reboot", NULL);
+    // schedule_task(sch, time(NULL) + config.reboot_interval, reboot_task, "reboot", NULL);
 }
 
 void reboot_service(Scheduler *sch) {

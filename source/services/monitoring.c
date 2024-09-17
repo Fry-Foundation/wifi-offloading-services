@@ -2,10 +2,10 @@
 #include "lib/scheduler.h"
 #include "lib/script_runner.h"
 #include "services/config.h"
+#include "services/device_info.h"
+#include "services/gen_id.h"
 #include "services/mqtt.h"
 #include "services/registration.h"
-#include "services/gen_id.h"
-#include "services/device_info.h"
 #include <json-c/json.h>
 #include <lib/console.h>
 #include <mosquitto.h>
@@ -76,10 +76,17 @@ void parse_output(const char *output, DeviceData *info) {
     }
 }
 
-json_object *createjson(DeviceData *device_data, json_object *jobj, int timestamp, Registration *registration,
-                        char *measurementid, char *os_name, char *os_version, char *os_services_version,char *public_ip) {
+json_object *createjson(DeviceData *device_data,
+                        json_object *jobj,
+                        int timestamp,
+                        Registration *registration,
+                        char *measurementid,
+                        char *os_name,
+                        char *os_version,
+                        char *os_services_version,
+                        char *public_ip) {
     json_object_object_add(jobj, "os_name", json_object_new_string(os_name));
-    json_object_object_add(jobj, "os_version", json_object_new_string(os_version));                            
+    json_object_object_add(jobj, "os_version", json_object_new_string(os_version));
     json_object_object_add(jobj, "os_services_version", json_object_new_string(os_services_version));
     json_object_object_add(jobj, "public_ip", json_object_new_string(public_ip));
     json_object_object_add(jobj, "measurement_id", json_object_new_string(measurementid));
@@ -123,13 +130,13 @@ void monitoring_task(Scheduler *sch, void *task_context) {
     context->os_version = get_os_version();
     context->os_services_version = get_os_services_version();
     context->public_ip = get_public_ip();
-    
+
     json_object *json_device_data = json_object_new_object();
     char measurementid[256];
     generate_id(measurementid, sizeof(measurementid), context->registration->wayru_device_id, now);
     console(CONSOLE_INFO, "Measurement ID for deviceData: %s", measurementid);
-    createjson(&device_data, json_device_data, now, context->registration, measurementid,
-               context->os_name, context->os_version, context->os_services_version, context->public_ip);
+    createjson(&device_data, json_device_data, now, context->registration, measurementid, context->os_name,
+               context->os_version, context->os_services_version, context->public_ip);
 
     const char *device_data_str = json_object_to_json_string(json_device_data);
 

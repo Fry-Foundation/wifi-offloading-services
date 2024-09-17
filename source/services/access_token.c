@@ -13,6 +13,7 @@
 
 #define ACCESS_TOKEN_ENDPOINT "access"
 #define ACCESS_TOKEN_FILE "access-token.json"
+#define ACCESS_TOKEN_EXPIRATION_MARGIN 3600
 
 typedef struct {
     AccessToken *access_token;
@@ -42,15 +43,41 @@ char *read_access_token() {
 
     FILE *file = fopen(access_token_file_path, "r");
     if (file == NULL) {
-        console(CONSOLE_ERROR, "failed to open access token file");
+        console(CONSOLE_DEBUG, "could not open access token file; it might not exist yet");
         return NULL;
     }
 
-    // Get file size to allocate memory
-    fseek(file, 0, SEEK_END);
-    long file_size = ftell(file);
-    fseek(file, 0, SEEK_SET);
+    // Move to the end of the file to determine its size
+    if (fseek(file, 0, SEEK_END) != 0) {
+        console(CONSOLE_ERROR, "failed to seek to the end of the access token file");
+        fclose(file);
+        return NULL;
+    }
 
+    long file_size_long = ftell(file);
+    if (file_size_long < 0) {
+        console(CONSOLE_ERROR, "failed to get file size of access token file");
+        fclose(file);
+        return NULL;
+    }
+
+    // Ensure the file fits in size_t and prevent integer overflow
+    if ((unsigned long) file_size_long + 1 > SIZE_MAX) {
+        console(CONSOLE_ERROR, "access token file is too large");
+        fclose(file);
+        return NULL;
+    }
+
+    size_t file_size = (size_t) file_size_long;
+
+    // Reset the file position to the beginning
+    if (fseek(file, 0, SEEK_SET) != 0) {
+        console(CONSOLE_ERROR, "failed to seek to the beginning of the access token file");
+        fclose(file);
+        return NULL;
+    }
+
+    // Allocate memory for the access token
     char *access_token = malloc(file_size + 1);
     if (access_token == NULL) {
         console(CONSOLE_ERROR, "failed to allocate memory for access token");
@@ -58,19 +85,25 @@ char *read_access_token() {
         return NULL;
     }
 
-    // Read file
-    fread(access_token, 1, file_size, file);
-    access_token[file_size] = '\0';
-    fclose(file);
+    // Read the file's contents
+    size_t bytes_read = fread(access_token, 1, file_size, file);
+    if (bytes_read != file_size) {
+        console(CONSOLE_ERROR, "failed to read access token file");
+        free(access_token);
+        fclose(file);
+        return NULL;
+    }
 
+    access_token[file_size] = '\0';
+
+    fclose(file);
     return access_token;
 }
 
-AccessToken parse_access_token(const char *access_token_json) {
-    AccessToken access_token;
-    access_token.token = NULL;
-    access_token.issued_at_seconds = 0;
-    access_token.expires_at_seconds = 0;
+bool parse_access_token(const char *access_token_json, AccessToken *access_token) {
+    access_token->token = NULL;
+    access_token->issued_at_seconds = 0;
+    access_token->expires_at_seconds = 0;
 
     json_object *json = json_tokener_parse(access_token_json);
     if (json == NULL) {
@@ -82,32 +115,63 @@ AccessToken parse_access_token(const char *access_token_json) {
     if (!json_object_object_get_ex(json, "token", &token_json)) {
         console(CONSOLE_ERROR, "failed to get token from access token json");
         json_object_put(json);
-        return access_token;
+        return false;
     }
 
-    access_token.token = strdup(json_object_get_string(token_json));
+    const char *token_str = json_object_get_string(token_json);
+    if (token_str == NULL) {
+        console(CONSOLE_ERROR, "failed to get token string from access token json");
+        json_object_put(json);
+        return false;
+    }
+
+    access_token->token = strdup(token_str);
+    if (access_token->token == NULL) {
+        console(CONSOLE_ERROR, "failed to allocate memory for access token string");
+        json_object_put(json);
+        return false;
+    }
 
     json_object *issued_at_json = NULL;
     if (!json_object_object_get_ex(json, "issued_at_seconds", &issued_at_json)) {
-        console(CONSOLE_ERROR, "failed to get issued_at from access token json");
+        console(CONSOLE_ERROR, "failed to get issued_at_seconds from access token json");
+        free(access_token->token);
+        access_token->token = NULL;
         json_object_put(json);
-        return access_token;
+        return false;
     }
 
-    access_token.issued_at_seconds = json_object_get_int64(issued_at_json);
+    if (!json_object_is_type(issued_at_json, json_type_int)) {
+        console(CONSOLE_ERROR, "issued_at_seconds is not an integer");
+        free(access_token->token);
+        access_token->token = NULL;
+        json_object_put(json);
+        return false;
+    }
+
+    access_token->issued_at_seconds = json_object_get_int64(issued_at_json);
 
     json_object *expires_at_json = NULL;
     if (!json_object_object_get_ex(json, "expires_at_seconds", &expires_at_json)) {
-        console(CONSOLE_ERROR, "failed to get expires_at from access token json");
+        console(CONSOLE_ERROR, "failed to get expires_at_seconds from access token json");
+        free(access_token->token);
+        access_token->token = NULL;
         json_object_put(json);
-        return access_token;
+        return false;
     }
 
-    access_token.expires_at_seconds = json_object_get_int64(expires_at_json);
+    if (!json_object_is_type(expires_at_json, json_type_int)) {
+        console(CONSOLE_ERROR, "expires_at_seconds is not an integer");
+        free(access_token->token);
+        access_token->token = NULL;
+        json_object_put(json);
+        return false;
+    }
+
+    access_token->expires_at_seconds = json_object_get_int64(expires_at_json);
 
     json_object_put(json);
-
-    return access_token;
+    return true;
 }
 
 char *request_access_token(Registration *registration) {
@@ -143,89 +207,107 @@ char *request_access_token(Registration *registration) {
     return result.response_buffer;
 }
 
-// @todo request token if saved token is expired
+time_t calculate_next_run(time_t expires_at_seconds, time_t access_interval) {
+    time_t now = time(NULL);
+    time_t next_run = expires_at_seconds - ACCESS_TOKEN_EXPIRATION_MARGIN;
+
+    // Check if the token has already expired or is about to expire
+    if (next_run <= now) return now;
+
+    // Check if the next access interval is sooner than the expiration time
+    time_t next_interval = now + access_interval;
+    if (next_interval < next_run) return next_interval;
+
+    // Default to the expiration time
+    return next_run;
+}
+
 AccessToken *init_access_token(Registration *registration) {
     AccessToken *access_token = (AccessToken *)malloc(sizeof(AccessToken));
-    if (access_token != NULL) {
-        access_token->token = NULL;
-        access_token->issued_at_seconds = 0;
-        access_token->expires_at_seconds = 0;
+    if (access_token == NULL) {
+        console(CONSOLE_ERROR, "failed to allocate memory for access token");
+        return NULL;
     }
 
-    if (read_access_token()) {
-        AccessToken parsed_access_token = parse_access_token(read_access_token());
-        if (parsed_access_token.token != NULL && parsed_access_token.issued_at_seconds != 0 &&
-            parsed_access_token.expires_at_seconds != 0) {
-            access_token->token = parsed_access_token.token;
-            access_token->issued_at_seconds = parsed_access_token.issued_at_seconds;
-            access_token->expires_at_seconds = parsed_access_token.expires_at_seconds;
-            console(CONSOLE_DEBUG, "access token is already available");
-            console(CONSOLE_DEBUG, "token: %s", access_token->token);
-            return access_token;
+    // Initialize access token (default values)
+    access_token->token = NULL;
+    access_token->issued_at_seconds = 0;
+    access_token->expires_at_seconds = 0;
+
+    // Try to read the access token and check if it's still valid
+    char *saved_access_token = read_access_token();
+    if (saved_access_token != NULL) {
+        bool parse_result = parse_access_token(saved_access_token, access_token);
+        free(saved_access_token);
+        if (parse_result) {
+            if (time(NULL) < access_token->expires_at_seconds - ACCESS_TOKEN_EXPIRATION_MARGIN) {
+                return access_token;
+            }
         }
     }
 
-    char *access_token_json = request_access_token(registration);
-    if (access_token_json == NULL) {
+    // Request a new access token
+    char *access_token_json_str = request_access_token(registration);
+    if (access_token_json_str == NULL) {
         console(CONSOLE_ERROR, "failed to request access token");
         return access_token;
     }
 
-    if (!save_access_token(access_token_json)) {
+    bool save_result = save_access_token(access_token_json_str);
+    if (!save_result) {
         console(CONSOLE_ERROR, "failed to save access token");
+        free(access_token_json_str);
         return access_token;
     }
 
-    AccessToken parsed_access_token = parse_access_token(access_token_json);
-    if (parsed_access_token.token == NULL) {
+    bool parse_result = parse_access_token(access_token_json_str, access_token);
+    if (!parse_result) {
         console(CONSOLE_ERROR, "failed to parse access token");
+        free(access_token_json_str);
         return access_token;
     }
 
-    free(access_token_json);
-
-    access_token->token = parsed_access_token.token;
-    access_token->issued_at_seconds = parsed_access_token.issued_at_seconds;
-    access_token->expires_at_seconds = parsed_access_token.expires_at_seconds;
-    console(CONSOLE_DEBUG, "token: %s", access_token->token);
+    free(access_token_json_str);
     return access_token;
 }
 
 void access_token_task(Scheduler *sch, void *task_context) {
     AccessTokenTaskContext *context = (AccessTokenTaskContext *)task_context;
 
-    char *access_token_json = request_access_token(context->registration);
-    if (access_token_json == NULL) {
+    char *access_token_json_str = request_access_token(context->registration);
+    if (access_token_json_str == NULL) {
         console(CONSOLE_ERROR, "failed to request access token");
         return;
     }
 
-    if (!save_access_token(access_token_json)) {
+    bool save_result = save_access_token(access_token_json_str);
+    if (!save_result) {
         console(CONSOLE_ERROR, "failed to save access token");
+        free(access_token_json_str);
         return;
     }
 
-    AccessToken parsed_access_token = parse_access_token(access_token_json);
-    if (parsed_access_token.token == NULL) {
+    bool parse_result = parse_access_token(access_token_json_str, context->access_token);
+    if (!parse_result) {
         console(CONSOLE_ERROR, "failed to parse access token");
+        free(access_token_json_str);
         return;
     }
 
-    free(access_token_json);
-    context->access_token->token = parsed_access_token.token;
-    context->access_token->issued_at_seconds = parsed_access_token.issued_at_seconds;
-    context->access_token->expires_at_seconds = parsed_access_token.expires_at_seconds;
-    console(CONSOLE_DEBUG, "token: %s", context->access_token->token);
-    console(CONSOLE_DEBUG, "issued at seconds: %ld", context->access_token->issued_at_seconds);
-    console(CONSOLE_DEBUG, "expires at seconds: %ld", context->access_token->expires_at_seconds);
+    free(access_token_json_str);
 
     // Refresh mosquitto client
     refresh_mosquitto_access_token(context->mosq, context->access_token);
 
-    schedule_task(sch, time(NULL) + config.access_interval, access_token_task, "access token task", context);
+    // Schedule the task
+    time_t next_run = calculate_next_run(context->access_token->expires_at_seconds, config.access_interval);
+    schedule_task(sch, next_run, access_token_task, "access token task", context);
 }
 
-void access_token_service(Scheduler *sch, AccessToken *access_token, Registration *registration, struct mosquitto *mosq) {
+void access_token_service(Scheduler *sch,
+                          AccessToken *access_token,
+                          Registration *registration,
+                          struct mosquitto *mosq) {
     AccessTokenTaskContext *context = (AccessTokenTaskContext *)malloc(sizeof(AccessTokenTaskContext));
     if (context == NULL) {
         console(CONSOLE_ERROR, "failed to allocate memory for access token task context");
@@ -236,7 +318,10 @@ void access_token_service(Scheduler *sch, AccessToken *access_token, Registratio
     context->registration = registration;
     context->mosq = mosq;
 
-    schedule_task(sch, time(NULL), access_token_task, "access token task", context);
+
+    // Schedule the task
+    time_t next_run = calculate_next_run(access_token->expires_at_seconds, config.access_interval);
+    schedule_task(sch, next_run, access_token_task, "access token task", context);
 }
 
 void clean_access_token(AccessToken *access_token) {

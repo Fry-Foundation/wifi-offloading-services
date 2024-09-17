@@ -1,20 +1,21 @@
+#include "lib/console.h"
 #include "lib/scheduler.h"
 #include "services/access_token.h"
 #include "services/accounting.h"
+#include "services/commands.h"
 #include "services/config.h"
 #include "services/device-context.h"
 #include "services/device_info.h"
 #include "services/device_status.h"
+#include "services/firmware_upgrade.h"
 #include "services/monitoring.h"
 #include "services/mqtt-cert.h"
 #include "services/mqtt.h"
+#include "services/reboot.h"
 #include "services/registration.h"
 #include "services/setup.h"
-#include "services/firmware_upgrade.h"
 #include "services/site-clients.h"
 #include "services/speedtest.h"
-#include "services/commands.h"
-#include "services/reboot.h"
 #include <mosquitto.h>
 #include <stdbool.h>
 #include <unistd.h>
@@ -27,7 +28,13 @@ int main(int argc, char *argv[]) {
     init_config(argc, argv);
     DeviceInfo *device_info = init_device_info();
     Registration *registration = init_registration(device_info->mac, device_info->model, device_info->brand, device_info->device_id);
+
     AccessToken *access_token = init_access_token(registration);
+    if (access_token == NULL) {
+        console(CONSOLE_ERROR, "Failed to start access token ... exiting");
+        return 1;
+    }
+
     firmware_upgrade_on_boot(registration, device_info, access_token);
     get_ca_cert(access_token);
     generate_and_sign_cert(access_token);
@@ -42,13 +49,12 @@ int main(int argc, char *argv[]) {
     setup_service(sch, device_info, registration->wayru_device_id, access_token);
     accounting_service(sch);
     monitoring_service(sch, mosq, registration);
-    firmware_upgrade_check(sch, device_info, registration, access_token);   
-    
+    firmware_upgrade_check(sch, device_info, registration, access_token);
+
     site_clients_service(sch, mosq, site_clients_fifo_fd, device_context->site);
     speedtest_service(sch, mosq, registration, access_token);
     commands_service(mosq, device_info, registration, access_token);
     reboot_service(sch);
-    
 
     run_tasks(sch);
 

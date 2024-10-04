@@ -2,7 +2,7 @@
 #ifndef CONSOLE_H
 #define CONSOLE_H
 
-// Define consoole log levels
+// Define console log levels
 typedef enum {
     CONSOLE_NONE = 0,  // No log output
     CONSOLE_ERROR = 1, // Critical errors

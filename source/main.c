@@ -27,6 +27,10 @@ int main(int argc, char *argv[]) {
     Scheduler *sch = init_scheduler();
     init_config(argc, argv);
     DeviceInfo *device_info = init_device_info();
+
+    // @todo add internet check (ping google.com), or wait ... if wait is too long ... exit(1)
+    // @todo add wayru check (HTTP GET ${config.accounting_api}/health), or wait ... exit(1)
+
     Registration *registration =
         init_registration(device_info->mac, device_info->model, device_info->brand, device_info->device_id);
 
@@ -37,8 +41,31 @@ int main(int argc, char *argv[]) {
     }
 
     firmware_upgrade_on_boot(registration, device_info, access_token);
+
+    // @todo-later check if this is the appropriate CA, and download it if it's not
+    // @todo check if the CA is a valid certificate, if not ... wait and try again ... and if not ... exit(1)
     get_ca_cert(access_token);
-    generate_and_sign_cert(access_token);
+
+    // @todo add a verification to check that the .key corresponds to the .crt ... and if not ... refresh .key, .csr and .crt
+
+    // @todo handle the case where the .crt was not received from the backend
+    // - handle CURL errors (HTTP request errors) or NULL response ... we currently just return and continue
+
+    // @todo improve the certificate verification after it is received from the backend (we if the .crt is signed by the CA)
+    // ------> add a verification to check that the .key corresponds to the .crt
+    int attempts = 0;
+    bool result = generate_and_sign_cert(access_token);
+    while (!result && attempts < 3) {
+        console(CONSOLE_ERROR, "Failed to generate and sign certificate ... retrying");
+        result = generate_and_sign_cert(access_token);
+        attempts++;
+    }
+    
+    if (!result) {
+        console(CONSOLE_ERROR, "Failed to generate and sign certificate ... exiting");
+        return 1;
+    }
+
     DeviceContext *device_context = init_device_context(registration, access_token);
     struct mosquitto *mosq = init_mqtt(registration, access_token);
     int site_clients_fifo_fd = init_site_clients_fifo();

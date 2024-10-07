@@ -1,6 +1,7 @@
 #include "mqtt-cert.h"
 #include "lib/console.h"
 #include "lib/key_pair.h"
+#include "lib/cert_audit.h"
 #include "services/access_token.h"
 #include "services/config.h"
 #include <lib/http-requests.h>
@@ -15,7 +16,7 @@
 #define CA_ENDPOINT "/certificate-signing/ca"
 #define BACKEND_ENDPOINT "/certificate-signing/sign"
 
-void get_ca_cert(AccessToken *access_token) {
+int get_ca_cert(AccessToken *access_token) {
     char url[256];
     snprintf(url, sizeof(url), "%s%s", config.accounting_api, CA_ENDPOINT);
     console(CONSOLE_DEBUG, "Getting CA certificate from: %s", url);
@@ -32,7 +33,17 @@ void get_ca_cert(AccessToken *access_token) {
     HttpResult result = http_download(&get_ca_options);
     if (result.is_error) {
         console(CONSOLE_ERROR, "Failed to download CA certificate: %s", result.error);
-        return;
+        return 1;
+    }else{
+        console(CONSOLE_INFO, "CA certificate downloaded successfully");
+    }
+
+    // Verify that the downloaded CA certificate is valid
+    int verify_result = validate_ca_cert(ca_cert_path);
+    if (verify_result == 1) {
+        return 0;
+    } else {
+        return 1;
     }
 }
 
@@ -69,12 +80,14 @@ void generate_and_sign_cert(AccessToken *access_token) {
     console(CONSOLE_DEBUG, "CSR path: %s", csr_path);
     console(CONSOLE_DEBUG, "Cert path: %s", cert_path);
     console(CONSOLE_DEBUG, "CA Cert path: %s", ca_cert_path);
-    console(CONSOLE_DEBUG, "BAckend URL: %s", backend_url);
+    console(CONSOLE_DEBUG, "Backend URL: %s", backend_url);
 
     // Check if the certificate already exists and is valid
     console(CONSOLE_DEBUG, "Checking if certificate already exists and is valid (mqtt)...");
     int initial_verify_result = verify_certificate(cert_path, ca_cert_path);
-    if (initial_verify_result == 1) {
+    console(CONSOLE_DEBUG, "Checking if existing certificate matches key (mqtt)...");
+    int initial_key_cert_match_result = validate_key_cert_match(key_path, cert_path);
+    if (initial_verify_result == 1 && initial_key_cert_match_result == 1 ) {
         console(CONSOLE_INFO, "Existing certificate is valid. No further action required (mqtt).");
         return;
     } else {
@@ -131,5 +144,13 @@ void generate_and_sign_cert(AccessToken *access_token) {
         console(CONSOLE_INFO, "Certificate verification successful (mqtt).");
     } else {
         console(CONSOLE_ERROR, "Certificate verification failed (mqtt).");
+    }
+
+    console(CONSOLE_DEBUG, "Verifying if new key matches certificate...");
+    int key_cert_match_result = validate_key_cert_match(key_path, cert_path);
+    if(key_cert_match_result == 1){
+        console(CONSOLE_INFO, "Key matches certificate");
+    }else{
+        console(CONSOLE_ERROR, "Key does not match certificate");
     }
 }

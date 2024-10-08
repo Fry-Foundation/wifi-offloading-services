@@ -11,8 +11,19 @@ typedef enum {
     CONSOLE_DEBUG = 4  // Debug messages
 } ConsoleLevel;
 
+// Define console structure
+typedef struct {
+    const char *topic;
+    ConsoleLevel level;
+} Console;
+
 // Function declarations
 void set_console_level(ConsoleLevel level);
 void console(ConsoleLevel level, const char *format, ...);
+
+void print_error(Console *console, const char *format, ...);
+void print_warn(Console *console, const char *format, ...);
+void print_info(Console *console, const char *format, ...);
+void print_debug(Console *console, const char *format, ...);
 
 #endif // CONSOLE_H

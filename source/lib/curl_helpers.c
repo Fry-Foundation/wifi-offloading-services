@@ -1,4 +1,3 @@
-#include "lib/console.h"
 #include "lib/http-requests.h"
 #include <curl/curl.h>
 #include <stdio.h>

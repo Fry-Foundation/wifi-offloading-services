@@ -29,20 +29,33 @@ int main(int argc, char *argv[]) {
     init_config(argc, argv);
     DeviceInfo *device_info = init_device_info();
 
-    //@todo add internet check (ping google.com), or wait ... if wait is too long ... exit(1)
     int internet_status = internet_check();
+    int internet_attempts = 0;
+    while (internet_status != 0 && internet_attempts < 3) {
+        console(CONSOLE_ERROR, "No internet connection ... retrying");
+        sleep(1);
+        internet_status = internet_check();
+        internet_attempts++;
+    }
     if (internet_status != 0) {
-        console(CONSOLE_ERROR, "No internet connection ... exiting");
+        console(CONSOLE_ERROR, "No internet connection after 3 attempts ... exiting");
         return 1;
-    }else{
+    } else {
         console(CONSOLE_INFO, "Internet connection is available");
     }
-    // @todo add wayru check (HTTP GET ${config.accounting_api}/health), or wait ... exit(1)
+
     int wayru_status = wayru_check();
+    int wayru_attempts = 0;
+    while (wayru_status != 0 && wayru_attempts < 3) {
+        console(CONSOLE_ERROR, "Wayru is not reachable ... retrying");
+        sleep(1);
+        wayru_status = wayru_check();
+        wayru_attempts++;
+    }
     if (wayru_status != 0) {
-        console(CONSOLE_ERROR, "Wayru is not reachable ... exiting");
+        console(CONSOLE_ERROR, "Wayru is not reachable after 3 attempts ... exiting");
         return 1;
-    }else{
+    } else {
         console(CONSOLE_INFO, "Wayru is reachable");
     }
 
@@ -58,35 +71,33 @@ int main(int argc, char *argv[]) {
     firmware_upgrade_on_boot(registration, device_info, access_token);
 
     // @todo-later check if this is the appropriate CA, and download it if it's not
-    // @todo check if the CA is a valid certificate, if not ... wait and try again ... and if not ... exit(1)
+    int ca_attempts = 0;
     int ca_result = get_ca_cert(access_token);
+    while (ca_result != 0 && ca_attempts < 3) {
+        if (ca_result == -1) {
+            console(CONSOLE_ERROR, "Could not Download CA certificate ... retrying");
+        } else {
+            console(CONSOLE_ERROR, "CA certificate is invalid ... retrying");
+        }
+        ca_result = get_ca_cert(access_token);
+        ca_attempts++;
+    }
     if (ca_result != 0) {
-        console(CONSOLE_ERROR, "Failed to get CA certificate ... exiting");
-        // return 1;
+        console(CONSOLE_ERROR, "Failed to get CA certificate after 3 attempts ... exiting");
+        return 1;
     }
 
-    // @todo add a verification to check that the .key corresponds to the .crt ... and if not ... refresh .key, .csr and .crt
-
-    // @todo handle the case where the .crt was not received from the backend
-    // - handle CURL errors (HTTP request errors) or NULL response ... we currently just return and continue
-
-    generate_and_sign_cert(access_token);
-    
-    // @todo improve the certificate verification after it is received from the backend (we if the .crt is signed by the CA)
-    // ------> add a verification to check that the .key corresponds to the .crt
-    // int attempts = 0;
-    // bool result = generate_and_sign_cert(access_token);
-    // while (!result && attempts < 3) {
-    //     console(CONSOLE_ERROR, "Failed to generate and sign certificate ... retrying");
-    //     result = generate_and_sign_cert(access_token);
-    //     attempts++;
-    // }
-    
-    // if (!result) {
-    //     console(CONSOLE_ERROR, "Failed to generate and sign certificate ... exiting");
-    //     return 1;
-    // }
-
+    int attempts = 0;
+    int generate_result = generate_and_sign_cert(access_token);
+    while (generate_result != 0 && attempts < 3) {
+        console(CONSOLE_ERROR, "Failed to generate and sign certificate ... retrying");
+        generate_result = generate_and_sign_cert(access_token);
+        attempts++;
+    }
+    if (generate_result != 0) {
+        console(CONSOLE_ERROR, "Failed to generate and sign certificate after 3 attempts ... exiting");
+        return 1;
+    }
     DeviceContext *device_context = init_device_context(registration, access_token);
     struct mosquitto *mosq = init_mqtt(registration, access_token);
     int site_clients_fifo_fd = init_site_clients_fifo();

@@ -33,7 +33,7 @@ int get_ca_cert(AccessToken *access_token) {
     HttpResult result = http_download(&get_ca_options);
     if (result.is_error) {
         console(CONSOLE_ERROR, "Failed to download CA certificate: %s", result.error);
-        return 1;
+        return -1;
     }else{
         console(CONSOLE_INFO, "CA certificate downloaded successfully");
     }
@@ -62,7 +62,7 @@ int get_ca_cert(AccessToken *access_token) {
     return result;
 }*/
 
-void generate_and_sign_cert(AccessToken *access_token) {
+int generate_and_sign_cert(AccessToken *access_token) {
     char key_path[256];
     char csr_path[256];
     char cert_path[256];
@@ -89,7 +89,7 @@ void generate_and_sign_cert(AccessToken *access_token) {
     int initial_key_cert_match_result = validate_key_cert_match(key_path, cert_path);
     if (initial_verify_result == 1 && initial_key_cert_match_result == 1 ) {
         console(CONSOLE_INFO, "Existing certificate is valid. No further action required (mqtt).");
-        return;
+        return 0;
     } else {
         console(CONSOLE_INFO, "Certificate does not exist or is not valid. Generating a new one (mqtt).");
     }
@@ -116,12 +116,12 @@ void generate_and_sign_cert(AccessToken *access_token) {
     HttpResult result = http_post(&post_cert_sign_options);
     if (result.is_error) {
         console(CONSOLE_ERROR, "Failed to sign certificate (mqtt): %s", result.error);
-        return;
+        return -1;
     }
 
     if (result.response_buffer == NULL) {
         console(CONSOLE_ERROR, "Failed to sign certificate (mqtt): no response");
-        return;
+        return -1;
     }
 
     // Save the signed certificate
@@ -129,7 +129,7 @@ void generate_and_sign_cert(AccessToken *access_token) {
     if (file == NULL) {
         console(CONSOLE_ERROR, "Failed to open file for writing (mqtt): %s", cert_path);
         free(result.response_buffer);
-        return;
+        return -1;
     }
 
     fwrite(result.response_buffer, 1, strlen(result.response_buffer), file);
@@ -144,13 +144,16 @@ void generate_and_sign_cert(AccessToken *access_token) {
         console(CONSOLE_INFO, "Certificate verification successful (mqtt).");
     } else {
         console(CONSOLE_ERROR, "Certificate verification failed (mqtt).");
+        return 1;
     }
 
     console(CONSOLE_DEBUG, "Verifying if new key matches certificate...");
     int key_cert_match_result = validate_key_cert_match(key_path, cert_path);
     if(key_cert_match_result == 1){
         console(CONSOLE_INFO, "Key matches certificate");
+        return 0;
     }else{
         console(CONSOLE_ERROR, "Key does not match certificate");
+        return 1;
     }
 }

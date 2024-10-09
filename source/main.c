@@ -33,20 +33,8 @@ int main(int argc, char *argv[]) {
     bool internet_status = internet_check();
     if (!internet_status) return 1;
 
-    int wayru_status = wayru_check();
-    int wayru_attempts = 0;
-    while (wayru_status != 0 && wayru_attempts < 3) {
-        console(CONSOLE_ERROR, "Wayru is not reachable ... retrying");
-        sleep(1);
-        wayru_status = wayru_check();
-        wayru_attempts++;
-    }
-    if (wayru_status != 0) {
-        console(CONSOLE_ERROR, "Wayru is not reachable after 3 attempts ... exiting");
-        return 1;
-    } else {
-        console(CONSOLE_INFO, "Wayru is reachable");
-    }
+    bool wayru_status = wayru_check();
+    if (!wayru_status) return 1;
 
     Registration *registration =
         init_registration(device_info->mac, device_info->model, device_info->brand, device_info->device_id);
@@ -60,33 +48,11 @@ int main(int argc, char *argv[]) {
     firmware_upgrade_on_boot(registration, device_info, access_token);
 
     // @todo-later check if this is the appropriate CA, and download it if it's not
-    int ca_attempts = 0;
-    int ca_result = get_ca_cert(access_token);
-    while (ca_result != 0 && ca_attempts < 3) {
-        if (ca_result == -1) {
-            console(CONSOLE_ERROR, "Could not Download CA certificate ... retrying");
-        } else {
-            console(CONSOLE_ERROR, "CA certificate is invalid ... retrying");
-        }
-        ca_result = get_ca_cert(access_token);
-        ca_attempts++;
-    }
-    if (ca_result != 0) {
-        console(CONSOLE_ERROR, "Failed to get CA certificate after 3 attempts ... exiting");
-        return 1;
-    }
+    bool ca_cert_result = attempt_ca_cert(access_token);
+    if (!ca_cert_result) return 1;
 
-    int attempts = 0;
-    int generate_result = generate_and_sign_cert(access_token);
-    while (generate_result != 0 && attempts < 3) {
-        console(CONSOLE_ERROR, "Failed to generate and sign certificate ... retrying");
-        generate_result = generate_and_sign_cert(access_token);
-        attempts++;
-    }
-    if (generate_result != 0) {
-        console(CONSOLE_ERROR, "Failed to generate and sign certificate after 3 attempts ... exiting");
-        return 1;
-    }
+    bool generate_and_sign_result = attempt_generate_and_sign(access_token);
+    if (!generate_and_sign_result) return 1;
     
     DeviceContext *device_context = init_device_context(registration, access_token);
     struct mosquitto *mosq = init_mqtt(registration, access_token);

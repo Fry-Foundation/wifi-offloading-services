@@ -4,6 +4,6 @@
 #include <stdbool.h>
 
 bool internet_check();
-int wayru_check();
+bool wayru_check();
 
 #endif /* NETWORK_CHECK_H */

@@ -45,7 +45,8 @@ bool internet_check() {
     }
 }
 
-int wayru_check() {
+// \brief Check if the device can reach the wayru accounting API via the /health endpoint
+bool wayru_health() {
     char url[256];
     snprintf(url, sizeof(url), "%s/health", config.accounting_api);
     HttpGetOptions get_wayru_options = {
@@ -54,12 +55,29 @@ int wayru_check() {
     };
     HttpResult result = http_get(&get_wayru_options);
 
-    if (result.is_error) {
-        return 1;
-    } else {
-        return 0;
-    }
-
     free(result.response_buffer);
 
+    if (result.is_error) {
+        return false;
+    } else {
+        return true;
+    }
+
+
+}
+
+bool wayru_check(){
+    RetryConfig config;
+    config.retry_func = wayru_health;
+    config.retry_params = NULL;
+    config.attempts = 5;
+    config.delay_seconds = 15;
+    bool result = retry(&config);
+    if (result == true) {
+        print_info(&csl, "Wayru is reachable");
+        return true;
+    } else {
+        print_error(&csl, "Wayru is not reachable after %d attempts ... exiting", config.attempts);
+        return false;
+    }
 }

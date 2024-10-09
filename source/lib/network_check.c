@@ -2,13 +2,14 @@
 #include <stdlib.h>
 #include "lib/http-requests.h"
 #include "services/config.h"
+#include "stdbool.h"
 
-int internet_check() {
+bool internet_check() {
     int status = system("ping -c 1 google.com > /dev/null 2>&1");
     if (status == 0) {
-        return 0;
+        return true;
     } else {
-        return 1;
+        return false;
     }
 }
 

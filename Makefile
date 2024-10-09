@@ -56,6 +56,7 @@ define Build/Compile
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/commands.o -c $(PKG_BUILD_DIR)/services/commands.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/gen_id.o -c $(PKG_BUILD_DIR)/services/gen_id.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/reboot.o -c $(PKG_BUILD_DIR)/services/reboot.c
+		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/radsec_cert.o -c $(PKG_BUILD_DIR)/services/radsec_cert.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/console.o -c $(PKG_BUILD_DIR)/lib/console.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/curl_helpers.o -c $(PKG_BUILD_DIR)/lib/curl_helpers.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/key_pair.o -c $(PKG_BUILD_DIR)/lib/key_pair.c
@@ -89,6 +90,7 @@ define Build/Compile
 			$(PKG_BUILD_DIR)/services/commands.o \
 			$(PKG_BUILD_DIR)/services/gen_id.o \
 			$(PKG_BUILD_DIR)/services/reboot.o \
+			$(PKG_BUILD_DIR)/services/radsec_cert.o \
 			$(PKG_BUILD_DIR)/lib/console.o \
 			$(PKG_BUILD_DIR)/lib/curl_helpers.o \
 			$(PKG_BUILD_DIR)/lib/key_pair.o \

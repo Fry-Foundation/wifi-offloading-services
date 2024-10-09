@@ -11,6 +11,7 @@
 #include "services/monitoring.h"
 #include "services/mqtt-cert.h"
 #include "services/mqtt.h"
+#include "services/radsec_cert.h"
 #include "services/reboot.h"
 #include "services/registration.h"
 #include "services/setup.h"
@@ -53,6 +54,12 @@ int main(int argc, char *argv[]) {
 
     bool generate_and_sign_result = attempt_generate_and_sign(access_token);
     if (!generate_and_sign_result) return 1;
+
+    bool radsec_cert_result = attempt_radsec_ca_cert(access_token);
+    if (!radsec_cert_result) return 1;
+
+    bool generate_and_sign_radsec_result = attempt_generate_and_sign_radsec(access_token, registration);
+    if (!generate_and_sign_radsec_result) return 1;
     
     DeviceContext *device_context = init_device_context(registration, access_token);
     struct mosquitto *mosq = init_mqtt(registration, access_token);

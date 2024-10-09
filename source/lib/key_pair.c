@@ -5,6 +5,7 @@
 #include <openssl/pem.h>
 #include <openssl/x509v3.h>
 #include <stdbool.h>
+#include <json-c/json.h>
 
 #define KEY_PATH_SIZE 512
 
@@ -138,7 +139,7 @@ char *get_public_key_pem_string(EVP_PKEY *pkey) {
     return public_key_pem_string_copy;
 }
 
-void generate_csr(EVP_PKEY *pkey, const char *csr_path) {
+void generate_csr(EVP_PKEY *pkey, const char *csr_path, json_object *csr_json) {
     // Create a new X.509 request object
     X509_REQ *x509_req = X509_REQ_new();
     X509_REQ_set_version(x509_req, 1);

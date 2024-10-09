@@ -14,17 +14,18 @@ static Console csl = {
 
 // \brief Check if the device has internet connection with a single ping
 // \param host Host to ping
-bool ping(void *host) {
-    if (host == NULL) return false;
-    char *host_str = (char *)host;
+bool ping(void *params) {
+    if (params == NULL) return false;
+    char *host = (char *)params;
+
     char command[256];
-    snprintf(command, sizeof(command), "ping -c 1 %s > /dev/null 2>&1", host_str);
+    snprintf(command, sizeof(command), "ping -c 1 %s > /dev/null 2>&1", host);
     int status = system(command);
     if (status == 0) {
-        print_info(&csl, "Ping to %s successful", host_str);
+        print_info(&csl, "Ping to %s successful", host);
         return true;
     } else {
-        print_error(&csl, "Ping to %s failed", host_str);
+        print_error(&csl, "Ping to %s failed", host);
         return false;
     }
 }

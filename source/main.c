@@ -98,6 +98,7 @@ int main(int argc, char *argv[]) {
         console(CONSOLE_ERROR, "Failed to generate and sign certificate after 3 attempts ... exiting");
         return 1;
     }
+    
     DeviceContext *device_context = init_device_context(registration, access_token);
     struct mosquitto *mosq = init_mqtt(registration, access_token);
     int site_clients_fifo_fd = init_site_clients_fifo();

@@ -62,6 +62,8 @@ define Build/Compile
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/http-requests.o -c $(PKG_BUILD_DIR)/lib/http-requests.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/scheduler.o -c $(PKG_BUILD_DIR)/lib/scheduler.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/script_runner.o -c $(PKG_BUILD_DIR)/lib/script_runner.c
+		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/network_check.o -c $(PKG_BUILD_DIR)/lib/network_check.c
+		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/cert_audit.o -c $(PKG_BUILD_DIR)/lib/cert_audit.c
 
 		$(TARGET_CC) $(TARGET_LDFLAGS) \
 			$(PKG_BUILD_DIR)/main.o \
@@ -92,7 +94,9 @@ define Build/Compile
 			$(PKG_BUILD_DIR)/lib/scheduler.o \
 			$(PKG_BUILD_DIR)/lib/script_runner.o \
 			-o $(PKG_BUILD_DIR)/wayru-os-services \
-			-lcurl -ljson-c -lssl -lcrypto -lmosquitto
+			-lcurl -ljson-c -lssl -lcrypto -lmosquitto \
+			$(PKG_BUILD_DIR)/lib/network_check.o \
+			$(PKG_BUILD_DIR)/lib/cert_audit.o 
 endef
 
 # define Build/Compile

@@ -16,9 +16,11 @@
 #include "services/setup.h"
 #include "services/site-clients.h"
 #include "services/speedtest.h"
+#include "lib/network_check.h"
 #include <mosquitto.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <lib/retry.h>
 
 // @todo reschedule device registration if it fails
 // @todo reschedule access token refresh if it fails
@@ -27,6 +29,13 @@ int main(int argc, char *argv[]) {
     Scheduler *sch = init_scheduler();
     init_config(argc, argv);
     DeviceInfo *device_info = init_device_info();
+
+    bool internet_status = internet_check();
+    if (!internet_status) return 1;
+
+    bool wayru_status = wayru_check();
+    if (!wayru_status) return 1;
+
     Registration *registration =
         init_registration(device_info->mac, device_info->model, device_info->brand, device_info->device_id);
 
@@ -37,8 +46,14 @@ int main(int argc, char *argv[]) {
     }
 
     firmware_upgrade_on_boot(registration, device_info, access_token);
-    get_ca_cert(access_token);
-    generate_and_sign_cert(access_token);
+
+    // @todo-later check if this is the appropriate CA, and download it if it's not
+    bool ca_cert_result = attempt_ca_cert(access_token);
+    if (!ca_cert_result) return 1;
+
+    bool generate_and_sign_result = attempt_generate_and_sign(access_token);
+    if (!generate_and_sign_result) return 1;
+    
     DeviceContext *device_context = init_device_context(registration, access_token);
     struct mosquitto *mosq = init_mqtt(registration, access_token);
     int site_clients_fifo_fd = init_site_clients_fifo();

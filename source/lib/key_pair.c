@@ -221,7 +221,7 @@ int verify_certificate(const char *cert_path, const char *ca_cert_path) {
         console(CONSOLE_INFO, "Certificate is valid.");
     } else {
         int err = X509_STORE_CTX_get_error(ctx);
-        console(CONSOLE_ERROR, "Certificate verification failed: %s\n", X509_verify_cert_error_string(err));
+        console(CONSOLE_ERROR, "Certificate verification failed: %s", X509_verify_cert_error_string(err));
     }
 
     X509_STORE_CTX_free(ctx);

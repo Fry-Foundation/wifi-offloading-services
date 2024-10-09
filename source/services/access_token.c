@@ -228,11 +228,6 @@ time_t calculate_next_run(time_t expires_at_seconds, time_t access_interval) {
 }
 
 AccessToken *init_access_token(Registration *registration) {
-    print_error(&cons, "error demo");
-    print_warn(&cons, "warn demo"); 
-    print_info(&cons, "info demo");
-    print_debug(&cons, "debug demo ---> registration: %s", registration->wayru_device_id);
-
     AccessToken *access_token = (AccessToken *)malloc(sizeof(AccessToken));
     if (access_token == NULL) {
         console(CONSOLE_ERROR, "failed to allocate memory for access token");

@@ -1,8 +1,8 @@
 #include <stdbool.h>
 
 typedef struct {
-    bool (*func)(void);
-    void (*handle_error)(bool);
+    bool (*retry_func)(void *);
+    void *retry_params;
     int attempts;
     int delay_seconds;
 } RetryConfig;

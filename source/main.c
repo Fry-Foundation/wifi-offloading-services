@@ -22,10 +22,6 @@
 #include <unistd.h>
 #include <lib/retry.h>
 
-void handle_internet_error(bool result) {
-    console(CONSOLE_ERROR, "No internet connection ... retrying");
-}
-
 // @todo reschedule device registration if it fails
 // @todo reschedule access token refresh if it fails
 int main(int argc, char *argv[]) {
@@ -34,34 +30,8 @@ int main(int argc, char *argv[]) {
     init_config(argc, argv);
     DeviceInfo *device_info = init_device_info();
 
-    RetryConfig config;
-    config.func = internet_check;  // Function to retry
-    config.handle_error = handle_internet_error;
-    config.attempts = 5;  // Number of retry attempts
-    config.delay_seconds = 1000;  // Delay between attempts (1000ms = 1 second) 
-    
-    int result = retry(&config);
-    if (result == 0) {
-        console(CONSOLE_INFO, "Internet connection is available");
-    } else {
-        console(CONSOLE_ERROR, "No internet connection after 5 attempts ... exiting");
-        return 1;
-    }
-
-    int internet_status = internet_check();
-    int internet_attempts = 0;
-    while (internet_status != 0 && internet_attempts < 3) {
-        console(CONSOLE_ERROR, "No internet connection ... retrying");
-        sleep(1);
-        internet_status = internet_check();
-        internet_attempts++;
-    }
-    if (internet_status != 0) {
-        console(CONSOLE_ERROR, "No internet connection after 3 attempts ... exiting");
-        return 1;
-    } else {
-        console(CONSOLE_INFO, "Internet connection is available");
-    }
+    bool internet_status = internet_check();
+    if (!internet_status) return 1;
 
     int wayru_status = wayru_check();
     int wayru_attempts = 0;

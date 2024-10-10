@@ -13,12 +13,7 @@
 #include <stdlib.h>
 
 #define RADSEC_CA_ENDPOINT "certificate-signing/ca/radsec"
-#define RADSEC_CA_FILE_NAME "radsec-ca.crt"
 #define RADSEC_SIGN_ENDPOINT "certificate-signing/sign/radsec"
-
-#define RADSEC_KEY_FILE_NAME "radsec.key"
-#define RADSEC_CSR_FILE_NAME "radsec.csr"
-#define RADSEC_CERT_FILE_NAME "radsec.crt"
 
 static Console csl = {
     .topic = "radsec cert",
@@ -120,7 +115,11 @@ bool generate_and_sign_radsec_cert(void *params) {
 
     // Generate CSR
     print_debug(&csl, "Generating CSR ...");
-    Result generate_csr(pkey, csr_path, NULL);
+    Result csr_result = generate_csr(pkey, csr_path, NULL);
+    if (!csr_result.ok) {
+        print_error(&csl, "Failed to generate CSR: %s", csr_result.error);
+        return false;
+    }
 
     print_debug(&csl, "Signing CSR to be signed ...");
     HttpPostOptions post_cert_sign_options = {

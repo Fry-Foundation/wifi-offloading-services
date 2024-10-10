@@ -3,16 +3,13 @@
 #include "services/env.h"
 #include "services/registration.h"
 #include <lib/console.h>
+#include <services/mqtt-cert.h>
 #include <mosquitto.h>
 #include <services/config.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define CA_FILE_NAME "ca.crt"
-#define KEY_FILE_NAME "device.key"
-#define CSR_FILE_NAME "device.csr"
-#define CERT_FILE_NAME "device.crt"
 #define MAX_TOPIC_CALLBACKS 10
 
 typedef struct {
@@ -115,19 +112,19 @@ struct mosquitto *init_mosquitto(Registration *registration, AccessToken *access
         return NULL;
     }
 
-    char caPath[256];
-    char keyPath[256];
-    char crtPath[256];
+    char ca_path[256];
+    char key_path[256];
+    char crt_path[256];
 
-    snprintf(caPath, sizeof(caPath), "%s/%s", config.data_path, CA_FILE_NAME);
-    snprintf(keyPath, sizeof(keyPath), "%s/%s", config.data_path, KEY_FILE_NAME);
-    snprintf(crtPath, sizeof(crtPath), "%s/%s", config.data_path, CERT_FILE_NAME);
+    snprintf(ca_path, sizeof(ca_path), "%s/%s", config.data_path, MQTT_CA_FILE_NAME);
+    snprintf(key_path, sizeof(key_path), "%s/%s", config.data_path, MQTT_KEY_FILE_NAME);
+    snprintf(crt_path, sizeof(crt_path), "%s/%s", config.data_path, MQTT_CERT_FILE_NAME);
 
-    console(CONSOLE_DEBUG, "CA Path: %s", &caPath);
-    console(CONSOLE_DEBUG, "Key Path: %s", &keyPath);
-    console(CONSOLE_DEBUG, "Crt Path: %s", &crtPath);
+    console(CONSOLE_DEBUG, "CA Path: %s", &ca_path);
+    console(CONSOLE_DEBUG, "Key Path: %s", &key_path);
+    console(CONSOLE_DEBUG, "Crt Path: %s", &crt_path);
 
-    tls_set = mosquitto_tls_set(mosq, caPath, NULL, crtPath, keyPath, NULL);
+    tls_set = mosquitto_tls_set(mosq, ca_path, NULL, crt_path, key_path, NULL);
     if (tls_set != MOSQ_ERR_SUCCESS) {
         console(CONSOLE_ERROR, "Error: Unable to set TLS. %s\n", mosquitto_strerror(tls_set));
         mosquitto_destroy(mosq);

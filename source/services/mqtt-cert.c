@@ -9,14 +9,11 @@
 #include <stdio.h>
 #include <string.h>
 #include "lib/retry.h"
+#include <lib/csr.h>
+#include <lib/result.h>
 
 #define MQTT_CA_ENDPOINT "certificate-signing/ca"
-#define MQTT_CA_FILE_NAME "mqtt-ca.crt"
 #define MQTT_SIGN_ENDPOINT "certificate-signing/sign"
-
-#define MQTT_KEY_FILE_NAME "mqtt.key"
-#define MQTT_CSR_FILE_NAME "mqtt.csr"
-#define MQTT_CERT_FILE_NAME "mqtt.crt"
 
 static Console csl = {
     .topic = "mqtt cert",
@@ -113,7 +110,11 @@ bool generate_and_sign_cert(void *params) {
 
     // Generate CSR
     print_debug(&csl, "Generating CSR ...");
-    generate_csr(pkey, csr_path, NULL);
+    Result csr_result = generate_csr(pkey, csr_path, NULL);
+    if (!csr_result.ok) {
+        print_error(&csl, "Failed to generate CSR: %s", csr_result.error);
+        return false;
+    }
 
     // Send CSR to backend to be signed
     print_debug(&csl, "Sending CSR to be signed ...");

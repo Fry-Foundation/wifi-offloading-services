@@ -4,6 +4,8 @@
 #include "lib/retry.h"
 #include "lib/cert_audit.h"
 #include "lib/key_pair.h"
+#include "lib/result.h"
+#include "lib/csr.h"
 #include "services/config.h"
 #include "services/access_token.h"
 #include "services/registration.h"
@@ -118,7 +120,7 @@ bool generate_and_sign_radsec_cert(void *params) {
 
     // Generate CSR
     print_debug(&csl, "Generating CSR ...");
-    generate_csr(pkey, csr_path, NULL);
+    Result generate_csr(pkey, csr_path, NULL);
 
     print_debug(&csl, "Signing CSR to be signed ...");
     HttpPostOptions post_cert_sign_options = {

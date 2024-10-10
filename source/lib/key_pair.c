@@ -139,37 +139,6 @@ char *get_public_key_pem_string(EVP_PKEY *pkey) {
     return public_key_pem_string_copy;
 }
 
-void generate_csr(EVP_PKEY *pkey, const char *csr_path, json_object *csr_json) {
-    // Create a new X.509 request object
-    X509_REQ *x509_req = X509_REQ_new();
-    X509_REQ_set_version(x509_req, 1);
-
-    // Set the subject name for the request
-    X509_NAME *name = X509_NAME_new();
-    X509_NAME_add_entry_by_txt(name, "C", MBSTRING_ASC, (unsigned char *)"US", -1, -1, 0);
-    X509_NAME_add_entry_by_txt(name, "ST", MBSTRING_ASC, (unsigned char *)"Florida", -1, -1, 0);
-    X509_NAME_add_entry_by_txt(name, "L", MBSTRING_ASC, (unsigned char *)"Boca Raton", -1, -1, 0);
-    X509_NAME_add_entry_by_txt(name, "O", MBSTRING_ASC, (unsigned char *)"Wayru Inc.", -1, -1, 0);
-    X509_NAME_add_entry_by_txt(name, "OU", MBSTRING_ASC, (unsigned char *)"Engineering", -1, -1, 0);
-    X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, (unsigned char *)"wayru.tech", -1, -1, 0);
-    X509_REQ_set_subject_name(x509_req, name);
-
-    // Set the public key for the request
-    X509_REQ_set_pubkey(x509_req, pkey);
-
-    // Sign the request with the private key
-    X509_REQ_sign(x509_req, pkey, EVP_sha256());
-
-    // Write the CSR to a PEM file
-    FILE *csr_file = fopen(csr_path, "wb");
-    PEM_write_X509_REQ(csr_file, x509_req);
-    fclose(csr_file);
-
-    // Cleanup
-    X509_NAME_free(name);
-    X509_REQ_free(x509_req);
-}
-
 // Load a certificate from a PEM file
 X509 *load_certificate(const char *cert_path) {
     FILE *cert_file = fopen(cert_path, "rb");

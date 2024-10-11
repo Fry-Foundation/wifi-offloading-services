@@ -35,7 +35,7 @@ bool internet_check() {
     config.retry_func = ping;
     config.retry_params = "google.com";
     config.attempts = 5;
-    config.delay_seconds = 15;    
+    config.delay_seconds = 30;    
     bool result = retry(&config);
     if (result == true) {
         print_info(&csl, "Internet connection is available");
@@ -72,7 +72,7 @@ bool wayru_check(){
     config.retry_func = wayru_health;
     config.retry_params = NULL;
     config.attempts = 5;
-    config.delay_seconds = 15;
+    config.delay_seconds = 30;
     bool result = retry(&config);
     if (result == true) {
         print_info(&csl, "Wayru is reachable");

@@ -6,12 +6,14 @@
 #include "lib/key_pair.h"
 #include "lib/result.h"
 #include "lib/csr.h"
+#include "lib/script_runner.h"
 #include "services/config.h"
 #include "services/access_token.h"
 #include "services/registration.h"
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #define RADSEC_CA_ENDPOINT "certificate-signing/ca/radsec"
 #define RADSEC_SIGN_ENDPOINT "certificate-signing/sign/radsec"
@@ -201,4 +203,21 @@ bool attempt_generate_and_sign_radsec(AccessToken *access_token, Registration *r
         print_error(&csl, "Failed to generate and sign RadSec certificate after %d attempts ... exiting", config.attempts);
         return false;
     }
+}
+
+// This function restarts radsecproxy; configuration is not distributed here, but through openwisp
+// @todo: distribute radsecproxy and configuration through wayru-os-services
+// @todo: check if radsecproxy is installed with opkg
+void install_radsec_cert() {
+    if (config.dev_env) {
+        print_debug(&csl, "Running in dev environment, skipping RadSec certificate installation");
+        return;
+    }
+
+    const char * is_installed = run_script("opkg list-installed | grep radsecproxy");
+    print_debug(&csl, "Is radsecproxy installed?: %s", is_installed);
+
+    run_script("service radsecproxy stop");
+    sleep(5);
+    run_script("service radsecproxy start");
 }

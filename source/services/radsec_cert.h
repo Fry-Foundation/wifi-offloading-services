@@ -12,5 +12,6 @@
 
 bool attempt_radsec_ca_cert(AccessToken *access_token);
 bool attempt_generate_and_sign_radsec(AccessToken *access_token, Registration *registration);
+void install_radsec_cert();
 
 #endif /* RADSEC_CERT_H */

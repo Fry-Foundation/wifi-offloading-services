@@ -60,6 +60,8 @@ int main(int argc, char *argv[]) {
 
     bool generate_and_sign_radsec_result = attempt_generate_and_sign_radsec(access_token, registration);
     if (!generate_and_sign_radsec_result) return 1;
+
+    install_radsec_cert();
     
     DeviceContext *device_context = init_device_context(registration, access_token);
     struct mosquitto *mosq = init_mqtt(registration, access_token);

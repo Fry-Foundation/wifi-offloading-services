@@ -11,6 +11,7 @@ HttpResult http_get(const HttpGetOptions *options) {
     HttpResult result = {
         .is_error = false,
         .error = NULL,
+        .http_status_code = 0,
         .response_buffer = NULL,
         .response_size = 0,
     };
@@ -66,6 +67,20 @@ HttpResult http_get(const HttpGetOptions *options) {
         free(result.response_buffer);
         result.is_error = true;
         result.error = strdup(curl_easy_strerror(res));
+    } else {
+        console(CONSOLE_DEBUG, "response buffer: %s", result.response_buffer);
+
+        // Get HTTP status code
+        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &result.http_status_code);
+        console(CONSOLE_DEBUG, "HTTP status code: %ld", result.http_status_code);
+
+        if (result.http_status_code >= 400) {
+            console(CONSOLE_ERROR, "HTTP status code is greater than 400, error");
+            result.is_error = true;
+            result.error = strdup("HTTP error, check status code and response buffer");
+        } else {
+            result.is_error = false;
+        }
     }
 
     if (headers != NULL) curl_slist_free_all(headers);
@@ -79,6 +94,7 @@ HttpResult http_post(const HttpPostOptions *options) {
     HttpResult result = {
         .is_error = false,
         .error = NULL,
+        .http_status_code = 0,
         .response_buffer = NULL,
         .response_size = 0,
     };
@@ -155,7 +171,7 @@ HttpResult http_post(const HttpPostOptions *options) {
 
     // Request
     res = curl_easy_perform(curl);
-    console(CONSOLE_DEBUG, "response code: %d", res);
+    console(CONSOLE_DEBUG, "curl code: %d", res);
 
     // Response
     if (res != CURLE_OK) {
@@ -165,7 +181,18 @@ HttpResult http_post(const HttpPostOptions *options) {
         result.error = strdup(curl_easy_strerror(res));
     } else {
         console(CONSOLE_DEBUG, "response buffer: %s", result.response_buffer);
-        result.is_error = false;
+
+        // Get HTTP status code
+        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &result.http_status_code);
+        console(CONSOLE_DEBUG, "HTTP status code: %ld", result.http_status_code);
+
+        if (result.http_status_code >= 400) {
+            console(CONSOLE_ERROR, "HTTP status code is greater than 400, error");
+            result.is_error = true;
+            result.error = strdup("HTTP error, check status code and response buffer");
+        } else {
+            result.is_error = false;
+        }
     }
 
     // Cleanup
@@ -184,6 +211,7 @@ HttpResult http_download(const HttpDownloadOptions *options) {
     HttpResult result = {
         .is_error = false,
         .error = NULL,
+        .http_status_code = 0,
         .response_buffer = NULL,
         .response_size = 0,
     };
@@ -219,6 +247,12 @@ HttpResult http_download(const HttpDownloadOptions *options) {
     if (res != CURLE_OK) {
         result.is_error = true;
         result.error = strdup(curl_easy_strerror(res));
+    } else {
+        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &result.http_status_code);
+        if (result.http_status_code >= 400) {
+            result.is_error = true;
+            result.error = strdup("HTTP error, check status code and response buffer");
+        }
     }
 
     fclose(fp);

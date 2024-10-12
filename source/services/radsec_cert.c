@@ -11,6 +11,7 @@
 #include "services/registration.h"
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define RADSEC_CA_ENDPOINT "certificate-signing/ca/radsec"
 #define RADSEC_SIGN_ENDPOINT "certificate-signing/sign/radsec"
@@ -121,7 +122,7 @@ bool generate_and_sign_radsec_cert(void *params) {
         return false;
     }
 
-    print_debug(&csl, "Signing CSR to be signed ...");
+    print_debug(&csl, "Sending CSR to backend so it can be signed ...");
     HttpPostOptions post_cert_sign_options = {
         .url = backend_url,
         .upload_file_path = csr_path,
@@ -143,10 +144,13 @@ bool generate_and_sign_radsec_cert(void *params) {
     FILE *cert_file = fopen(cert_path, "wb");
     if (cert_file == NULL) {
         print_error(&csl, "Failed to open certificate file for writing: %s", cert_path);
+        free(sign_result.response_buffer);
         return false;
     }
 
-    fwrite(sign_result.response_buffer, 1, sign_result.response_size, cert_file);
+    print_debug(&csl, "Writing signed certificate to file %s", cert_path);
+
+    fwrite(sign_result.response_buffer, 1, strlen(sign_result.response_buffer), cert_file);
     fclose(cert_file);
     free(sign_result.response_buffer);
 

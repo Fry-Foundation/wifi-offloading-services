@@ -7,6 +7,7 @@
 typedef struct {
     bool is_error;
     char *error;
+    long http_status_code;
     char *response_buffer;
     size_t response_size;
     double upload_speed_mbps;

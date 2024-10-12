@@ -10,12 +10,12 @@ typedef enum {
     Ed25519 = EVP_PKEY_ED25519,
 } GenerateKeyPairType;
 
+
 EVP_PKEY *generate_key_pair(GenerateKeyPairType type);
 bool save_private_key_in_pem(EVP_PKEY *pkey, char *private_key_filepath);
 bool save_public_key_in_pem(EVP_PKEY *pkey, char *public_key_filepath);
 EVP_PKEY *load_private_key_from_pem(char *private_key_filepath);
 char *get_public_key_pem_string(EVP_PKEY *pkey);
-void generate_csr(EVP_PKEY *pkey, const char *csr_filepath, json_object *csr_info);
 X509 *load_certificate(const char *cert_path);
 int verify_certificate(const char *cert_path, const char *ca_cert_path);
 

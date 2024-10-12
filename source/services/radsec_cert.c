@@ -4,19 +4,17 @@
 #include "lib/retry.h"
 #include "lib/cert_audit.h"
 #include "lib/key_pair.h"
+#include "lib/result.h"
+#include "lib/csr.h"
 #include "services/config.h"
 #include "services/access_token.h"
 #include "services/registration.h"
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define RADSEC_CA_ENDPOINT "certificate-signing/ca/radsec"
-#define RADSEC_CA_FILE_NAME "radsec-ca.crt"
 #define RADSEC_SIGN_ENDPOINT "certificate-signing/sign/radsec"
-
-#define RADSEC_KEY_FILE_NAME "radsec.key"
-#define RADSEC_CSR_FILE_NAME "radsec.csr"
-#define RADSEC_CERT_FILE_NAME "radsec.crt"
 
 static Console csl = {
     .topic = "radsec cert",
@@ -118,9 +116,13 @@ bool generate_and_sign_radsec_cert(void *params) {
 
     // Generate CSR
     print_debug(&csl, "Generating CSR ...");
-    generate_csr(pkey, csr_path, NULL);
+    Result csr_result = generate_csr(pkey, csr_path, NULL);
+    if (!csr_result.ok) {
+        print_error(&csl, "Failed to generate CSR: %s", csr_result.error);
+        return false;
+    }
 
-    print_debug(&csl, "Signing CSR to be signed ...");
+    print_debug(&csl, "Sending CSR to backend so it can be signed ...");
     HttpPostOptions post_cert_sign_options = {
         .url = backend_url,
         .upload_file_path = csr_path,
@@ -142,10 +144,13 @@ bool generate_and_sign_radsec_cert(void *params) {
     FILE *cert_file = fopen(cert_path, "wb");
     if (cert_file == NULL) {
         print_error(&csl, "Failed to open certificate file for writing: %s", cert_path);
+        free(sign_result.response_buffer);
         return false;
     }
 
-    fwrite(sign_result.response_buffer, 1, sign_result.response_size, cert_file);
+    print_debug(&csl, "Writing signed certificate to file %s", cert_path);
+
+    fwrite(sign_result.response_buffer, 1, strlen(sign_result.response_buffer), cert_file);
     fclose(cert_file);
     free(sign_result.response_buffer);
 

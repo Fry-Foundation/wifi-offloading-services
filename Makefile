@@ -66,6 +66,8 @@ define Build/Compile
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/network_check.o -c $(PKG_BUILD_DIR)/lib/network_check.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/cert_audit.o -c $(PKG_BUILD_DIR)/lib/cert_audit.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/retry.o -c $(PKG_BUILD_DIR)/lib/retry.c
+		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/result.o -c $(PKG_BUILD_DIR)/lib/result.c
+		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/csr.o -c $(PKG_BUILD_DIR)/lib/csr.c
 
 
 		$(TARGET_CC) $(TARGET_LDFLAGS) \
@@ -102,6 +104,8 @@ define Build/Compile
 			$(PKG_BUILD_DIR)/lib/network_check.o \
 			$(PKG_BUILD_DIR)/lib/cert_audit.o \
 			$(PKG_BUILD_DIR)/lib/retry.o
+			$(PKG_BUILD_DIR)/lib/result.o
+			$(PKG_BUILD_DIR)/lib/csr.o
 endef
 
 # define Build/Compile

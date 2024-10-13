@@ -103,8 +103,8 @@ define Build/Compile
 			-lcurl -ljson-c -lssl -lcrypto -lmosquitto \
 			$(PKG_BUILD_DIR)/lib/network_check.o \
 			$(PKG_BUILD_DIR)/lib/cert_audit.o \
-			$(PKG_BUILD_DIR)/lib/retry.o
-			$(PKG_BUILD_DIR)/lib/result.o
+			$(PKG_BUILD_DIR)/lib/retry.o \
+			$(PKG_BUILD_DIR)/lib/result.o \
 			$(PKG_BUILD_DIR)/lib/csr.o
 endef
 

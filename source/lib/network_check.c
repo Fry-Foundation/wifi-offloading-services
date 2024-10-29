@@ -12,21 +12,30 @@ static Console csl = {
     .level = CONSOLE_DEBUG,
 };
 
-// \brief Check if the device has internet connection with a single ping
+// \brief Check if the device has internet connection with a single ping. Validating both IPv4 and IPv6
 // \param host Host to ping
 bool ping(void *params) {
     if (params == NULL) return false;
     char *host = (char *)params;
 
     char command[256];
-    snprintf(command, sizeof(command), "ping -c 1 %s > /dev/null 2>&1", host);
+    snprintf(command, sizeof(command), "ping -6 -c 1 %s > /dev/null 2>&1", host);
     int status = system(command);
+
     if (status == 0) {
-        print_info(&csl, "Ping to %s successful", host);
+        print_info(&csl, "Ping to %s successful (IPv6)", host);
         return true;
     } else {
-        print_error(&csl, "Ping to %s failed", host);
-        return false;
+        snprintf(command, sizeof(command), "ping -4 -c 1 %s > /dev/null 2>&1", host);
+        status = system(command);
+
+        if (status == 0) {
+            print_info(&csl, "Ping to %s successful (IPv4)", host);
+            return true;
+        } else {
+            print_error(&csl, "Ping to %s failed (IPv4 and IPv6)", host);
+            return false;
+        }
     }
 }
 

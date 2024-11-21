@@ -149,8 +149,11 @@ void monitoring_task(Scheduler *sch, void *task_context) {
     free(context->os_services_version);
     free(context->public_ip);
 
+    unsigned int seed = time(0);
+    const int random_monitoring_interval = rand_r(&seed) % (config.monitoring_maximum_interval - config.monitoring_minimum_interval + 1) + config.monitoring_minimum_interval;
+
     // Schedule monitoring_task to rerun later
-    schedule_task(sch, time(NULL) + config.monitoring_interval, monitoring_task, "monitoring", context);
+    schedule_task(sch, time(NULL) + random_monitoring_interval, monitoring_task, "monitoring", context);
 }
 
 void monitoring_service(Scheduler *sch, struct mosquitto *mosq, Registration *registration) {

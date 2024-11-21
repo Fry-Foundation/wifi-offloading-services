@@ -19,6 +19,8 @@ void init_config(int argc, char *argv[]) {
     config.setup_interval = 120;
     config.monitoring_enabled = true;
     config.monitoring_interval = 900;
+    config.monitoring_minimum_interval = 500;
+    config.monitoring_maximum_interval = 1000;
     config.speed_test_enabled = true;
     config.speed_test_interval = 10800;
     config.speed_test_backhaul_attempts = 3;
@@ -114,6 +116,18 @@ void init_config(int argc, char *argv[]) {
         // Monitoring interval
         if (strcmp(argv[i], "--config-monitoring-interval") == 0) {
             config.monitoring_interval = atoi(argv[i + 1]);
+            continue;
+        }
+
+        // Monitoring minimum interval
+        if (strcmp(argv[i], "--config-monitoring-minimum-interval") == 0) {
+            config.monitoring_minimum_interval = atoi(argv[i + 1]);
+            continue;
+        }
+
+        // Monitoring maximum interval
+        if (strcmp(argv[i], "--config-monitoring-maximum-interval") == 0) {
+            config.monitoring_maximum_interval = atoi(argv[i + 1]);
             continue;
         }
 
@@ -229,6 +243,8 @@ void init_config(int argc, char *argv[]) {
     console(CONSOLE_DEBUG, "config.temp_path: %s", config.temp_path);
     console(CONSOLE_DEBUG, "config.monitoring_enabled: %d", config.monitoring_enabled);
     console(CONSOLE_DEBUG, "config.monitoring_interval: %d", config.monitoring_interval);
+    console(CONSOLE_DEBUG, "config.monitoring_minimum_interval: %d", config.monitoring_minimum_interval);
+    console(CONSOLE_DEBUG, "config.monitoring_maximum_interval: %d", config.monitoring_maximum_interval);
     console(CONSOLE_DEBUG, "config.speed_test_enabled: %d", config.speed_test_enabled);
     console(CONSOLE_DEBUG, "config.speed_test_interval: %d", config.speed_test_interval);
     console(CONSOLE_DEBUG, "config.speed_test_backhaul_attempts: %d", config.speed_test_backhaul_attempts);

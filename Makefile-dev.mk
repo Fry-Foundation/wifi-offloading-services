@@ -10,6 +10,8 @@ CONFIG_SETUP_INTERVAL = 120
 CONFIG_LOG_LEVEL = 4
 CONFIG_MONITORING_ENABLED = 1
 CONFIG_MONITORING_INTERVAL = 900
+CONFIG_MONITORING_MINIMUM_INTERVAL = 500
+CONFIG_MONITORING_MAXIMUM_INTERVAL = 1000
 CONFIG_SPEED_TEST_ENABLED = 1
 CONFIG_SPEED_TEST_INTERVAL = 10800
 CONFIG_SPEED_TEST_BACKHAUL_ATTEMPTS = 3
@@ -92,6 +94,8 @@ run:
 	--config-console-log-level "$(CONFIG_LOG_LEVEL)" \
 	--config-monitoring-enabled "$(CONFIG_MONITORING_ENABLED)" \
 	--config-monitoring-interval "$(CONFIG_MONITORING_INTERVAL)" \
+	--config-monitoring-minimum-interval "$(CONFIG_MONITORING_MINIMUM_INTERVAL)" \
+	--config-monitoring-maximum-interval "$(CONFIG_MONITORING_MAXIMUM_INTERVAL)" \
 	--config-speed-test-enabled "$(CONFIG_SPEED_TEST_ENABLED)" \
 	--config-speed-test-interval "$(CONFIG_SPEED_TEST_INTERVAL)" \
 	--config-speed-test-backhaul-attempts "$(CONFIG_SPEED_TEST_BACKHAUL_ATTEMPTS)" \

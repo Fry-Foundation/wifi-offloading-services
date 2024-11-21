@@ -23,6 +23,8 @@ void init_config(int argc, char *argv[]) {
     config.monitoring_maximum_interval = 1000;
     config.speed_test_enabled = true;
     config.speed_test_interval = 10800;
+    config.speed_test_minimum_interval = 500;
+    config.speed_test_maximum_interval = 1000;
     config.speed_test_backhaul_attempts = 3;
     config.speed_test_latency_attempts = 4;
     config.speed_test_file_size = 0.3;
@@ -141,6 +143,18 @@ void init_config(int argc, char *argv[]) {
         // Speed test interval
         if (strcmp(argv[i], "--config-speed-test-interval") == 0) {
             config.speed_test_interval = atoi(argv[i + 1]);
+            continue;
+        }
+
+        // Speed test minimum interval
+        if (strcmp(argv[i], "--config-speed-test-minimum-interval") == 0) {
+            config.speed_test_minimum_interval = atoi(argv[i + 1]);
+            continue;
+        }
+
+        // Speed test maximum interval
+        if (strcmp(argv[i], "--config-speed-test-maximum-interval") == 0) {
+            config.speed_test_maximum_interval = atoi(argv[i + 1]);
             continue;
         }
 

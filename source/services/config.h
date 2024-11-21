@@ -33,6 +33,8 @@ typedef struct {
 
     bool speed_test_enabled;
     int speed_test_interval;
+    int speed_test_minimum_interval;
+    int speed_test_maximum_interval;
     int speed_test_backhaul_attempts;
     int speed_test_latency_attempts;
     float speed_test_file_size;

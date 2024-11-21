@@ -242,7 +242,10 @@ void speedtest_task(Scheduler *sch, void *task_context) {
 
     json_object_put(speedtest_data);
 
-    schedule_task(sch, time(NULL) + config.speed_test_interval, speedtest_task, "speedtest", context);
+    // Schedule monitoring_task to rerun later
+    unsigned int seed = time(0);
+    const int random_speed_test_interval = rand_r(&seed) % (config.speed_test_maximum_interval - config.speed_test_minimum_interval + 1) + config.speed_test_minimum_interval;
+    schedule_task(sch, time(NULL) + random_speed_test_interval, speedtest_task, "speedtest", context);
 }
 
 void speedtest_service(Scheduler *sch, struct mosquitto *mosq, Registration *registration, AccessToken *access_token) {
@@ -261,5 +264,8 @@ void speedtest_service(Scheduler *sch, struct mosquitto *mosq, Registration *reg
     context->registration = registration;
     context->access_token = access_token;
 
-    schedule_task(sch, time(NULL) + config.speed_test_interval, speedtest_task, "speedtest", context);
+    unsigned int seed = time(0);
+    const int random_speed_test_interval = rand_r(&seed) % (config.speed_test_maximum_interval - config.speed_test_minimum_interval + 1) + config.speed_test_minimum_interval;
+
+    schedule_task(sch, time(NULL) + random_speed_test_interval, speedtest_task, "speedtest", context);
 }

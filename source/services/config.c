@@ -19,12 +19,12 @@ void init_config(int argc, char *argv[]) {
     config.setup_interval = 120;
     config.monitoring_enabled = true;
     config.monitoring_interval = 900;
-    config.monitoring_minimum_interval = 500;
-    config.monitoring_maximum_interval = 1000;
+    config.monitoring_minimum_interval = 300;
+    config.monitoring_maximum_interval = 900;
     config.speed_test_enabled = true;
     config.speed_test_interval = 10800;
-    config.speed_test_minimum_interval = 500;
-    config.speed_test_maximum_interval = 1000;
+    config.speed_test_minimum_interval = 10800;
+    config.speed_test_maximum_interval = 21600;
     config.speed_test_backhaul_attempts = 3;
     config.speed_test_latency_attempts = 4;
     config.speed_test_file_size = 0.3;

@@ -32,6 +32,57 @@ typedef struct {
     double download_speed_mbps;
 } SpeedTestResult;
 
+static Console csl = {
+    .topic = "speed test",
+    .level = CONSOLE_DEBUG,
+};
+
+size_t write_callback(void *ptr, size_t size, size_t nmemb, void *userdata) {
+    size_t *total_bytes = (size_t *)userdata;
+    *total_bytes += size * nmemb; // Count total bytes downloaded
+    return size * nmemb;
+}
+
+void measure_download_speed(AccessToken *access_token) {
+    CURL *curl;
+    CURLcode res;
+    size_t total_bytes = 0;
+    struct timeval start, end;
+    char *url = "http://192.168.68.127:4050/monitoring/speedtest/v2/download";//config.speed_test_file_url;
+
+    print_info(&csl, "Starting download speed test");
+    curl = curl_easy_init();
+    if (!curl) {
+        print_error(&csl, "Failed to initialize curl");
+        return;
+    }
+    print_debug(&csl, "Downloading file");
+    struct curl_slist *headers = NULL;
+    char auth_header[1024];
+    snprintf(auth_header, 1024, "Authorization: Bearer %s", access_token->token);
+    headers = curl_slist_append(headers, auth_header);
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &total_bytes);
+
+    gettimeofday(&start, NULL);
+    res = curl_easy_perform(curl);
+    gettimeofday(&end, NULL);
+
+    if (res != CURLE_OK) {
+        print_error(&csl, "Error on download: %s", curl_easy_strerror(res));
+    } else {
+        double duration = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6; // Time in seconds
+        double speed_mbps = (total_bytes * 8) / (duration * 1e6); // Calculate speed in Mbps
+        double total_mb = total_bytes / (1024.0 * 1024.0); // Calculate total downloaded in MB
+        print_info(&csl, "Download Speed: %.2f Mbps", speed_mbps);
+        print_info(&csl, "Total Downloaded: %.2f MB", total_mb);
+    }
+
+    curl_easy_cleanup(curl);
+}
+
 float get_average_latency(const char *hostname) {
     char command[256];
     snprintf(command, sizeof(command), "ping -c %d %s", config.speed_test_latency_attempts, hostname);

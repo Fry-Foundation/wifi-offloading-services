@@ -19,6 +19,7 @@
 #include <time.h>
 
 #define SPEEDTEST_ENDPOINT "monitoring/speedtest"
+#define UPLOAD_LIMIT (800L * 1024 * 1024) // 100 MB
 
 typedef struct {
     struct mosquitto *mosq;
@@ -48,9 +49,9 @@ void measure_download_speed(AccessToken *access_token) {
     CURLcode res;
     size_t total_bytes = 0;
     struct timeval start, end;
-    char *url = "http://192.168.68.127:4050/monitoring/speedtest/v2/download";//config.speed_test_file_url;
+    char *url = "http://localhost:6050/download";//config.speed_test_file_url;
 
-    print_info(&csl, "Starting download speed test");
+    print_info(&csl, "Starting download speed test...");
     curl = curl_easy_init();
     if (!curl) {
         print_error(&csl, "Failed to initialize curl");
@@ -81,6 +82,71 @@ void measure_download_speed(AccessToken *access_token) {
     }
 
     curl_easy_cleanup(curl);
+    curl_slist_free_all(headers);
+}
+
+size_t upload_callback(void *ptr, size_t size, size_t nitems, void *userdata) {
+    size_t *bytes_sent = (size_t *)userdata;
+    size_t max_to_send = size * nitems;
+
+    // If we've already sent the maximum amount, return 0 to signal end of upload
+    if (*bytes_sent >= UPLOAD_LIMIT) {
+        return 0;
+    }
+
+    size_t to_send = (*bytes_sent + max_to_send <= UPLOAD_LIMIT)
+                         ? max_to_send
+                         : UPLOAD_LIMIT - *bytes_sent;
+
+    memset(ptr, 'A', to_send);
+    *bytes_sent += to_send;
+
+    return to_send;
+}
+
+void measure_upload_speed(AccessToken *access_token) {
+    CURL *curl;
+    CURLcode res;
+    size_t bytes_sent = 0;
+    struct timeval start, end;
+    const char *url = "http://localhost:6050/upload";//config.speed_test_file_url;
+
+    print_info(&csl,"Starting upload speed test...");
+    curl = curl_easy_init();
+    if (!curl) {
+        print_error(&csl,"Failed to initialize curl\n");
+        return;
+    }
+
+    struct curl_slist *headers = NULL;
+    char auth_header[1024];
+    snprintf(auth_header, sizeof(auth_header), "Authorization: Bearer %s", access_token->token);
+    headers = curl_slist_append(headers, auth_header);
+    headers = curl_slist_append(headers, "Content-Type: application/octet-stream");
+
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+    curl_easy_setopt(curl, CURLOPT_POST, 1L);
+    curl_easy_setopt(curl, CURLOPT_READFUNCTION, upload_callback);
+    curl_easy_setopt(curl, CURLOPT_READDATA, &bytes_sent);
+    curl_easy_setopt(curl, CURLOPT_INFILESIZE_LARGE, (curl_off_t)UPLOAD_LIMIT);
+
+    gettimeofday(&start, NULL);
+    res = curl_easy_perform(curl);
+    gettimeofday(&end, NULL);
+
+    if (res != CURLE_OK) {
+        print_error(&csl,"Error on upload: %s", curl_easy_strerror(res));
+    } else {
+        double duration = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6;
+        double speed_mbps = (bytes_sent * 8.0) / (duration * 1e6); // Speed in Mbps
+        print_info(&csl,"Upload complete");
+        print_info(&csl,"Upload Speed: %.2f Mbps", speed_mbps);
+        print_info(&csl,"Total Uploaded: %.2f MB", bytes_sent / (1024.0 * 1024.0));
+    }
+
+    curl_easy_cleanup(curl);
+    curl_slist_free_all(headers);
 }
 
 float get_average_latency(const char *hostname) {

@@ -44,7 +44,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    measure_download_speed(access_token);
+    //measure_download_speed(access_token);
+    //measure_upload_speed(access_token);
     firmware_upgrade_on_boot(registration, device_info, access_token);
 
     // @todo-later check if this is the appropriate CA, and download it if it's not

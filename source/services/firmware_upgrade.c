@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/stat.h> 
 
 #define FIRMWARE_ENDPOINT "/firmware-updates/check-updates"
 #define START_UPGRADE_ENDPOINT "/firmware-updates/start"
@@ -59,7 +60,7 @@ int run_sysupgrade() {
 void report_upgrade_status(AccessToken *access_token, int upgrade_attempt_id, const char *upgrade_status) {
     char report_status_url[256];
     snprintf(report_status_url, sizeof(report_status_url), "%s%s", config.accounting_api, REPORT_STATUS_ENDPOINT);
-    // snprintf(report_status_url, sizeof(report_status_url), "%s%s", "http://localhost:4050", REPORT_STATUS_ENDPOINT);
+    //snprintf(report_status_url, sizeof(report_status_url), "%s%s", "http://localhost:4050", REPORT_STATUS_ENDPOINT);
 
     json_object *json_body = json_object_new_object();
     json_object_object_add(json_body, "upgrade_attempt_id", json_object_new_int(upgrade_attempt_id));
@@ -117,36 +118,144 @@ int execute_firmware_verification() {
     return -1;
 }
 
+void parse_outputf(const char *output, size_t *memory_free) {
+    const char *key = "memory_free:";
+    char *start = strstr(output, key);
+    if (start) {
+        start += strlen(key); 
+        *memory_free = strtoull(start, NULL, 10); 
+    }
+}
+
+// Check available memory
+bool check_memory_and_proceed() {
+
+    char sysupgrade_path[256];
+    snprintf(sysupgrade_path, sizeof(sysupgrade_path), "%s/firmware.bin", config.temp_path);
+
+    struct stat st;
+    if (stat(sysupgrade_path, &st) != 0) {
+        console(CONSOLE_ERROR, "Failed to get image size for %s", sysupgrade_path);
+        // report_upgrade_status(access_token, upgrade_attempt_id, "image_size_error");
+        return false;
+    }
+    
+    // Get image size
+    size_t image_size = (size_t)st.st_size;
+    console(CONSOLE_INFO, "Image size: %zu bytes", image_size);
+
+    // Run Lua script to get free memory
+    char script_file[256];
+    snprintf(script_file, sizeof(script_file), "%s%s", config.scripts_path, "/retrieve-data.lua");
+    char* output = run_script(script_file);
+    if (output == NULL) {
+        console(CONSOLE_ERROR, "Failed to run script %s", script_file);
+        //report_upgrade_status(access_token, upgrade_attempt_id, "memory_check_failed");
+        return false;
+    }
+
+    size_t memory_free = 0;
+    parse_outputf(output, &memory_free);
+
+    if (memory_free == 0) {
+        console(CONSOLE_ERROR, "Failed to parse memory_free from script output");
+        free(output);
+        return;
+    }
+
+    console(CONSOLE_INFO, "Free memory: %zu bytes", memory_free);
+    free(output);
+
+    // Compare free memory to image size
+    if (image_size > memory_free) {
+        console(CONSOLE_ERROR, "Insufficient memory. Required: %zu bytes, Available: %zu bytes", image_size, memory_free);
+        console(CONSOLE_INFO, "Insufficient memory. Do not proceeding with the upgrade.");
+        return false;
+    }
+
+    console(CONSOLE_INFO, "Sufficient memory. Proceeding with the upgrade.");
+    return true;
+}
+
+int run_firmware_test() {
+
+    char script_path[256];
+    char image_path[256];
+
+    snprintf(script_path, sizeof(script_path), "%s/run_sysupgrade_test.sh", config.scripts_path);
+    snprintf(image_path, sizeof(image_path), "%s", config.temp_path);
+
+    char command[256];
+    snprintf(command, sizeof(command), "%s %s", script_path, image_path);
+
+    char *script_output = run_script(command);
+
+    if (script_output) {
+        console(CONSOLE_DEBUG, "Sysupgrade test script output: %s", script_output);
+        int result = (*script_output == '1') ? 1 : -1;
+        free(script_output);
+        return result;
+    }
+
+    return -1;
+}
+
 void handle_download_result(AccessToken *access_token, int upgrade_attempt_id, bool success) {
     if (success) {
         report_upgrade_status(access_token, upgrade_attempt_id, "download_confirmed");
 
-        int script_result = execute_firmware_verification();
+        int script_result = execute_firmware_verification();        
 
         if (script_result == 1) {
             // Verification successful
             console(CONSOLE_INFO, "The image is correct. The hashes match");
             report_upgrade_status(access_token, upgrade_attempt_id, "hash_verification_confirmed");
 
-            int upgrade_result = run_sysupgrade();
+            bool check_memory = check_memory_and_proceed();
 
-            if (upgrade_result == -1) {
-                report_upgrade_status(access_token, upgrade_attempt_id, "sysupgrade_failed");
-                // schedule_task(NULL, time(NULL) + 3600, firmware_upgrade_task, "sysupgrade_retry");
-                // Reschedule task
-            }
+                if (check_memory){
+                    report_upgrade_status(access_token, upgrade_attempt_id, "sufficient_memory");
+                    
+                    int firmware_test = run_firmware_test();
 
-            /*if (upgrade_result == 1) {
-                report_upgrade_status(upgrade_attempt_id, "upgrading");
-            } else {
-                report_upgrade_status(upgrade_attempt_id, "sysupgrade_failed");
-                // Reschedule task
-                // schedule_task(NULL, time(NULL) + 3600, firmware_upgrade_task, "sysupgrade_retry");
-            }*/
+                    if (firmware_test == 1){
+                        
+                        console(CONSOLE_INFO, "Firmware test successful, proceeding with upgrade");
+
+                        report_upgrade_status(access_token, upgrade_attempt_id, "test_successfull");
+
+                        int upgrade_result = run_sysupgrade();
+
+                        if (upgrade_result == -1) {
+                            report_upgrade_status(access_token, upgrade_attempt_id, "sysupgrade_failed");
+                            // schedule_task(NULL, time(NULL) + 3600, firmware_upgrade_task, "sysupgrade_retry");
+                            // Reschedule task
+
+
+                            /*if (upgrade_result == 1) {
+                                report_upgrade_status(upgrade_attempt_id, "upgrading");
+                            } else {
+                                report_upgrade_status(upgrade_attempt_id, "sysupgrade_failed");
+                                // Reschedule task
+                                // schedule_task(NULL, time(NULL) + 3600, firmware_upgrade_task, "sysupgrade_retry");
+                            }*/
+                        }
+                    }
+                    else{
+                        console(CONSOLE_INFO, "Firmware test failed, upgrade does not continue");
+
+                        report_upgrade_status(access_token, upgrade_attempt_id, "test_failed");
+                   }
+                    
+                }
+                else {
+
+                    report_upgrade_status(access_token, upgrade_attempt_id, "insufficient_memory");
+                }          
 
         } else {
             // Verification failed
-            console(CONSOLE_INFO, "TThe image is incorrect. The hashes do not match");
+            console(CONSOLE_INFO, "The image is incorrect. The hashes do not match");
             report_upgrade_status(access_token, upgrade_attempt_id, "hash_verification_failed");
             // Reschedule verification in an hour
             // schedule_task(NULL, time(NULL) + 3600, firmware_upgrade_task, "hash_verification_retry");
@@ -172,7 +281,7 @@ void send_firmware_check_request(const char *codename,
     // Url
     char firmware_upgrade_url[256];
     snprintf(firmware_upgrade_url, sizeof(firmware_upgrade_url), "%s%s", config.accounting_api, FIRMWARE_ENDPOINT);
-    // snprintf(firmware_upgrade_url, sizeof(firmware_upgrade_url), "%s%s", "http://localhost:4050", FIRMWARE_ENDPOINT);
+    //snprintf(firmware_upgrade_url, sizeof(firmware_upgrade_url), "%s%s", "http://localhost:4050", FIRMWARE_ENDPOINT);
 
     console(CONSOLE_DEBUG, "Firmware endpoint: %s", firmware_upgrade_url);
 
@@ -273,6 +382,7 @@ void send_firmware_check_request(const char *codename,
             .download_path = download_path,
         };
 
+
         HttpResult download_result = http_download(&download_options);
         handle_download_result(access_token, upgrade_attempt_id, !download_result.is_error);
 
@@ -337,7 +447,7 @@ void firmware_upgrade_on_boot(Registration *registration, DeviceInfo *device_inf
     console(CONSOLE_DEBUG, "Starting firmware_upgrade_on_boot");
     char verify_status_url[256];
     snprintf(verify_status_url, sizeof(verify_status_url), "%s%s", config.accounting_api, VERIFY_STATUS_ENDPOINT);
-    // snprintf(verify_status_url, sizeof(verify_status_url), "%s%s", "http://localhost:4050", VERIFY_STATUS_ENDPOINT);
+    //snprintf(verify_status_url, sizeof(verify_status_url), "%s%s", "http://localhost:4050", VERIFY_STATUS_ENDPOINT);
 
     if (registration == NULL || registration->wayru_device_id == NULL) {
         console(CONSOLE_ERROR, "Registration or wayru_device_id is NULL");

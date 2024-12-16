@@ -22,12 +22,14 @@ void init_config(int argc, char *argv[]) {
     config.monitoring_minimum_interval = 300;
     config.monitoring_maximum_interval = 900;
     config.speed_test_enabled = true;
+    strcpy(config.speed_test_api, "https://speedtest.wayru.tech");
+    strcpy(config.speed_test_api_key,"nwde9UEXUDRcUp6hTuasrpmTcTP8Gxn2");
     config.speed_test_interval = 10800;
     config.speed_test_minimum_interval = 10800;
     config.speed_test_maximum_interval = 21600;
     config.speed_test_backhaul_attempts = 3;
     config.speed_test_latency_attempts = 4;
-    config.speed_test_file_size = 0.3;
+    config.speed_test_upload_limit = 800;
     config.device_context_interval = 900;
     config.site_clients_interval = 60;
     strcpy(config.mqtt_broker_url, "mqtt.wayru.tech");
@@ -140,6 +142,18 @@ void init_config(int argc, char *argv[]) {
             continue;
         }
 
+        // Speed test api
+        if (strcmp(argv[i], "--config-speed-test-api") == 0) {
+            snprintf(config.speed_test_api, sizeof(config.speed_test_api), "%s", argv[i + 1]);
+            continue;
+        }
+
+        // Speed test api key
+        if (strcmp(argv[i], "--config-speed-test-api-key") == 0) {
+            snprintf(config.speed_test_api_key, sizeof(config.speed_test_api_key), "%s", argv[i + 1]);
+            continue;
+        }
+
         // Speed test interval
         if (strcmp(argv[i], "--config-speed-test-interval") == 0) {
             config.speed_test_interval = atoi(argv[i + 1]);
@@ -170,9 +184,9 @@ void init_config(int argc, char *argv[]) {
             continue;
         }
 
-        // Speed test file size
-        if (strcmp(argv[i], "--config-speed-test-file-size") == 0) {
-            config.speed_test_file_size = atof(argv[i + 1]);
+        // Speed test upload limit
+        if (strcmp(argv[i], "--config-speed-test-upload-limit") == 0) {
+            config.speed_test_upload_limit = atof(argv[i + 1]);
             continue;
         }
 
@@ -260,10 +274,12 @@ void init_config(int argc, char *argv[]) {
     console(CONSOLE_DEBUG, "config.monitoring_minimum_interval: %d", config.monitoring_minimum_interval);
     console(CONSOLE_DEBUG, "config.monitoring_maximum_interval: %d", config.monitoring_maximum_interval);
     console(CONSOLE_DEBUG, "config.speed_test_enabled: %d", config.speed_test_enabled);
+    console(CONSOLE_DEBUG, "config.speed_test_api: %s", config.speed_test_api);
+    console(CONSOLE_DEBUG, "config.speed_test_api_key: %s", config.speed_test_api_key);
     console(CONSOLE_DEBUG, "config.speed_test_interval: %d", config.speed_test_interval);
     console(CONSOLE_DEBUG, "config.speed_test_backhaul_attempts: %d", config.speed_test_backhaul_attempts);
     console(CONSOLE_DEBUG, "config.speed_test_latency_attempts: %d", config.speed_test_latency_attempts);
-    console(CONSOLE_DEBUG, "config.speed_test_file_size: %f", config.speed_test_file_size);
+    console(CONSOLE_DEBUG, "config.speed_test_upload_limit: %f", config.speed_test_upload_limit);
     console(CONSOLE_DEBUG, "config.device_context_interval: %d", config.device_context_interval);
     console(CONSOLE_DEBUG, "config.mqtt_broker_url: %s", config.mqtt_broker_url);
     console(CONSOLE_DEBUG, "config.reboot_enabled: %d", config.reboot_enabled);

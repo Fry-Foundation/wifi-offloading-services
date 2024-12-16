@@ -5,6 +5,7 @@
 
 #define PATH_SIZE 256
 #define API_SIZE 256
+#define API_KEY_SIZE 1024
 
 typedef struct {
     bool dev_env;
@@ -32,12 +33,14 @@ typedef struct {
     int firmware_update_interval;
 
     bool speed_test_enabled;
+    char speed_test_api[API_SIZE];
+    char speed_test_api_key[API_KEY_SIZE];
     int speed_test_interval;
     int speed_test_minimum_interval;
     int speed_test_maximum_interval;
     int speed_test_backhaul_attempts;
     int speed_test_latency_attempts;
-    float speed_test_file_size;
+    int speed_test_upload_limit;
 
     int device_context_interval;
 

@@ -19,7 +19,7 @@
 #include <time.h>
 
 #define SPEEDTEST_ENDPOINT "monitoring/speedtest"
-#define UPLOAD_LIMIT (800L * 1024 * 1024) // 100 MB
+#define UPLOAD_LIMIT (config.speed_test_upload_limit * 1024 * 1024)
 
 typedef struct {
     struct mosquitto *mosq;
@@ -33,6 +33,11 @@ typedef struct {
     double download_speed_mbps;
 } SpeedTestResult;
 
+typedef struct {
+    bool is_error;
+    double speed_mbps;
+} TestResult;
+
 static Console csl = {
     .topic = "speed test",
     .level = CONSOLE_DEBUG,
@@ -44,24 +49,36 @@ size_t write_callback(void *ptr, size_t size, size_t nmemb, void *userdata) {
     return size * nmemb;
 }
 
-void measure_download_speed(AccessToken *access_token) {
+TestResult measure_download_speed(char *access_token) {
     CURL *curl;
     CURLcode res;
     size_t total_bytes = 0;
     struct timeval start, end;
-    char *url = "http://localhost:6050/download";//config.speed_test_file_url;
+    char url[256];
+    strcpy(url, config.speed_test_api);
+    strcat(url, "/");
+    strcat(url, "download");
+    TestResult result = {
+        .is_error = false,
+        .speed_mbps = 0.0,
+    };
 
     print_info(&csl, "Starting download speed test...");
     curl = curl_easy_init();
     if (!curl) {
         print_error(&csl, "Failed to initialize curl");
-        return;
+        result.is_error = true;
+        curl_easy_cleanup(curl);
+        return result;
     }
     print_debug(&csl, "Downloading file");
     struct curl_slist *headers = NULL;
     char auth_header[1024];
-    snprintf(auth_header, 1024, "Authorization: Bearer %s", access_token->token);
+    snprintf(auth_header, sizeof(auth_header), "Access-Token: %s", access_token);
     headers = curl_slist_append(headers, auth_header);
+    char bearer_header[1024];
+    snprintf(bearer_header, sizeof(bearer_header), "Authorization: Bearer %s", config.speed_test_api_key);
+    headers = curl_slist_append(headers, bearer_header);
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(curl, CURLOPT_URL, url);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
@@ -73,16 +90,19 @@ void measure_download_speed(AccessToken *access_token) {
 
     if (res != CURLE_OK) {
         print_error(&csl, "Error on download: %s", curl_easy_strerror(res));
+        result.is_error = true;
     } else {
         double duration = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6; // Time in seconds
         double speed_mbps = (total_bytes * 8) / (duration * 1e6); // Calculate speed in Mbps
         double total_mb = total_bytes / (1024.0 * 1024.0); // Calculate total downloaded in MB
         print_info(&csl, "Download Speed: %.2f Mbps", speed_mbps);
         print_info(&csl, "Total Downloaded: %.2f MB", total_mb);
+        result.speed_mbps = speed_mbps;
     }
 
     curl_easy_cleanup(curl);
     curl_slist_free_all(headers);
+    return result;
 }
 
 size_t upload_callback(void *ptr, size_t size, size_t nitems, void *userdata) {
@@ -104,24 +124,36 @@ size_t upload_callback(void *ptr, size_t size, size_t nitems, void *userdata) {
     return to_send;
 }
 
-void measure_upload_speed(AccessToken *access_token) {
+TestResult measure_upload_speed(char *access_token) {
     CURL *curl;
     CURLcode res;
     size_t bytes_sent = 0;
     struct timeval start, end;
-    const char *url = "http://localhost:6050/upload";//config.speed_test_file_url;
+    char url[256];
+    strcpy(url, config.speed_test_api);
+    strcat(url, "/");
+    strcat(url, "upload");
+    TestResult result = {
+        .is_error = false,
+        .speed_mbps = 0.0,
+    };
 
     print_info(&csl,"Starting upload speed test...");
     curl = curl_easy_init();
     if (!curl) {
         print_error(&csl,"Failed to initialize curl\n");
-        return;
+        result.is_error = true;
+        curl_easy_cleanup(curl);
+        return result;
     }
 
     struct curl_slist *headers = NULL;
     char auth_header[1024];
-    snprintf(auth_header, sizeof(auth_header), "Authorization: Bearer %s", access_token->token);
+    snprintf(auth_header, sizeof(auth_header), "Access-Token: %s", access_token);
     headers = curl_slist_append(headers, auth_header);
+    char bearer_header[1024];
+    snprintf(bearer_header, sizeof(bearer_header), "Authorization: Bearer %s", config.speed_test_api_key);
+    headers = curl_slist_append(headers, bearer_header);
     headers = curl_slist_append(headers, "Content-Type: application/octet-stream");
 
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
@@ -137,16 +169,19 @@ void measure_upload_speed(AccessToken *access_token) {
 
     if (res != CURLE_OK) {
         print_error(&csl,"Error on upload: %s", curl_easy_strerror(res));
+        result.is_error = true;
     } else {
         double duration = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6;
         double speed_mbps = (bytes_sent * 8.0) / (duration * 1e6); // Speed in Mbps
         print_info(&csl,"Upload complete");
         print_info(&csl,"Upload Speed: %.2f Mbps", speed_mbps);
         print_info(&csl,"Total Uploaded: %.2f MB", bytes_sent / (1024.0 * 1024.0));
+        result.speed_mbps = speed_mbps;
     }
 
     curl_easy_cleanup(curl);
     curl_slist_free_all(headers);
+    return result;
 }
 
 float get_average_latency(const char *hostname) {
@@ -183,88 +218,6 @@ float get_average_latency(const char *hostname) {
     }
 }
 
-char *get_available_memory_str() {
-    struct sysinfo si;
-    if (sysinfo(&si) != 0) {
-        console(CONSOLE_ERROR, "sysinfo call failed");
-        return NULL;
-    }
-    sysinfo(&si);
-    size_t half_free_memory = (size_t)(si.freeram * config.speed_test_file_size);
-    size_t buf_size = 20;
-    char *mem_str = (char *)malloc(buf_size * sizeof(char));
-    if (mem_str == NULL) {
-        fprintf(stderr, "Memory allocation failed");
-        exit(EXIT_FAILURE);
-    }
-
-    snprintf(mem_str, buf_size, "%zu", half_free_memory);
-    return mem_str;
-}
-
-HttpResult download_test(char *url, char *bearer_token) {
-    HttpGetOptions options = {
-        .url = url,
-        .bearer_token = bearer_token,
-    };
-
-    struct timeval start, end;
-    double time_taken = 0.0;
-
-    gettimeofday(&start, NULL);
-    HttpResult result = http_get(&options);
-    gettimeofday(&end, NULL);
-    time_taken = (end.tv_sec - start.tv_sec) * 1e6;
-    time_taken = (time_taken + (end.tv_usec - start.tv_usec)) * 1e-6;
-
-    if (result.is_error) {
-        console(CONSOLE_ERROR, "HTTP GET request failed: %s", result.error);
-        free(result.error);
-        free(result.response_buffer);
-    } else {
-        size_t total_bytes = result.response_size;
-        double speed_bps = total_bytes / time_taken;
-        double speed_mbps = (speed_bps * 8) / 1e6;
-        console(CONSOLE_DEBUG, "Downloaded %zu bytes in %.2f seconds", total_bytes, time_taken);
-        console(CONSOLE_DEBUG, "Download speed: %.2f Mbps", speed_mbps);
-        result.download_speed_mbps = speed_mbps;
-    }
-
-    return result;
-}
-
-HttpResult upload_test(char *url, char *bearer_token, char *upload_data, size_t upload_data_size) {
-    HttpPostOptions options = {
-        .url = url,
-        .bearer_token = bearer_token,
-        .upload_data = upload_data,
-        .upload_data_size = upload_data_size,
-    };
-    struct timeval start, end;
-    double time_taken = 0.0;
-
-    gettimeofday(&start, NULL);
-    HttpResult result = http_post(&options);
-    gettimeofday(&end, NULL);
-
-    time_taken = (end.tv_sec - start.tv_sec) * 1e6;
-    time_taken = (time_taken + (end.tv_usec - start.tv_usec)) * 1e-6;
-
-    if (result.is_error) {
-        console(CONSOLE_ERROR, "HTTP POST request failed: %s", result.error);
-        free(result.error);
-        free(result.response_buffer);
-    } else {
-        double speed_bps = upload_data_size / time_taken;
-        double speed_mbps = (speed_bps * 8) / 1e6;
-        console(CONSOLE_DEBUG, "Uploaded %zu bytes in %.2f seconds", upload_data_size, time_taken);
-        console(CONSOLE_DEBUG, "Upload speed: %.2f Mbps", speed_mbps);
-        result.upload_speed_mbps = speed_mbps;
-    }
-
-    return result;
-}
-
 SpeedTestResult speed_test(char *bearer_token) {
     SpeedTestResult result = {
         .is_error = false,
@@ -274,45 +227,25 @@ SpeedTestResult speed_test(char *bearer_token) {
 
     console(CONSOLE_INFO, "Starting speed test");
 
-    char *freeram_str = get_available_memory_str();
-    char get_url[256];
-    strcpy(get_url, config.accounting_api);
-    strcat(get_url, "/");
-    strcat(get_url, SPEEDTEST_ENDPOINT);
-    strcat(get_url, "/");
-    strcat(get_url, freeram_str);
-    console(CONSOLE_DEBUG, "GET URL: %s", get_url);
-
-    HttpResult download_result = download_test(get_url, bearer_token);
+    TestResult download_result = measure_download_speed(bearer_token);
     if (download_result.is_error) {
-        console(CONSOLE_ERROR, "Download test failed");
+        print_error(&csl, "Download test failed");
         result.is_error = true;
         return result;
     }
 
-    char post_url[256];
-    strcpy(post_url, config.accounting_api);
-    strcat(post_url, "/");
-    strcat(post_url, SPEEDTEST_ENDPOINT);
-    console(CONSOLE_DEBUG, "POST URL: %s", post_url);
-
-    HttpResult upload_result =
-        upload_test(post_url, bearer_token, download_result.response_buffer, download_result.response_size);
+    TestResult upload_result = measure_upload_speed(bearer_token);
     if (upload_result.is_error) {
-        console(CONSOLE_ERROR, "Upload test failed");
-        free(download_result.response_buffer);
+        print_error(&csl, "Upload test failed");
         result.is_error = true;
         return result;
     }
 
     result.is_error = false;
-    result.upload_speed_mbps = upload_result.upload_speed_mbps;
-    result.download_speed_mbps = download_result.download_speed_mbps;
+    result.upload_speed_mbps = upload_result.speed_mbps;
+    result.download_speed_mbps = download_result.speed_mbps;
 
-    free(download_result.response_buffer);
-    free(upload_result.response_buffer);
-
-    console(CONSOLE_INFO, "Speed test complete\n");
+    print_info(&csl, "Speed test complete");
 
     return result;
 }
@@ -320,25 +253,26 @@ SpeedTestResult speed_test(char *bearer_token) {
 void speedtest_task(Scheduler *sch, void *task_context) {
     SpeedTestTaskContext *context = (SpeedTestTaskContext *)task_context;
 
-    console(CONSOLE_INFO, "Starting speedtest task");
+    print_info(&csl, "Starting speedtest task");
     int interval = 0;
     int failed = 0;
     double upload_speed = 0.0;
     double download_speed = 0.0;
     float latency = get_average_latency("www.google.com");
-    console(CONSOLE_INFO, "Average latency: %.2f ms", latency);
-    while (interval < config.speed_test_backhaul_attempts) {
-        SpeedTestResult result = speed_test(context->access_token->token);
-        upload_speed += result.upload_speed_mbps;
-        download_speed += result.download_speed_mbps;
-        interval++;
-    }
+    print_info(&csl, "Average latency: %.2f ms", latency);
+    // while (interval < config.speed_test_backhaul_attempts) {
+    //     SpeedTestResult result = speed_test(context->access_token->token);
+    //     upload_speed += result.upload_speed_mbps;
+    //     download_speed += result.download_speed_mbps;
+    //     interval++;
+    // }
 
-    double upload_speed_mbps = upload_speed / interval;
-    double download_speed_mbps = download_speed / interval;
+    // double upload_speed_mbps = upload_speed / interval;
+    // double download_speed_mbps = download_speed / interval;
 
-    console(CONSOLE_INFO, "Average upload speed: %.2f Mbps", upload_speed_mbps);
-    console(CONSOLE_INFO, "Average download speed: %.2f Mbps", download_speed_mbps);
+    // console(CONSOLE_INFO, "Average upload speed: %.2f Mbps", upload_speed_mbps);
+    // console(CONSOLE_INFO, "Average download speed: %.2f Mbps", download_speed_mbps);
+    SpeedTestResult result = speed_test(context->access_token->token);
 
     time_t now;
     time(&now);
@@ -349,8 +283,8 @@ void speedtest_task(Scheduler *sch, void *task_context) {
     json_object_object_add(speedtest_data, "measurement_id", json_object_new_string(measurementid));
     json_object_object_add(speedtest_data, "device_id", json_object_new_string(context->registration->wayru_device_id));
     json_object_object_add(speedtest_data, "timestamp", json_object_new_int(now));
-    json_object_object_add(speedtest_data, "upload_speed", json_object_new_double(upload_speed_mbps));
-    json_object_object_add(speedtest_data, "download_speed", json_object_new_double(download_speed_mbps));
+    json_object_object_add(speedtest_data, "upload_speed", json_object_new_double(result.upload_speed_mbps));
+    json_object_object_add(speedtest_data, "download_speed", json_object_new_double(result.download_speed_mbps));
     json_object_object_add(speedtest_data, "latency", json_object_new_double(latency));
     const char *speedtest_data_str = json_object_to_json_string(speedtest_data);
 

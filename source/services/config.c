@@ -279,7 +279,7 @@ void init_config(int argc, char *argv[]) {
     console(CONSOLE_DEBUG, "config.speed_test_interval: %d", config.speed_test_interval);
     console(CONSOLE_DEBUG, "config.speed_test_backhaul_attempts: %d", config.speed_test_backhaul_attempts);
     console(CONSOLE_DEBUG, "config.speed_test_latency_attempts: %d", config.speed_test_latency_attempts);
-    console(CONSOLE_DEBUG, "config.speed_test_upload_limit: %f", config.speed_test_upload_limit);
+    console(CONSOLE_DEBUG, "config.speed_test_upload_limit: %d", config.speed_test_upload_limit);
     console(CONSOLE_DEBUG, "config.device_context_interval: %d", config.device_context_interval);
     console(CONSOLE_DEBUG, "config.mqtt_broker_url: %s", config.mqtt_broker_url);
     console(CONSOLE_DEBUG, "config.reboot_enabled: %d", config.reboot_enabled);

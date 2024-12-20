@@ -9,12 +9,12 @@ mkdir -p "$EXTRACT_DIR"
 # Extract files from .tar.gz archive
 tar -xzf "$TAR_FILE" -C "$EXTRACT_DIR"
 
-# Find the .bin file in the extracted directory
-IMAGE_FILE=$(find "$EXTRACT_DIR" -name "*.bin")
+# Find the .bin or .itb file in the extracted directory
+IMAGE_FILE=$(find "$EXTRACT_DIR" -type f \( -name "*.bin" -o -name "*.itb" \))
 
 # Check if files exist after extraction
 if [ -z "$IMAGE_FILE" ]; then
-    echo "Error: No .bin file found in '$EXTRACT_DIR'."
+    echo "Error: No .bin or .itb file found in '$EXTRACT_DIR'."
     exit -1
 fi
 

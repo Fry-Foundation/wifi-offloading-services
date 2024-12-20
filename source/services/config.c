@@ -22,7 +22,7 @@ void init_config(int argc, char *argv[]) {
     config.monitoring_minimum_interval = 300;
     config.monitoring_maximum_interval = 900;
     config.speed_test_enabled = true;
-    strcpy(config.speed_test_api, "https://speedtest.wayru.tech");
+    strcpy(config.speed_test_api, "https://speedtest.api.internal.wayru.tech");
     strcpy(config.speed_test_api_key,"nwde9UEXUDRcUp6hTuasrpmTcTP8Gxn2");
     config.speed_test_interval = 10800;
     config.speed_test_minimum_interval = 10800;

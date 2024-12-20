@@ -44,6 +44,9 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+
+    test(access_token->token);
+    _exit(0);
     firmware_upgrade_on_boot(registration, device_info, access_token);
 
     // @todo-later check if this is the appropriate CA, and download it if it's not

@@ -16,10 +16,15 @@
 #include <string.h>
 #include <sys/sysinfo.h>
 #include <sys/time.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include <time.h>
 
 #define SPEEDTEST_ENDPOINT "monitoring/speedtest"
 #define UPLOAD_LIMIT (config.speed_test_upload_limit * 1024 * 1024)
+#define BUFFER_SIZE 1024
+#define TEST_DURATION 10
+
 
 typedef struct {
     struct mosquitto *mosq;
@@ -43,145 +48,132 @@ static Console csl = {
     .level = CONSOLE_DEBUG,
 };
 
-size_t write_callback(void *ptr, size_t size, size_t nmemb, void *userdata) {
-    size_t *total_bytes = (size_t *)userdata;
-    *total_bytes += size * nmemb; // Count total bytes downloaded
-    return size * nmemb;
+TestResult measure_download_speed(int sockfd, struct sockaddr_in *server_addr, char *access_token) {
+    char request[] = "DOWNLOAD";
+    char buffer[BUFFER_SIZE];
+    ssize_t bytes_received;
+    long total_bytes = 0;
+    struct timeval start, end;
+    TestResult result = {
+        .is_error = true,
+        .speed_mbps = 0.0,
+    };
+
+    // Send request to server
+    sendto(sockfd, request, strlen(request), 0, (struct sockaddr *)server_addr, sizeof(*server_addr));
+
+    // Start timer
+    print_info(&csl,"Starting download test...");
+
+    gettimeofday(&start, NULL);
+    //  Receive data from server
+    while (1) {
+        bytes_received = recvfrom(sockfd, buffer, BUFFER_SIZE, 0, NULL, NULL);
+        if (bytes_received < 0) {
+            print_error(&csl,"Error receiving data");
+            break;
+        }
+        total_bytes += bytes_received;
+        // Log time spent and total bytes received
+        gettimeofday(&end, NULL);
+        double elapsed_time = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6;
+        print_info(&csl, "Time spent: %.2f seconds, Total bytes received: %ld", elapsed_time, total_bytes);
+        // Stop timer after TEST_DURATION seconds
+        if (end.tv_sec - start.tv_sec >= TEST_DURATION) {
+            break;
+        }
+    }
+
+    // Calculate speed
+    double elapsed_time = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6;
+    double mbps = (total_bytes * 8) / (elapsed_time * 1e6);
+    print_info(&csl,"Total MB Downloaded: %.2f MB", total_bytes / (1024.0 * 1024.0));
+    result.is_error = false;
+    result.speed_mbps = mbps;
+
+    return result;
 }
 
-TestResult measure_download_speed(char *access_token) {
-    CURL *curl;
-    CURLcode res;
-    size_t total_bytes = 0;
-    struct timeval start, end;
-    char url[256];
-    strcpy(url, config.speed_test_api);
-    strcat(url, "/");
-    strcat(url, "download");
+TestResult measure_upload_speed(int sockfd, struct sockaddr_in *server_addr, char *access_token) {
+    char request[] = "UPLOAD";
+    char buffer[BUFFER_SIZE];
+    ssize_t bytes_sent;
+    long total_bytes = 0;
+    struct timespec start, end;
     TestResult result = {
         .is_error = false,
         .speed_mbps = 0.0,
     };
 
-    print_info(&csl, "Starting download speed test...");
-    curl = curl_easy_init();
-    if (!curl) {
-        print_error(&csl, "Failed to initialize curl");
-        result.is_error = true;
-        curl_easy_cleanup(curl);
-        return result;
-    }
-    print_debug(&csl, "Downloading file");
-    struct curl_slist *headers = NULL;
-    char auth_header[1024];
-    snprintf(auth_header, sizeof(auth_header), "Access-Token: %s", access_token);
-    headers = curl_slist_append(headers, auth_header);
-    char bearer_header[1024];
-    snprintf(bearer_header, sizeof(bearer_header), "Authorization: Bearer %s", config.speed_test_api_key);
-    headers = curl_slist_append(headers, bearer_header);
-    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-    curl_easy_setopt(curl, CURLOPT_URL, url);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &total_bytes);
-
+    // Send request to server
+    sendto(sockfd, request, strlen(request), 0, (struct sockaddr *)server_addr, sizeof(*server_addr));
+    print_info(&csl,"Starting upload test...");
+    // Start timer
     gettimeofday(&start, NULL);
-    res = curl_easy_perform(curl);
-    gettimeofday(&end, NULL);
 
-    if (res != CURLE_OK) {
-        print_error(&csl, "Error on download: %s", curl_easy_strerror(res));
-        result.is_error = true;
-    } else {
-        double duration = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6; // Time in seconds
-        double speed_mbps = (total_bytes * 8) / (duration * 1e6); // Calculate speed in Mbps
-        double total_mb = total_bytes / (1024.0 * 1024.0); // Calculate total downloaded in MB
-        print_info(&csl, "Download Speed: %.2f Mbps", speed_mbps);
-        print_info(&csl, "Total Downloaded: %.2f MB", total_mb);
-        result.speed_mbps = speed_mbps;
+    //  Send data to server
+    while (total_bytes < UPLOAD_LIMIT) {
+        bytes_sent = sendto(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr *)server_addr, sizeof(*server_addr));
+        if (bytes_sent < 0) {
+            print_error(&csl,"Error sending data");
+            break;
+        }
+        total_bytes += bytes_sent;
+
+        // Stop timer after TEST_DURATION seconds
+        gettimeofday(&end, NULL);
+        if (end.tv_sec - start.tv_sec >= TEST_DURATION) {
+            break;
+        }
     }
 
-    curl_easy_cleanup(curl);
-    curl_slist_free_all(headers);
+    // Calculate speed
+    double elapsed_time = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+    double mbps = (total_bytes * 8) / (elapsed_time * 1e6);
+    double total_mb = total_bytes / (1024.0 * 1024.0);
+    print_info(&csl,"Total MB sent: %.2f MB", total_mb);
+    result.speed_mbps = mbps;
     return result;
 }
 
-size_t upload_callback(void *ptr, size_t size, size_t nitems, void *userdata) {
-    size_t *bytes_sent = (size_t *)userdata;
-    size_t max_to_send = size * nitems;
+void test(char *access_token){
 
-    // If we've already sent the maximum amount, return 0 to signal end of upload
-    if (*bytes_sent >= UPLOAD_LIMIT) {
-        return 0;
+    int sockfd;
+    struct sockaddr_in server_addr;
+    
+    // Create a UDP socket
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd < 0) {
+        print_error(&csl,"Error creating socket");
+        return;
     }
 
-    size_t to_send = (*bytes_sent + max_to_send <= UPLOAD_LIMIT)
-                         ? max_to_send
-                         : UPLOAD_LIMIT - *bytes_sent;
-
-    memset(ptr, 'A', to_send);
-    *bytes_sent += to_send;
-
-    return to_send;
-}
-
-TestResult measure_upload_speed(char *access_token) {
-    CURL *curl;
-    CURLcode res;
-    size_t bytes_sent = 0;
-    struct timeval start, end;
-    char url[256];
-    strcpy(url, config.speed_test_api);
-    strcat(url, "/");
-    strcat(url, "upload");
-    TestResult result = {
-        .is_error = false,
-        .speed_mbps = 0.0,
-    };
-
-    print_info(&csl,"Starting upload speed test...");
-    curl = curl_easy_init();
-    if (!curl) {
-        print_error(&csl,"Failed to initialize curl\n");
-        result.is_error = true;
-        curl_easy_cleanup(curl);
-        return result;
+    // Set server address
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(8080);
+    if (inet_pton(AF_INET, "127.0.0.1", &server_addr.sin_addr) <= 0) {
+        print_error(&csl,"Invalid address/ Address not supported");
+        close(sockfd);
+        return;
     }
 
-    struct curl_slist *headers = NULL;
-    char auth_header[1024];
-    snprintf(auth_header, sizeof(auth_header), "Access-Token: %s", access_token);
-    headers = curl_slist_append(headers, auth_header);
-    char bearer_header[1024];
-    snprintf(bearer_header, sizeof(bearer_header), "Authorization: Bearer %s", config.speed_test_api_key);
-    headers = curl_slist_append(headers, bearer_header);
-    headers = curl_slist_append(headers, "Content-Type: application/octet-stream");
-
-    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-    curl_easy_setopt(curl, CURLOPT_URL, url);
-    curl_easy_setopt(curl, CURLOPT_POST, 1L);
-    curl_easy_setopt(curl, CURLOPT_READFUNCTION, upload_callback);
-    curl_easy_setopt(curl, CURLOPT_READDATA, &bytes_sent);
-    curl_easy_setopt(curl, CURLOPT_INFILESIZE_LARGE, (curl_off_t)UPLOAD_LIMIT);
-
-    gettimeofday(&start, NULL);
-    res = curl_easy_perform(curl);
-    gettimeofday(&end, NULL);
-
-    if (res != CURLE_OK) {
-        print_error(&csl,"Error on upload: %s", curl_easy_strerror(res));
-        result.is_error = true;
+    TestResult download_result = measure_download_speed(sockfd, &server_addr, access_token);
+    if (download_result.is_error) {
+        print_error(&csl, "Download speed test failed");
     } else {
-        double duration = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6;
-        double speed_mbps = (bytes_sent * 8.0) / (duration * 1e6); // Speed in Mbps
-        print_info(&csl,"Upload complete");
-        print_info(&csl,"Upload Speed: %.2f Mbps", speed_mbps);
-        print_info(&csl,"Total Uploaded: %.2f MB", bytes_sent / (1024.0 * 1024.0));
-        result.speed_mbps = speed_mbps;
+        print_info(&csl, "Download speed: %.2f Mbps", download_result.speed_mbps);
     }
 
-    curl_easy_cleanup(curl);
-    curl_slist_free_all(headers);
-    return result;
+    TestResult upload_result = measure_upload_speed(sockfd, &server_addr, access_token);
+    if (upload_result.is_error) {
+        print_error(&csl, "Upload speed test failed");
+    } else {
+        print_info(&csl, "Upload speed: %.2f Mbps", upload_result.speed_mbps);
+    }
+
+    // Close the socket | ALWAYS MAKE SURE TO CLOSE SOCKET AFTER USE
+    close(sockfd);
 }
 
 float get_average_latency(const char *hostname) {
@@ -227,23 +219,23 @@ SpeedTestResult speed_test(char *bearer_token) {
 
     console(CONSOLE_INFO, "Starting speed test");
 
-    TestResult download_result = measure_download_speed(bearer_token);
-    if (download_result.is_error) {
-        print_error(&csl, "Download test failed");
-        result.is_error = true;
-        return result;
-    }
+    // TestResult download_result = measure_download_speed(bearer_token);
+    // if (download_result.is_error) {
+    //     print_error(&csl, "Download test failed");
+    //     result.is_error = true;
+    //     return result;
+    // }
 
-    TestResult upload_result = measure_upload_speed(bearer_token);
-    if (upload_result.is_error) {
-        print_error(&csl, "Upload test failed");
-        result.is_error = true;
-        return result;
-    }
+    // TestResult upload_result = measure_upload_speed(bearer_token);
+    // if (upload_result.is_error) {
+    //     print_error(&csl, "Upload test failed");
+    //     result.is_error = true;
+    //     return result;
+    // }
 
     result.is_error = false;
-    result.upload_speed_mbps = upload_result.speed_mbps;
-    result.download_speed_mbps = download_result.speed_mbps;
+    // result.upload_speed_mbps = upload_result.speed_mbps;
+    // result.download_speed_mbps = download_result.speed_mbps;
 
     print_info(&csl, "Speed test complete");
 

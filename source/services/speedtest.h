@@ -8,5 +8,6 @@
 
 void speed_test();
 void speedtest_service(Scheduler *sch, struct mosquitto *mosq, Registration *registration, AccessToken *access_token);
+void test(char *access_token);
 
 #endif // SPEEDTEST_H

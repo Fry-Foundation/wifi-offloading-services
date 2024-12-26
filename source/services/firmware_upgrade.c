@@ -160,7 +160,7 @@ bool check_memory_and_proceed() {
     if (memory_free == 0) {
         console(CONSOLE_ERROR, "Failed to parse memory_free from script output");
         free(output);
-        return;
+        return false;
     }
 
     console(CONSOLE_INFO, "Free memory: %zu bytes", memory_free);

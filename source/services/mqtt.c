@@ -11,6 +11,11 @@
 #include <string.h>
 
 #define MAX_TOPIC_CALLBACKS 10
+#define CLEAN_SESSION true
+#define TLS_VERIFY 1
+#define TLS_VERSION "tlsv1.2"
+#define PORT 8883
+#define KEEP_ALIVE 60
 
 static Console csl = {
     .topic = "mqtt",
@@ -94,21 +99,18 @@ struct mosquitto *init_mosquitto(Registration *registration, AccessToken *access
 
     struct mosquitto *mosq;
     int rc;
-    int pw_set;
-    int tls_set;
-    int tls_opts_set;
     // Initialize the Mosquitto library
     mosquitto_lib_init();
 
     // Create a new Mosquitto client instance
-    mosq = mosquitto_new(registration->wayru_device_id, true, NULL);
+    mosq = mosquitto_new(registration->wayru_device_id, CLEAN_SESSION, NULL);
     if (!mosq) {
         print_error(&csl, "unable to create Mosquitto client instance.\n");
         mosquitto_lib_cleanup();
         return NULL;
     }
 
-    pw_set = mosquitto_username_pw_set(mosq, mqtt_user, mqtt_password);
+    int pw_set = mosquitto_username_pw_set(mosq, mqtt_user, mqtt_password);
     if (pw_set != MOSQ_ERR_SUCCESS) {
         print_error(&csl, "unable to set username and password. %s\n", mosquitto_strerror(pw_set));
         mosquitto_destroy(mosq);
@@ -128,7 +130,7 @@ struct mosquitto *init_mosquitto(Registration *registration, AccessToken *access
     print_debug(&csl, "Key Path: %s", &key_path);
     print_debug(&csl, "Crt Path: %s", &crt_path);
 
-    tls_set = mosquitto_tls_set(mosq, ca_path, NULL, crt_path, key_path, NULL);
+    int tls_set = mosquitto_tls_set(mosq, ca_path, NULL, crt_path, key_path, NULL);
     if (tls_set != MOSQ_ERR_SUCCESS) {
         print_error(&csl, "unable to set TLS. %s\n", mosquitto_strerror(tls_set));
         mosquitto_destroy(mosq);
@@ -136,7 +138,7 @@ struct mosquitto *init_mosquitto(Registration *registration, AccessToken *access
         return NULL;
     }
 
-    tls_opts_set = mosquitto_tls_opts_set(mosq, 1, "tlsv1.2", NULL);
+    int tls_opts_set = mosquitto_tls_opts_set(mosq, TLS_VERIFY, TLS_VERSION, NULL);
     if (tls_opts_set != MOSQ_ERR_SUCCESS) {
         print_error(&csl, "unable to set TLS options. %s\n", mosquitto_strerror(tls_opts_set));
         mosquitto_destroy(mosq);
@@ -151,7 +153,7 @@ struct mosquitto *init_mosquitto(Registration *registration, AccessToken *access
     mosquitto_subscribe_callback_set(mosq, on_subscribe);
 
     // Connect to an MQTT broker
-    rc = mosquitto_connect(mosq, config.mqtt_broker_url, 8883, 60);
+    rc = mosquitto_connect(mosq, config.mqtt_broker_url, PORT, KEEP_ALIVE);
     if (rc != MOSQ_ERR_SUCCESS) {
         print_error(&csl, "unable to connect to broker. %s\n", mosquitto_strerror(rc));
         mosquitto_destroy(mosq);
@@ -159,10 +161,7 @@ struct mosquitto *init_mosquitto(Registration *registration, AccessToken *access
         return NULL;
     }
 
-    // Subscribe to a topic
-    rc = mosquitto_subscribe(mosq, NULL, "test", 0);
-
-    // Start the event loop
+    // Start the event loop (threaded version, but works fine on single core devices like the Genesis)
     rc = mosquitto_loop_start(mosq);
     if (rc != MOSQ_ERR_SUCCESS) {
         print_error(&csl, "unable to start the event loop. %s\n", mosquitto_strerror(rc));
@@ -171,11 +170,6 @@ struct mosquitto *init_mosquitto(Registration *registration, AccessToken *access
         mosquitto_lib_cleanup();
         return NULL;
     }
-
-    publish_mqtt(mosq, "wayru", "Hola desde una conexion segura!", 0);
-    // Keep the program running to listen for messages
-    // printf("Press Enter to exit...\n");
-    // getchar();
 
     return mosq;
 }

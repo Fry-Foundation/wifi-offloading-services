@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #define MAX_TOPIC_CALLBACKS 10
 #define CLEAN_SESSION true
@@ -42,6 +43,38 @@ void on_connect(struct mosquitto *mosq, void *obj, int reason_code) {
 
 void on_disconnect(struct mosquitto *mosq, void *obj, int reason_code) {
     print_info(&csl, "disconnected from the broker. Reason code: %d", reason_code);
+
+    static int retry_count = 0;
+    const int max_retries = 3;
+    const int initial_retry_delay = 5; // 5 seconds
+    
+    // Log the disconnection reason
+    if (reason_code == 0) {
+        print_info(&csl, "disconnected from the broker");
+    } else {
+        print_error(&csl, "unexpectedly disconnected from the broker");
+        print_error(&csl, "reason code: %d", reason_code);
+        print_error(&csl, "reason string: %s", mosquitto_reason_string(reason_code));
+    }
+
+    // Attempt to reconnect if the disconnection was unexpected
+    if (reason_code != 0 && retry_count < max_retries) {
+        retry_count++;
+        int delay = initial_retry_delay * (1 << (retry_count - 1)); // Exponential backoff
+        print_info(&csl, "reconnecting in %d seconds (attempt %d/%d)...", delay, retry_count, max_retries);
+        sleep(delay);
+
+        int rc = mosquitto_reconnect(mosq);
+        if (rc == MOSQ_ERR_SUCCESS) {
+            print_info(&csl, "reconnected successfully.");
+            retry_count = 0; // Reset retry count on success
+        } else {
+            print_error(&csl, "reconnection attempt failed; error code is %d", rc);
+        }
+    } else if (retry_count >= max_retries) {
+        print_error(&csl, "maximum reconnection attempts reached. Giving up and exiting...");
+        exit(1);
+    }
 }
 
 void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg) {

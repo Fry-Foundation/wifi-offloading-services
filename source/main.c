@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
     bool internet_status = internet_check();
     if (!internet_status) return 1;
 
-    /*bool wayru_status = wayru_check();
+    bool wayru_status = wayru_check();
     if (!wayru_status) return 1;
 
     Registration *registration =
@@ -68,32 +68,32 @@ int main(int argc, char *argv[]) {
 
     DeviceContext *device_context = init_device_context(registration, access_token);
     struct mosquitto *mosq = init_mqtt(registration, access_token);
-    int site_clients_fifo_fd = init_site_clients_fifo();*/
+    int site_clients_fifo_fd = init_site_clients_fifo();
 
     // Start services and schedule future tasks on each
-    /*access_token_service(sch, access_token, registration, mosq);
+    access_token_service(sch, access_token, registration, mosq);
     device_context_service(sch, device_context, registration, access_token);
     device_status_service(sch, device_info, registration->wayru_device_id, access_token);
     setup_service(sch, device_info, registration->wayru_device_id, access_token);
     accounting_service(sch);
     monitoring_service(sch, mosq, registration);
-    firmware_upgrade_check(sch, device_info, registration, access_token);*/
+    firmware_upgrade_check(sch, device_info, registration, access_token);
     start_diagnostic_service(sch, device_info); //only for "Genesis"
-    //site_clients_service(sch, mosq, site_clients_fifo_fd, device_context->site);
-    /*speedtest_service(sch, mosq, registration, access_token);
+    site_clients_service(sch, mosq, site_clients_fifo_fd, device_context->site);
+    speedtest_service(sch, mosq, registration, access_token);
     commands_service(mosq, device_info, registration, access_token);
-    reboot_service(sch);*/
+    reboot_service(sch);
 
     run_tasks(sch);
 
     // Clean up
-    /*clean_site_clients_fifo(site_clients_fifo_fd);
+    clean_site_clients_fifo(site_clients_fifo_fd);
     clean_up_mosquitto(&mosq);
     clean_device_context(device_context);
     clean_access_token(access_token);
     clean_registration(registration);
     clean_device_info(device_info);
-    clean_scheduler(sch);*/
+    clean_scheduler(sch);
 
     return 0;
 }

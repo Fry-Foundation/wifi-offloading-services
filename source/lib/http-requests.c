@@ -6,6 +6,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+static Console csl = {
+    .topic = "http-requests",
+    .level = CONSOLE_DEBUG,
+};
+
 // HTTP GET request
 HttpResult http_get(const HttpGetOptions *options) {
     HttpResult result = {
@@ -18,7 +23,7 @@ HttpResult http_get(const HttpGetOptions *options) {
 
     CURL *curl = curl_easy_init();
     if (curl == NULL) {
-        console(CONSOLE_ERROR, "curl did not initialize");
+        print_error(&csl, "curl did not initialize");
         result.is_error = true;
         result.error = "curl did not initialize";
         return result;
@@ -59,23 +64,23 @@ HttpResult http_get(const HttpGetOptions *options) {
 
     // Request
     res = curl_easy_perform(curl);
-    console(CONSOLE_DEBUG, "response code: %d", res);
+    print_debug(&csl, "response buffer: %s", result.response_buffer);
 
     // Response
     if (res != CURLE_OK) {
-        console(CONSOLE_ERROR, "curl GET failed: %s", curl_easy_strerror(res));
+        print_error(&csl, "curl GET failed: %s", curl_easy_strerror(res));
         free(result.response_buffer);
         result.is_error = true;
         result.error = strdup(curl_easy_strerror(res));
     } else {
-        console(CONSOLE_DEBUG, "response buffer: %s", result.response_buffer);
+        print_debug(&csl, "response buffer: %s", result.response_buffer);
 
         // Get HTTP status code
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &result.http_status_code);
-        console(CONSOLE_DEBUG, "HTTP status code: %ld", result.http_status_code);
+        print_debug(&csl, "HTTP status code: %ld", result.http_status_code);
 
         if (result.http_status_code >= 400) {
-            console(CONSOLE_ERROR, "HTTP status code is greater than 400, error");
+            print_error(&csl, "HTTP status code is greater than 400, error");
             result.is_error = true;
             result.error = strdup("HTTP error, check status code and response buffer");
         } else {
@@ -101,7 +106,7 @@ HttpResult http_post(const HttpPostOptions *options) {
 
     CURL *curl = curl_easy_init();
     if (curl == NULL) {
-        console(CONSOLE_ERROR, "curl did not initialize");
+        print_error(&csl, "curl did not initialize");
         result.is_error = true;
         result.error = "curl did not initialize";
         return result;
@@ -171,23 +176,23 @@ HttpResult http_post(const HttpPostOptions *options) {
 
     // Request
     res = curl_easy_perform(curl);
-    console(CONSOLE_DEBUG, "curl code: %d", res);
+    print_debug(&csl, "curl code: %d", res);
 
     // Response
     if (res != CURLE_OK) {
-        console(CONSOLE_ERROR, "curl POST failed: %s", curl_easy_strerror(res));
+        print_error(&csl, "curl POST failed: %s", curl_easy_strerror(res));
         free(result.response_buffer);
         result.is_error = true;
         result.error = strdup(curl_easy_strerror(res));
     } else {
-        console(CONSOLE_DEBUG, "response buffer: %s", result.response_buffer);
+        print_debug(&csl, "response buffer: %s", result.response_buffer);
 
         // Get HTTP status code
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &result.http_status_code);
-        console(CONSOLE_DEBUG, "HTTP status code: %ld", result.http_status_code);
+        print_debug(&csl, "HTTP status code: %ld", result.http_status_code);
 
         if (result.http_status_code >= 400) {
-            console(CONSOLE_ERROR, "HTTP status code is greater than 400, error");
+            print_error(&csl, "HTTP status code is greater than 400, error");
             result.is_error = true;
             result.error = strdup("HTTP error, check status code and response buffer");
         } else {

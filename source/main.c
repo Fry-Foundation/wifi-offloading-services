@@ -23,6 +23,11 @@
 #include <unistd.h>
 #include <lib/retry.h>
 
+static Console csl = {
+    .topic = "main",
+    .level = CONSOLE_DEBUG,
+};
+
 int main(int argc, char *argv[]) {
     // Init
     Scheduler *sch = init_scheduler();
@@ -40,7 +45,7 @@ int main(int argc, char *argv[]) {
 
     AccessToken *access_token = init_access_token(registration);
     if (access_token == NULL) {
-        console(CONSOLE_ERROR, "Failed to start access token ... exiting");
+        print_error(&csl, "Failed to start access token ... exiting");
         return 1;
     }
 
@@ -60,7 +65,7 @@ int main(int argc, char *argv[]) {
     if (!generate_and_sign_radsec_result) return 1;
 
     install_radsec_cert();
-    
+
     DeviceContext *device_context = init_device_context(registration, access_token);
     struct mosquitto *mosq = init_mqtt(registration, access_token);
     int site_clients_fifo_fd = init_site_clients_fifo();

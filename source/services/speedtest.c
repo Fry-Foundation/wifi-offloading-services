@@ -190,7 +190,7 @@ float get_average_latency(const char *hostname) {
 
     FILE *fp = popen(command, "r");
     if (fp == NULL) {
-        console(CONSOLE_ERROR, "Failed to run ping command");
+        print_error(&csl, "Failed to run ping command");
         return -1;
     }
 
@@ -225,7 +225,7 @@ SpeedTestResult speed_test(char *bearer_token) {
         .download_speed_mbps = 0.0,
     };
 
-    console(CONSOLE_INFO, "Starting speed test");
+    print_info(&csl, "Starting speed test");
 
     TestResult download_result = measure_download_speed(bearer_token);
     if (download_result.is_error) {
@@ -270,15 +270,15 @@ void speedtest_task(Scheduler *sch, void *task_context) {
     // double upload_speed_mbps = upload_speed / interval;
     // double download_speed_mbps = download_speed / interval;
 
-    // console(CONSOLE_INFO, "Average upload speed: %.2f Mbps", upload_speed_mbps);
-    // console(CONSOLE_INFO, "Average download speed: %.2f Mbps", download_speed_mbps);
+    // print_info(&csl, "Average upload speed: %.2f Mbps", upload_speed_mbps);
+    // print_info(&csl, "Average download speed: %.2f Mbps", download_speed_mbps);
     SpeedTestResult result = speed_test(context->access_token->token);
 
     time_t now;
     time(&now);
     char measurementid[256];
     generate_id(measurementid, sizeof(measurementid), context->registration->wayru_device_id, now);
-    console(CONSOLE_INFO, "Measurement ID for speedtest: %s", measurementid);
+    print_info(&csl, "Measurement ID for speedtest: %s", measurementid);
     json_object *speedtest_data = json_object_new_object();
     json_object_object_add(speedtest_data, "measurement_id", json_object_new_string(measurementid));
     json_object_object_add(speedtest_data, "device_id", json_object_new_string(context->registration->wayru_device_id));
@@ -288,7 +288,7 @@ void speedtest_task(Scheduler *sch, void *task_context) {
     json_object_object_add(speedtest_data, "latency", json_object_new_double(latency));
     const char *speedtest_data_str = json_object_to_json_string(speedtest_data);
 
-    console(CONSOLE_INFO, "Publishing speedtest results");
+    print_info(&csl, "Publishing speedtest results");
     publish_mqtt(context->mosq, "monitoring/speedtest", speedtest_data_str, 0);
 
     json_object_put(speedtest_data);
@@ -301,13 +301,13 @@ void speedtest_task(Scheduler *sch, void *task_context) {
 
 void speedtest_service(Scheduler *sch, struct mosquitto *mosq, Registration *registration, AccessToken *access_token) {
     if (config.speed_test_enabled == 0) {
-        console(CONSOLE_INFO, "Speedtest service is disabled by config");
+        print_info(&csl, "Speedtest service is disabled by config");
         return;
     }
 
     SpeedTestTaskContext *context = (SpeedTestTaskContext *)malloc(sizeof(SpeedTestTaskContext));
     if (context == NULL) {
-        console(CONSOLE_ERROR, "failed to allocate memory for speedtest task context");
+        print_error(&csl, "failed to allocate memory for speedtest task context");
         return;
     }
 

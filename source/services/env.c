@@ -1,10 +1,16 @@
 #include "env.h"
+#include "lib/console.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #define MAX_LINE_LENGTH 256
 #define MAX_VARIABLES 100
+
+static Console csl = {
+    .topic = "env",
+    .level = CONSOLE_DEBUG,
+};
 
 typedef struct {
     char key[MAX_LINE_LENGTH];
@@ -17,7 +23,8 @@ int env_variable_count = 0;
 void load_env(const char *filename) {
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
-        perror("Error opening .env file");
+        print_error(&csl, "failed to open .env file");
+
         return;
     }
 
@@ -40,7 +47,7 @@ void load_env(const char *filename) {
 
         env_variable_count++;
         if (env_variable_count >= MAX_VARIABLES) {
-            fprintf(stderr, "Too many environment variables\n");
+            print_error(&csl, "too many environment variables");
             break;
         }
     }

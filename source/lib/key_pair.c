@@ -9,19 +9,24 @@
 
 #define KEY_PATH_SIZE 512
 
+static Console csl = {
+    .topic = "key_pair",
+    .level = CONSOLE_DEBUG,
+};
+
 // Generate a new key pair; note that we alias the type to control the allowed key algorithms
 EVP_PKEY *generate_key_pair(GenerateKeyPairType type) {
     // Create the context for key generation
     EVP_PKEY_CTX *pkey_ctx = EVP_PKEY_CTX_new_id(type, NULL);
     if (pkey_ctx == NULL) {
-        console(CONSOLE_ERROR, "Error creating PKEY context");
+        print_error(&csl, "Error creating PKEY context");
         ERR_print_errors_fp(stderr);
         return NULL;
     }
 
     // Initialize the key generation
     if (EVP_PKEY_keygen_init(pkey_ctx) <= 0) {
-        console(CONSOLE_ERROR, "Error initializing PKEY keygen");
+        print_error(&csl, "Error initializing PKEY keygen");
         ERR_print_errors_fp(stderr);
         EVP_PKEY_CTX_free(pkey_ctx);
         return NULL;
@@ -30,7 +35,7 @@ EVP_PKEY *generate_key_pair(GenerateKeyPairType type) {
     // Generate the key pair
     EVP_PKEY *pkey = NULL;
     if (EVP_PKEY_keygen(pkey_ctx, &pkey) <= 0) {
-        console(CONSOLE_ERROR, "Error generating key pair");
+        print_error(&csl, "Error generating key pair");
         ERR_print_errors_fp(stderr);
         EVP_PKEY_CTX_free(pkey_ctx);
         return NULL;
@@ -46,20 +51,20 @@ EVP_PKEY *generate_key_pair(GenerateKeyPairType type) {
 bool save_private_key_in_pem(EVP_PKEY *pkey, char *private_key_filepath) {
     FILE *private_key_file = fopen(private_key_filepath, "wb");
     if (!private_key_file) {
-        console(CONSOLE_ERROR, "Error opening private key file for writing");
+        print_error(&csl, "Error opening private key file for writing");
         ERR_print_errors_fp(stderr);
         return false;
     }
 
     if (PEM_write_PrivateKey(private_key_file, pkey, NULL, NULL, 0, NULL, NULL) != 1) {
-        console(CONSOLE_ERROR, "Error writing private key to file");
+        print_error(&csl, "Error writing private key to file");
         ERR_print_errors_fp(stderr);
         fclose(private_key_file);
         return false;
     }
 
     fclose(private_key_file);
-    console(CONSOLE_INFO, "Private key written to %s", private_key_filepath);
+    print_info(&csl, "Private key written to %s", private_key_filepath);
     return true;
 }
 
@@ -67,20 +72,20 @@ bool save_private_key_in_pem(EVP_PKEY *pkey, char *private_key_filepath) {
 bool save_public_key_in_pem(EVP_PKEY *pkey, char *public_key_filepath) {
     FILE *public_key_file = fopen(public_key_filepath, "wb");
     if (!public_key_file) {
-        console(CONSOLE_ERROR, "Error opening public key file for writing");
+        print_error(&csl, "Error opening public key file for writing");
         ERR_print_errors_fp(stderr);
         return false;
     }
 
     if (PEM_write_PUBKEY(public_key_file, pkey) != 1) {
-        console(CONSOLE_ERROR, "Error writing public key to file");
+        print_error(&csl, "Error writing public key to file");
         ERR_print_errors_fp(stderr);
         fclose(public_key_file);
         return false;
     }
 
     fclose(public_key_file);
-    console(CONSOLE_INFO, "Public key written to %s", public_key_filepath);
+    print_info(&csl, "Public key written to %s", public_key_filepath);
     return true;
 }
 
@@ -88,14 +93,14 @@ bool save_public_key_in_pem(EVP_PKEY *pkey, char *public_key_filepath) {
 EVP_PKEY *load_private_key_from_pem(char *private_key_filepath) {
     FILE *private_key_file = fopen(private_key_filepath, "rb");
     if (!private_key_file) {
-        console(CONSOLE_ERROR, "Error opening private key file for reading");
+        print_error(&csl, "Error opening private key file for reading");
         ERR_print_errors_fp(stderr);
         return NULL;
     }
 
     EVP_PKEY *pkey = PEM_read_PrivateKey(private_key_file, NULL, NULL, NULL);
     if (!pkey) {
-        console(CONSOLE_ERROR, "Error reading private key from file");
+        print_error(&csl, "Error reading private key from file");
         ERR_print_errors_fp(stderr);
         fclose(private_key_file);
         return NULL;
@@ -109,13 +114,13 @@ EVP_PKEY *load_private_key_from_pem(char *private_key_filepath) {
 char *get_public_key_pem_string(EVP_PKEY *pkey) {
     BIO *bio = BIO_new(BIO_s_mem());
     if (!bio) {
-        console(CONSOLE_ERROR, "Error creating BIO");
+        print_error(&csl, "Error creating BIO");
         ERR_print_errors_fp(stderr);
         return NULL;
     }
 
     if (PEM_write_bio_PUBKEY(bio, pkey) != 1) {
-        console(CONSOLE_ERROR, "Error writing public key to BIO");
+        print_error(&csl, "Error writing public key to BIO");
         ERR_print_errors_fp(stderr);
         BIO_free(bio);
         return NULL;
@@ -125,7 +130,7 @@ char *get_public_key_pem_string(EVP_PKEY *pkey) {
     long bio_size = BIO_get_mem_data(bio, &public_key_pem_string);
     char *public_key_pem_string_copy = malloc(bio_size + 1);
     if (!public_key_pem_string_copy) {
-        console(CONSOLE_ERROR, "Error allocating memory for public key string");
+        print_error(&csl, "Error allocating memory for public key string");
         ERR_print_errors_fp(stderr);
         BIO_free(bio);
         return NULL;
@@ -143,7 +148,7 @@ char *get_public_key_pem_string(EVP_PKEY *pkey) {
 X509 *load_certificate(const char *cert_path) {
     FILE *cert_file = fopen(cert_path, "rb");
     if (!cert_file) {
-        console(CONSOLE_ERROR, "Unable to open certificate file: %s", cert_path);
+        print_error(&csl, "Unable to open certificate file: %s", cert_path);
         return NULL;
     }
     X509 *cert = PEM_read_X509(cert_file, NULL, NULL, NULL);
@@ -155,20 +160,20 @@ X509 *load_certificate(const char *cert_path) {
 int verify_certificate(const char *cert_path, const char *ca_cert_path) {
     X509 *cert = load_certificate(cert_path);
     if (!cert) {
-        console(CONSOLE_ERROR, "Failed to load certificate: %s", cert_path);
+        print_error(&csl, "Failed to load certificate: %s", cert_path);
         return 0;
     }
 
     X509 *ca_cert = load_certificate(ca_cert_path);
     if (!ca_cert) {
-        console(CONSOLE_ERROR, "Failed to load CA certificate: %s", ca_cert_path);
+        print_error(&csl, "Failed to load CA certificate: %s", ca_cert_path);
         X509_free(cert);
         return 0;
     }
 
     X509_STORE *store = X509_STORE_new();
     if (!store) {
-        console(CONSOLE_ERROR, "Failed to create X509_STORE");
+        print_error(&csl, "Failed to create X509_STORE");
         X509_free(cert);
         X509_free(ca_cert);
         return 0;
@@ -177,7 +182,7 @@ int verify_certificate(const char *cert_path, const char *ca_cert_path) {
 
     X509_STORE_CTX *ctx = X509_STORE_CTX_new();
     if (!ctx) {
-        console(CONSOLE_ERROR, "Failed to create X509_STORE_CTX");
+        print_error(&csl, "Failed to create X509_STORE_CTX");
         X509_STORE_free(store);
         X509_free(cert);
         X509_free(ca_cert);
@@ -188,10 +193,10 @@ int verify_certificate(const char *cert_path, const char *ca_cert_path) {
 
     int ret = X509_verify_cert(ctx);
     if (ret == 1) {
-        console(CONSOLE_INFO, "Certificate is valid.");
+        print_info(&csl, "Certificate is valid.");
     } else {
         int err = X509_STORE_CTX_get_error(ctx);
-        console(CONSOLE_ERROR, "Certificate verification failed: %s", X509_verify_cert_error_string(err));
+        print_error(&csl, "Certificate verification failed: %s", X509_verify_cert_error_string(err));
     }
 
     X509_STORE_CTX_free(ctx);

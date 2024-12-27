@@ -25,6 +25,11 @@
 #define DOWNLOAD_QUOTA "0"
 #define CUSTOM "custom_placeholder"
 
+static Console csl = {
+    .topic = "site-clients",
+    .level = CONSOLE_DEBUG,
+};
+
 typedef struct {
     struct mosquitto *mosq;
     Site *site;
@@ -57,11 +62,11 @@ void handle_connect(struct json_object *parsed_json) {
              json_object_get_string(uploadquota), json_object_get_string(downloadquota),
              json_object_get_string(custom));
 
-    console(CONSOLE_DEBUG, "Command: %s", command);
+    print_debug(&csl, "Command: %s", command);
 
     // Run the script
     char *output = run_script(command);
-    console(CONSOLE_DEBUG, "Script output: %s", output);
+    print_debug(&csl, "Script output: %s", output);
 
     // Clean up
     free(output);
@@ -80,14 +85,14 @@ void handle_disconnect(struct json_object *parsed_json) {
 
     // Run the script
     char *output = run_script(command);
-    console(CONSOLE_DEBUG, "Script output: %s", output);
+    print_debug(&csl, "Script output: %s", output);
 
     // Clean up
     free(output);
 }
 
 void site_clients_callback(struct mosquitto *mosq, const struct mosquitto_message *message) {
-    console(CONSOLE_DEBUG, "Received message on site clients topic, payload: %s", (char *)message->payload);
+    print_debug(&csl, "Received message on site clients topic, payload: %s", (char *)message->payload);
 
     // Parse the JSON payload
     struct json_object *parsed_json;
@@ -95,12 +100,12 @@ void site_clients_callback(struct mosquitto *mosq, const struct mosquitto_messag
 
     parsed_json = json_tokener_parse((char *)message->payload);
     if (!parsed_json) {
-        console(CONSOLE_ERROR, "Failed to parse clients topic payload JSON");
+        print_error(&csl, "Failed to parse clients topic payload JSON");
         return;
     }
 
     if (!json_object_object_get_ex(parsed_json, "type", &type)) {
-        console(CONSOLE_ERROR, "Failed to extract type field from clients topic payload JSON");
+        print_error(&csl, "Failed to extract type field from clients topic payload JSON");
         json_object_put(parsed_json);
         return;
     }
@@ -113,7 +118,7 @@ void site_clients_callback(struct mosquitto *mosq, const struct mosquitto_messag
     } else if (strcmp(type_str, "disconnect") == 0) {
         handle_disconnect(parsed_json);
     } else {
-        console(CONSOLE_ERROR, "Unknown clients topic type: %s", type_str);
+        print_error(&csl, "Unknown clients topic type: %s", type_str);
     }
 
     // Clean up
@@ -127,7 +132,7 @@ void configure_site_mac(char *mac) {
 
     // Run the script
     char *output = run_script(command);
-    console(CONSOLE_DEBUG, "Script output: %s", output);
+    print_debug(&csl, "Script output: %s", output);
 
     // Clean up
     free(output);
@@ -143,7 +148,7 @@ void configure_binauth() {
 
     // Run the script
     char *output = run_script(command);
-    console(CONSOLE_DEBUG, "Script output: %s", output);
+    print_debug(&csl, "Script output: %s", output);
 
     // Clean up
     free(output);
@@ -155,17 +160,17 @@ void site_clients_task(Scheduler *sch, void *task_context) {
 
     // Read all available data from the FIFO
     ssize_t bytesRead = read(context->fifo_fd, buffer, sizeof(buffer) - 1);
-    console(CONSOLE_DEBUG, "Read %ld bytes from fifo", bytesRead);
+    print_debug(&csl, "Read %ld bytes from fifo", bytesRead);
     if (bytesRead > 0) {
         // Null-terminate the buffer to make it a valid C-string
         buffer[bytesRead] = '\0';
 
         // Process the data from FIFO
-        console(CONSOLE_DEBUG, "Received from fifo: %s", buffer);
+        print_debug(&csl, "Received from fifo: %s", buffer);
 
         // Split the buffer into lines
         char *line = strtok(buffer, "\n");
-        console(CONSOLE_DEBUG, "Line after strtok: %s", line);
+        print_debug(&csl, "Line after strtok: %s", line);
 
         while (line != NULL) {
             char event_type[64];
@@ -175,7 +180,7 @@ void site_clients_task(Scheduler *sch, void *task_context) {
             int ret = sscanf(line, "%s %s", event_type, mac);
 
             // Display the results
-            console(CONSOLE_DEBUG, "Event type: %s, MAC: %s", event_type, mac);
+            print_debug(&csl, "Event type: %s, MAC: %s", event_type, mac);
 
             if (ret == 2) {
                 if (strcmp(event_type, "connect") == 0) {
@@ -200,7 +205,7 @@ void site_clients_task(Scheduler *sch, void *task_context) {
                     char topic[256];
                     snprintf(topic, sizeof(topic), "site/%s/clients", context->site->id);
 
-                    console(CONSOLE_DEBUG, "Publishing to topic: %s, payload: %s", topic, payload_str);
+                    print_debug(&csl, "Publishing to topic: %s, payload: %s", topic, payload_str);
 
                     publish_mqtt(context->mosq, topic, payload_str, 0);
 
@@ -216,16 +221,16 @@ void site_clients_task(Scheduler *sch, void *task_context) {
                     char topic[256];
                     snprintf(topic, sizeof(topic), "site/%s/clients", context->site->id);
 
-                    console(CONSOLE_DEBUG, "Publishing to topic: %s, payload: %s", topic, payload_str);
+                    print_debug(&csl, "Publishing to topic: %s, payload: %s", topic, payload_str);
 
                     publish_mqtt(context->mosq, topic, payload_str, 0);
 
                     json_object_put(json_payload);
                 } else {
-                    console(CONSOLE_ERROR, "Unknown event type: %s", event_type);
+                    print_error(&csl, "Unknown event type: %s", event_type);
                 }
             } else {
-                console(CONSOLE_ERROR, "Invalid line: %s", line);
+                print_error(&csl, "Invalid line: %s", line);
             }
 
             // Get next line
@@ -233,8 +238,7 @@ void site_clients_task(Scheduler *sch, void *task_context) {
         }
     } else if (bytesRead == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
         // Handle actual error
-        console(CONSOLE_ERROR, "Failed to read from site clients fifo");
-        perror("read");
+        print_error(&csl, "Failed to read from site clients fifo");
     }
 
     // Re-schedule the task to run again after interval
@@ -259,45 +263,43 @@ int init_site_clients_fifo() {
     if (stat(fifo_dir, &st) == -1) {
         // Directory does not exist, create it
         if (mkdir(fifo_dir, 0700) == -1) {
-            console(CONSOLE_ERROR, "failed to create site clients fifo directory");
+            print_error(&csl, "failed to create site clients fifo directory");
             return -1;
         }
-        console(CONSOLE_INFO, "Directory created: %s", fifo_dir);
+        print_info(&csl, "Directory created: %s", fifo_dir);
     } else {
         printf("Directory already exists: %s\n", fifo_dir);
-        console(CONSOLE_INFO, "Directory already exists: %s", fifo_dir);
+        print_info(&csl, "Directory already exists: %s", fifo_dir);
     }
 
     // Create the FIFO file if it doesn't exist
     if (mkfifo(fifo_file, 0666) == -1) {
         if (errno != EEXIST) {
-            console(CONSOLE_ERROR, "failed to create site clients fifo");
-            perror("mkfifo");
+            print_error(&csl, "failed to create site clients fifo");
             return -1;
         }
     }
 
     int fifo_fd = open(fifo_file, O_RDONLY | O_NONBLOCK);
     if (fifo_fd == -1) {
-        console(CONSOLE_ERROR, "failed to open site clients fifo");
-        perror("open");
+        print_error(&csl, "failed to open site clients fifo");
         return -1;
     }
 
-    console(CONSOLE_INFO, "site clients fifo opened, fifo_fd: %d", fifo_fd);
+    print_info(&csl, "site clients fifo opened, fifo_fd: %d", fifo_fd);
 
     return fifo_fd;
 }
 
 void site_clients_service(Scheduler *sch, struct mosquitto *mosq, int site_fifo_fd, Site *site) {
     if (site == NULL || site->id == NULL || site->mac == NULL) {
-        console(CONSOLE_INFO, "no site to subscribe to or incomplete details");
+        print_info(&csl, "no site to subscribe to or incomplete details");
         return;
     }
 
     SiteClientsTaskContext *context = (SiteClientsTaskContext *)malloc(sizeof(SiteClientsTaskContext));
     if (context == NULL) {
-        console(CONSOLE_ERROR, "failed to allocate memory for site clients task context");
+        print_error(&csl, "failed to allocate memory for site clients task context");
         return;
     }
 

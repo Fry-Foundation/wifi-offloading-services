@@ -13,6 +13,11 @@
 #define KEY_PATH_SIZE 512
 #define KEY_GENERATION_RETRIES 5
 
+static Console csl = {
+    .topic = "did-key",
+    .level = CONSOLE_DEBUG,
+};
+
 // Remove whitespace and newline characters from a string
 void remove_whitespace_and_newline_characters(char *str) {
     char *src = str;
@@ -33,13 +38,13 @@ char *strip_pem_headers_and_footers(char *public_key_pem_string) {
 
     char *begin_pos = strstr(public_key_pem_string, begin);
     if (begin_pos == NULL) {
-        console(CONSOLE_ERROR, "Invalid public key PEM format");
+        print_error(&csl, "Invalid public key PEM format");
         return NULL;
     }
 
     char *end_pos = strstr(public_key_pem_string, end);
     if (end_pos == NULL) {
-        console(CONSOLE_ERROR, "Invalid public key PEM format");
+        print_error(&csl, "Invalid public key PEM format");
         return NULL;
     }
 
@@ -48,7 +53,7 @@ char *strip_pem_headers_and_footers(char *public_key_pem_string) {
 
     char *stripped_pem = malloc(stripped_pem_len + 1);
     if (!stripped_pem) {
-        console(CONSOLE_ERROR, "Error allocating memory for stripped PEM");
+        print_error(&csl, "Error allocating memory for stripped PEM");
         return NULL;
     }
 
@@ -90,18 +95,18 @@ char *get_did_public_key_or_generate_keypair() {
     snprintf(private_key_filepath, sizeof(private_key_filepath), "%s/%s/%s", config.data_path, DID_KEY_DIR,
              PRIVKEY_FILE_NAME);
 
-    console(CONSOLE_DEBUG, "Attempting to load private key from %s", private_key_filepath);
+    print_debug(&csl, "Attempting to load private key from %s", private_key_filepath);
     EVP_PKEY *pkey = load_private_key_from_pem(private_key_filepath);
 
     if (pkey != NULL) {
-        console(CONSOLE_DEBUG, "Private key loaded successfully");
+        print_debug(&csl, "Private key loaded successfully");
         char *public_key_pem = get_public_key_pem_string(pkey);
         EVP_PKEY_free(pkey);
         public_key_pem = strip_pem_headers_and_footers(public_key_pem);
         remove_whitespace_and_newline_characters(public_key_pem);
         return public_key_pem;
     } else {
-        console(CONSOLE_DEBUG, "Private key not found, generating new key pair");
+        print_debug(&csl, "Private key not found, generating new key pair");
         int attempts = 0;
         while (attempts < KEY_GENERATION_RETRIES) {
             pkey = generate_key_pair(Ed25519);
@@ -117,7 +122,7 @@ char *get_did_public_key_or_generate_keypair() {
                     // Save the private key
                     bool save_private_result = save_private_key_in_pem(pkey, private_key_filepath);
                     if (!save_private_result) {
-                        console(CONSOLE_ERROR, "Failed to save private key");
+                        print_error(&csl, "Failed to save private key");
                         exit(1);
                     }
 
@@ -128,7 +133,7 @@ char *get_did_public_key_or_generate_keypair() {
 
                     bool save_public_result = save_public_key_in_pem(pkey, public_key_filepath);
                     if (!save_public_result) {
-                        console(CONSOLE_ERROR, "Failed to save public key");
+                        print_error(&csl, "Failed to save public key");
                         exit(1);
                     }
 
@@ -140,7 +145,7 @@ char *get_did_public_key_or_generate_keypair() {
             attempts++;
         }
 
-        console(CONSOLE_ERROR, "Failed to generate key pair after %d attempts", KEY_GENERATION_RETRIES);
+        print_error(&csl, "Failed to generate key pair after %d attempts", KEY_GENERATION_RETRIES);
         exit(1);
     }
 }

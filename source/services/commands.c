@@ -16,10 +16,15 @@ typedef struct {
     AccessToken *access_token;
 } FirmwareUpdateCommandContext;
 
+static Console csl = {
+    .topic = "commands",
+    .level = CONSOLE_DEBUG,
+};
+
 static FirmwareUpdateCommandContext firmware_update_command_context = {NULL, NULL, NULL, NULL};
 
-void commands_callback(struct mosquitto *mosq, const struct mosquitto_message *message) {
-    console(CONSOLE_DEBUG, "Received message on commands topic, payload: %s", (char *)message->payload);
+void commands_callback(struct mosquitto *_, const struct mosquitto_message *message) {
+    print_debug(&csl, "Received message on commands topic, payload: %s", (char *)message->payload);
 
     // Parse the JSON payload
     struct json_object *parsed_json;
@@ -27,12 +32,12 @@ void commands_callback(struct mosquitto *mosq, const struct mosquitto_message *m
 
     parsed_json = json_tokener_parse((char *)message->payload);
     if (!parsed_json) {
-        console(CONSOLE_ERROR, "Failed to parse commands topic payload JSON");
+        print_error(&csl, "Failed to parse commands topic payload JSON");
         return;
     }
 
     if (!json_object_object_get_ex(parsed_json, "command", &command)) {
-        console(CONSOLE_ERROR, "Failed to extract command field from commands topic payload JSON");
+        print_error(&csl, "Failed to extract command field from commands topic payload JSON");
         json_object_put(parsed_json);
         return;
     }
@@ -40,12 +45,12 @@ void commands_callback(struct mosquitto *mosq, const struct mosquitto_message *m
     const char *command_str = json_object_get_string(command);
 
     if (strcmp(command_str, "check_firmware_update") == 0) {
-        console(CONSOLE_INFO, "Received firmware update command");
+        print_info(&csl, "Received firmware update command");
         send_firmware_check_request(firmware_update_command_context.codename, firmware_update_command_context.version,
                                     firmware_update_command_context.wayru_device_id,
                                     firmware_update_command_context.access_token);
     } else {
-        console(CONSOLE_ERROR, "Unknown command: %s", command_str);
+        print_error(&csl, "Unknown command: %s", command_str);
     }
 
     // Clean up

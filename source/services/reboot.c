@@ -8,11 +8,15 @@
 #include <string.h>
 #include <unistd.h>
 
+static Console csl = {
+   .topic = "reboot",
+   .level = CONSOLE_DEBUG,
+};
 void execute_reboot() {
     if (config.dev_env)
-        console(CONSOLE_DEBUG, "Running reboot command...but not");
+        print_debug(&csl, "Running reboot command ... but not rebooting because we are on dev mode");
     else {
-        console(CONSOLE_DEBUG, "Running reboot command");
+        print_debug(&csl, "Running reboot command");
         run_script("reboot now");
     }
 }
@@ -21,11 +25,11 @@ void reboot_task(Scheduler *sch, void *task_context) {
     (void)task_context;
 
     if (config.reboot_enabled == 0) {
-        console(CONSOLE_DEBUG, "Reboot is disabled by configuration; will not reschedule reboot task.");
+        print_debug(&csl, "reboot is disabled by configuration; will not reschedule reboot task");
         return;
     }
 
-    console(CONSOLE_DEBUG, "Executing scheduled reboot task.");
+    print_debug(&csl, "executing scheduled reboot task.");
     execute_reboot();
 
     // schedule_task(sch, time(NULL) + config.reboot_interval, reboot_task, "reboot", NULL);
@@ -33,10 +37,10 @@ void reboot_task(Scheduler *sch, void *task_context) {
 
 void reboot_service(Scheduler *sch) {
     if (config.reboot_enabled) {
-        console(CONSOLE_DEBUG, "Scheduling reboot task.");
+        print_debug(&csl, "scheduling reboot task");
 
         schedule_task(sch, time(NULL) + config.reboot_interval, reboot_task, "reboot", NULL);
     } else {
-        console(CONSOLE_DEBUG, "Reboot service is disabled in configuration.");
+        print_debug(&csl, "reboot service is disabled in configuration");
     }
 }

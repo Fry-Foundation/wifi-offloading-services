@@ -12,6 +12,11 @@
 #define SETUP_ENDPOINT "/api/nfNode/setup-v2"
 #define SETUP_COMPLETE_ENDPOINT "/api/nfNode/setup/complete"
 
+static Console csl = {
+    .topic = "setup",
+    .level = CONSOLE_DEBUG,
+};
+
 typedef struct {
     DeviceInfo *device_info;
     char *wayru_device_id;
@@ -22,12 +27,12 @@ typedef struct {
 // If no setup request exists, create one
 void request_setup(void *task_context) {
     SetupTaskContext *context = (SetupTaskContext *)task_context;
-    console(CONSOLE_DEBUG, "Request setup");
+    print_debug(&csl, "Requesting setup");
 
     // Build setup URL
     char setup_url[256];
     snprintf(setup_url, sizeof(setup_url), "%s%s", config.main_api, SETUP_ENDPOINT);
-    console(CONSOLE_DEBUG, "setup_url: %s", setup_url);
+    print_debug(&csl, "setup_url: %s", setup_url);
 
     // Request body
     json_object *json_body = json_object_new_object();
@@ -55,16 +60,16 @@ void request_setup(void *task_context) {
     json_object_put(json_body);
 
     if (result.is_error) {
-        console(CONSOLE_ERROR, "setup request failed: %s", result.error);
+        print_error(&csl, "setup request failed: %s", result.error);
         return;
     }
 
     if (result.response_buffer == NULL) {
-        console(CONSOLE_ERROR, "setup request failed: no response received");
+        print_error(&csl, "setup request failed: no response received");
         return;
     }
 
-    console(CONSOLE_DEBUG, "setup request response: %s", result.response_buffer);
+    print_debug(&csl, "setup request response: %s", result.response_buffer);
 }
 
 void setup_task(Scheduler *sch, void *task_context) {
@@ -72,12 +77,12 @@ void setup_task(Scheduler *sch, void *task_context) {
     if (device_status == Unknown) {
         // Schedule setup_task to rerun later
         // The device's status has to be defined beforehand
-        console(CONSOLE_DEBUG, "device status is Unknown, rescheduling setup task");
+        print_debug(&csl, "device status is Unknown, rescheduling setup task");
         schedule_task(sch, time(NULL) + config.setup_interval, setup_task, "setup", context);
     }
 
     if (device_status == Initial) {
-        console(CONSOLE_DEBUG, "requesting setup");
+        print_debug(&csl, "requesting setup");
         request_setup(context);
     }
 }

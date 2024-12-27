@@ -15,6 +15,11 @@
 #define MAX_RETRIES 50
 #define DEVICE_PROFILE_FILE "/etc/wayru-os/device.json"
 
+static Console csl = {
+    .topic = "device-info",
+    .level = CONSOLE_DEBUG,
+};
+
 char *get_os_version() {
     if (config.dev_env) {
         return strdup("23.0.4");
@@ -22,8 +27,7 @@ char *get_os_version() {
 
     FILE *file = fopen(OS_VERSION_FILE, "r");
     if (file == NULL) {
-        console(CONSOLE_ERROR, "error opening OS version file");
-        perror("error opening file");
+        print_error(&csl, "error opening file");
         return NULL;
     }
 
@@ -52,16 +56,15 @@ char *get_os_version() {
     if (*distrib_release != '\0') { // Check if distrib_release is not empty
         os_version = strdup(distrib_release);
         if (os_version == NULL) {
-            console(CONSOLE_ERROR, "failed to allocate memory for OS version");
-            perror("memory allocation failed for osVersion");
+            print_error(&csl, "memory allocation failed for os_version");
             fclose(file);
             return NULL;
         }
     } else {
-        console(CONSOLE_ERROR, "OS version is empty");
+        print_error(&csl, "os_version is empty");
     }
 
-    console(CONSOLE_DEBUG, "OS version is: %s", os_version);
+    print_debug(&csl, "os_version is: %s", os_version);
 
     return os_version;
 }
@@ -73,8 +76,7 @@ char *get_os_services_version() {
 
     FILE *file = fopen(PACKAGE_VERSION_FILE, "r");
     if (file == NULL) {
-        console(CONSOLE_ERROR, "error opening services version file");
-        perror("error opening file");
+        print_error(&csl, "error opening services version file");
         return NULL;
     }
 
@@ -83,7 +85,7 @@ char *get_os_services_version() {
     char version[MAX_LINE_LENGTH];
 
     if (fgets(version, MAX_LINE_LENGTH, file) == NULL) {
-        console(CONSOLE_ERROR, "failed to read services version");
+        print_error(&csl, "failed to read services version");
         fclose(file);
         return NULL; // Handle failed read attempt
     }
@@ -97,12 +99,11 @@ char *get_os_services_version() {
     // Allocate memory for the version string and return
     os_services_version = strdup(version);
     if (os_services_version == NULL) {
-        console(CONSOLE_ERROR, "memory allocation failed for services version");
-        perror("memory allocation failed for dynamicVersion");
+        print_error(&csl, "memory allocation failed for services version");
         return NULL;
     }
 
-    console(CONSOLE_INFO, "services version is: %s", os_services_version);
+    print_info(&csl, "services version is: %s", os_services_version);
 
     return os_services_version;
 }
@@ -115,7 +116,7 @@ char *get_mac() {
         mac[strcspn(mac, "\n")] = 0;
     }
 
-    console(CONSOLE_DEBUG, "mac address is: %s", mac);
+    print_debug(&csl, "mac address is: %s", mac);
 
     return mac;
 }
@@ -132,8 +133,7 @@ DeviceProfile get_device_profile() {
 
     FILE *file = fopen(DEVICE_PROFILE_FILE, "r");
     if (file == NULL) {
-        console(CONSOLE_ERROR, "error opening device info file");
-        perror("error opening device info file");
+        print_error(&csl, "error opening device info file");
         return device_profile;
     }
 
@@ -166,8 +166,8 @@ DeviceProfile get_device_profile() {
     // Free the JSON object
     json_object_put(parsed_json);
 
-    console(CONSOLE_DEBUG, "device identifiers are: %s, %s, %s", device_profile.name, device_profile.brand,
-            device_profile.model);
+    print_debug(&csl, "device identifiers are: %s, %s, %s", device_profile.name, device_profile.brand,
+                device_profile.model);
 
     return device_profile;
 }
@@ -186,18 +186,18 @@ char *get_id() {
                 id[strcspn(id, "\n")] = 0;
             }
 
-            console(CONSOLE_DEBUG, "UUID found, took %d attempts.", retry_count + 1);
-            console(CONSOLE_DEBUG, "UUID is: %s", id);
+            print_debug(&csl, "UUID found; took %d attempts.", retry_count + 1);
+            print_debug(&csl, "UUID is: %s", id);
 
             break; // Exit the loop if a valid UUID is obtained
         }
 
-        console(CONSOLE_DEBUG, "retrying to obtain UUID...");
+        print_debug(&csl, "retrying to obtain UUID...");
         sleep(5); // Wait for 5 seconds before retrying
         retry_count++;
     }
     if (retry_count == MAX_RETRIES) {
-        console(CONSOLE_ERROR, "unable to obtain UUID after %d attempts. Exiting.", MAX_RETRIES);
+        print_error(&csl, "unable to obtain UUID after %d attempts. Exiting.", MAX_RETRIES);
         exit(1);
     }
 
@@ -212,7 +212,7 @@ char *get_public_ip() {
         public_ip[strcspn(public_ip, "\n")] = 0;
     }
 
-    console(CONSOLE_DEBUG, "public ip: %s", public_ip);
+    print_debug(&csl, "public ip: %s", public_ip);
 
     return public_ip;
 }

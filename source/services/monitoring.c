@@ -13,6 +13,11 @@
 #include <string.h>
 #include <time.h>
 
+static Console csl = {
+    .topic = "monitoring",
+    .level = CONSOLE_DEBUG,
+};
+
 typedef struct {
     struct mosquitto *mosq;
     Registration *registration;
@@ -120,7 +125,7 @@ void monitoring_task(Scheduler *sch, void *task_context) {
     snprintf(script_file, sizeof(script_file), "%s%s", config.scripts_path, "/retrieve-data.lua");
     char *output = run_script(script_file);
     if (output == NULL) {
-        console(CONSOLE_ERROR, "failed to run script %s", script_file);
+        print_error(&csl, "failed to run script %s", script_file);
         return;
     }
     parse_output(output, &device_data);
@@ -134,13 +139,13 @@ void monitoring_task(Scheduler *sch, void *task_context) {
     json_object *json_device_data = json_object_new_object();
     char measurementid[256];
     generate_id(measurementid, sizeof(measurementid), context->registration->wayru_device_id, now);
-    console(CONSOLE_INFO, "Measurement ID for deviceData: %s", measurementid);
+    print_info(&csl, "measurement ID for deviceData: %s", measurementid);
     createjson(&device_data, json_device_data, now, context->registration, measurementid, context->os_name,
                context->os_version, context->os_services_version, context->public_ip);
 
     const char *device_data_str = json_object_to_json_string(json_device_data);
 
-    console(CONSOLE_INFO, "Device data: %s", device_data_str);
+    print_info(&csl, "device data: %s", device_data_str);
     publish_mqtt(context->mosq, "monitoring/device-data", device_data_str, 0);
 
     json_object_put(json_device_data);
@@ -158,13 +163,13 @@ void monitoring_task(Scheduler *sch, void *task_context) {
 
 void monitoring_service(Scheduler *sch, struct mosquitto *mosq, Registration *registration) {
     if (config.monitoring_enabled == 0) {
-        console(CONSOLE_INFO, "Monitoring service is disabled by config param");
+        print_info(&csl, "monitoring service is disabled by config param");
         return;
     }
 
     MonitoringTaskContext *context = (MonitoringTaskContext *)malloc(sizeof(MonitoringTaskContext));
     if (context == NULL) {
-        console(CONSOLE_ERROR, "failed to allocate memory for access token task context");
+        print_error(&csl, "failed to allocate memory for monitoring task context");
         return;
     }
 

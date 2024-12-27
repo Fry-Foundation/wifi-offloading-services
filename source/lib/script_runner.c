@@ -7,6 +7,11 @@
 #define MIN_OUTPUT_SIZE 512
 #define MAX_COMMAND_SIZE 256
 
+static Console csl = {
+    .topic = "script_runner",
+    .level = CONSOLE_DEBUG,
+};
+
 void run_script_and_save_output(const char *script_path, const char *output_path) {
     char buffer[1024]; // Buffer for reading script output
     FILE *script_pipe, *output_file;
@@ -14,14 +19,14 @@ void run_script_and_save_output(const char *script_path, const char *output_path
     // Open the script for execution
     script_pipe = popen(script_path, "r");
     if (script_pipe == NULL) {
-        console(CONSOLE_ERROR, "failed to run script %s", script_path);
+        print_error(&csl, "failed to run script %s", script_path);
         return;
     }
 
     // Open the output file for writing
     output_file = fopen(output_path, "w");
     if (output_file == NULL) {
-        console(CONSOLE_ERROR, "failed to open file for writing %s", output_path);
+        print_error(&csl, "failed to open file for writing %s", output_path);
         pclose(script_pipe);
         return;
     }
@@ -35,7 +40,7 @@ void run_script_and_save_output(const char *script_path, const char *output_path
     pclose(script_pipe);
     fclose(output_file);
 
-    console(CONSOLE_DEBUG, "script executed successfully, output saved to: %s", output_path);
+    print_debug(&csl, "script executed successfully, output saved to: %s", output_path);
 }
 
 // Make sure to free the char* returned by this function
@@ -44,7 +49,7 @@ char *run_script(const char *script_path) {
     size_t result_size = MIN_OUTPUT_SIZE;
     char *result = (char *)malloc(result_size);
     if (result == NULL) {
-        console(CONSOLE_ERROR, "memory allocation for script result failed");
+        print_error(&csl, "memory allocation for script result failed");
         return NULL;
     }
 
@@ -57,7 +62,7 @@ char *run_script(const char *script_path) {
 
     FILE *pipe = popen(command, "r");
     if (!pipe) {
-        console(CONSOLE_ERROR, "failed to run script %s", script_path);
+        print_error(&csl, "failed to run script %s", script_path);
         free(result);
         return NULL;
     }
@@ -70,7 +75,7 @@ char *run_script(const char *script_path) {
             result_size = needed_size;
             char *new_result = realloc(result, result_size);
             if (new_result == NULL) {
-                console(CONSOLE_ERROR, "script result reallocation failed for %s", script_path);
+                print_error(&csl, "script result reallocation failed");
                 free(result);
                 pclose(pipe);
                 return NULL;
@@ -83,10 +88,10 @@ char *run_script(const char *script_path) {
     }
 
     if (pclose(pipe) == -1) {
-        console(CONSOLE_ERROR, "pclose reported exit code -1");
+        print_error(&csl, "failed to close script pipe (pclose); exit code is -1");
     }
 
-    console(CONSOLE_DEBUG, "length of result: %zu", strlen(result));
+    print_debug(&csl, "script executed successfully; length of result: %zu", strlen(result));
 
     return result;
 }

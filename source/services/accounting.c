@@ -17,11 +17,16 @@
 #define MAX_BUFFER_SIZE 256
 #define ACCOUNTING_ENDPOINT "/gateways/connections/accounting"
 
+static Console csl = {
+    .topic = "accounting",
+    .level = CONSOLE_DEBUG,
+};
+
 char command[MAX_BUFFER_SIZE];
 char scripts_path[256];
 
 char *query_opennds() {
-    console(CONSOLE_DEBUG, "querying OpenNDS");
+    print_debug(&csl, "querying OpenNDS");
 
     char script_file[256];
     snprintf(script_file, sizeof(script_file), "%s%s", scripts_path, "/nds-clients.sh");
@@ -33,7 +38,7 @@ char *query_opennds() {
     parsed_response = json_tokener_parse(accounting_output);
     if (parsed_response == NULL) {
         // JSON parsing failed
-        console(CONSOLE_ERROR, "failed to parse ndsctl JSON");
+        print_error(&csl, "failed to parse ndsctl JSON");
         return NULL;
     }
 
@@ -43,13 +48,13 @@ char *query_opennds() {
 }
 
 void deauthenticate_session(const char *client_mac_address) {
-    console(CONSOLE_DEBUG, "deauthenticating session %s", client_mac_address);
+    print_debug(&csl, "deauthenticating session %s", client_mac_address);
 
     char script_file[256];
     snprintf(script_file, sizeof(script_file), "%s%s %s", scripts_path, "/nds-deauth.sh", client_mac_address);
 
     char *deauthenticate_output = run_script(script_file);
-    console(CONSOLE_DEBUG, "deauthenticate result -> %s", deauthenticate_output);
+    print_debug(&csl, "deauthenticate result -> %s", deauthenticate_output);
 
     free(deauthenticate_output);
 }
@@ -59,8 +64,8 @@ void post_accounting_update(char *opennds_clients_data) {
     char accounting_url[256];
     snprintf(accounting_url, sizeof(accounting_url), "%s%s", config.accounting_api, ACCOUNTING_ENDPOINT);
 
-    console(CONSOLE_DEBUG, "accounting_url: %s", accounting_url);
-    console(CONSOLE_DEBUG, "posting accounting update");
+    print_debug(&csl, "accounting_url: %s", accounting_url);
+    print_debug(&csl, "posting accounting update");
 
     // Request options
     HttpPostOptions post_accounting_options = {
@@ -70,14 +75,14 @@ void post_accounting_update(char *opennds_clients_data) {
 
     HttpResult result = http_post(&post_accounting_options);
     if (result.is_error) {
-        console(CONSOLE_ERROR, "failed to post accounting update");
-        console(CONSOLE_ERROR, "error: %s", result.error);
+        print_error(&csl, "failed to post accounting update");
+        print_error(&csl, "error: %s", result.error);
         return;
     }
 
     if (result.response_buffer == NULL) {
-        console(CONSOLE_ERROR, "failed to post accounting update");
-        console(CONSOLE_ERROR, "no response received");
+        print_error(&csl, "failed to post accounting update");
+        print_error(&csl, "no response received");
         return;
     }
 
@@ -88,20 +93,20 @@ void post_accounting_update(char *opennds_clients_data) {
     parsed_response = json_tokener_parse(result.response_buffer);
     if (parsed_response == NULL) {
         // JSON parsing failed
-        console(CONSOLE_ERROR, "failed to parse accounting response JSON");
+        print_error(&csl, "failed to parse accounting response JSON");
         return;
     }
 
     // Make sure the 'end_list' key exists,  and extract it
     if (!json_object_object_get_ex(parsed_response, "end_list", &end_list)) {
-        console(CONSOLE_ERROR, "'end_list' key not found in JSON");
+        print_error(&csl, "'end_list' key not found in JSON");
         json_object_put(parsed_response);
         return;
     }
 
     // Ensure 'end_list' is an array
     if (!json_object_is_type(end_list, json_type_array)) {
-        console(CONSOLE_ERROR, "'end_list' is not an array");
+        print_error(&csl, "'end_list' is not an array");
         json_object_put(parsed_response);
         return;
     }
@@ -122,13 +127,13 @@ char *status_opennds() {
 
     FILE *fp = popen(command, "r");
     if (fp == NULL) {
-        console(CONSOLE_ERROR, "failed to execute ndsctl status command");
+        print_error(&csl, "failed to execute ndsctl status command");
         return NULL;
     }
 
     char *status = (char *)malloc(MAX_BUFFER_SIZE * sizeof(char));
     if (fgets(status, MAX_BUFFER_SIZE, fp) == NULL) {
-        console(CONSOLE_ERROR, "failed to read opennds status");
+        print_error(&csl, "failed to read opennds status");
         pclose(fp);
         free(status);
         return NULL;
@@ -143,25 +148,25 @@ int stop_opennds() {
 
     FILE *fp = popen(command, "r");
     if (fp == NULL) {
-        console(CONSOLE_ERROR, "failed to execute command opennds stop");
+        print_error(&csl, "failed to execute command opennds stop");
         return -1;
     }
 
     int status = pclose(fp);
     if (status == -1) {
-        console(CONSOLE_ERROR, "failed to close opennds stop command; we could have a memory issue!");
+        print_error(&csl, "failed to close opennds stop command");
         return -1;
     } else if (WIFEXITED(status)) {
         int exit_status = WEXITSTATUS(status);
         if (exit_status == 0) {
-            console(CONSOLE_DEBUG, "openNDS stop command executed successfully");
+            print_debug(&csl, "openNDS stop command executed successfully");
             return 0;
         } else {
-            console(CONSOLE_ERROR, "error executing the opennds stop command; exit code: %d", exit_status);
+            print_error(&csl, "error executing the opennds stop command; exit code: %d", exit_status);
             return exit_status;
         }
     } else {
-        console(CONSOLE_ERROR, "openNDS stop command terminated unexpectedly");
+        print_error(&csl, "openNDS stop command terminated unexpectedly");
         return -1;
     }
 }
@@ -171,25 +176,25 @@ int start_opennds() {
 
     FILE *fp = popen(command, "r");
     if (fp == NULL) {
-        console(CONSOLE_DEBUG, "Error executing command opennds start.");
+        print_debug(&csl, "failed to execute command opennds start");
         return -1;
     }
 
     int status = pclose(fp);
     if (status == -1) {
-        console(CONSOLE_DEBUG, "Error closing opennds start command.");
+        print_debug(&csl, "failed to close opennds start command");
         return -1;
     } else if (WIFEXITED(status)) {
         int exit_status = WEXITSTATUS(status);
         if (exit_status == 0) {
-            console(CONSOLE_DEBUG, "Opennds start command executed successfully.");
+            print_debug(&csl, "opennds start command executed successfully");
             return 0;
         } else {
-            console(CONSOLE_DEBUG, "Error executing the opennds start command. Exit code: %d", exit_status);
+            print_debug(&csl, "error executing the opennds start command; exit code: %d", exit_status);
             return exit_status;
         }
     } else {
-        console(CONSOLE_DEBUG, "Opennds start command terminated unexpectedly.");
+        print_debug(&csl, "opennds start command terminated unexpectedly");
         return -1;
     }
 }
@@ -202,14 +207,14 @@ void accounting_task(Scheduler *sch, void *task_context) {
     int accounting_enabled = config.accounting_enabled;
 
     if (accounting_enabled == 0) {
-        console(CONSOLE_DEBUG, "accounting is disabled by config params");
-        console(CONSOLE_DEBUG, "maybe this device doesn't run the captive portal");
-        console(CONSOLE_DEBUG, "will not reschedule accounting task");
+        print_debug(&csl, "accounting is disabled by config params");
+        print_debug(&csl, "maybe this device doesn't run the captive portal");
+        print_debug(&csl, "will not reschedule accounting task");
         return;
     }
 
     if (device_status != Ready) {
-        console(CONSOLE_DEBUG, "accounting is disabled because device is not ready; will try again later");
+        print_debug(&csl, "device is not ready; will try again later");
         schedule_task(sch, time(NULL) + config.accounting_interval, accounting_task, "accounting", NULL);
         return;
     }
@@ -226,7 +231,7 @@ void accounting_task(Scheduler *sch, void *task_context) {
 
     char *opennds_clients_data = query_opennds();
     if (opennds_clients_data == NULL) {
-        console(CONSOLE_DEBUG, "failed to query OpenNDS; skipping server sync, will try again later");
+        print_debug(&csl, "failed to query opennds; skipping server sync, will try again later");
         schedule_task(sch, time(NULL) + config.accounting_interval, accounting_task, "accounting", NULL);
         return;
     }
@@ -238,4 +243,6 @@ void accounting_task(Scheduler *sch, void *task_context) {
     schedule_task(sch, time(NULL) + config.accounting_interval, accounting_task, "accounting", NULL);
 }
 
-void accounting_service(Scheduler *sch) { accounting_task(sch, NULL); }
+void accounting_service(Scheduler *sch) { 
+        accounting_task(sch, NULL);
+}

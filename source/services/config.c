@@ -4,6 +4,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+static Console csl = {
+    .topic = "config",
+    .level = CONSOLE_DEBUG,
+};
+
 Config config = {0};
 
 void init_config(int argc, char *argv[]) {
@@ -256,35 +261,35 @@ void init_config(int argc, char *argv[]) {
     }
 
     // Print for debug purposes
-    console(CONSOLE_DEBUG, "config.dev_env: %d", config.dev_env);
-    console(CONSOLE_DEBUG, "config.enabled: %d", config.enabled);
-    console(CONSOLE_DEBUG, "config.main_api: %s", config.main_api);
-    console(CONSOLE_DEBUG, "config.accounting_api: %s", config.accounting_api);
-    console(CONSOLE_DEBUG, "config.accounting_enabled: %d", config.accounting_enabled);
-    console(CONSOLE_DEBUG, "config.accounting_interval: %d", config.accounting_interval);
-    console(CONSOLE_DEBUG, "config.access_interval: %d", config.access_interval);
-    console(CONSOLE_DEBUG, "config.device_status_interval: %d", config.device_status_interval);
-    console(CONSOLE_DEBUG, "config.setup_interval: %d", config.setup_interval);
-    console(CONSOLE_DEBUG, "config.active_path: %s", config.active_path);
-    console(CONSOLE_DEBUG, "config.scripts_path: %s", config.scripts_path);
-    console(CONSOLE_DEBUG, "config.data_path: %s", config.data_path);
-    console(CONSOLE_DEBUG, "config.temp_path: %s", config.temp_path);
-    console(CONSOLE_DEBUG, "config.monitoring_enabled: %d", config.monitoring_enabled);
-    console(CONSOLE_DEBUG, "config.monitoring_interval: %d", config.monitoring_interval);
-    console(CONSOLE_DEBUG, "config.monitoring_minimum_interval: %d", config.monitoring_minimum_interval);
-    console(CONSOLE_DEBUG, "config.monitoring_maximum_interval: %d", config.monitoring_maximum_interval);
-    console(CONSOLE_DEBUG, "config.speed_test_enabled: %d", config.speed_test_enabled);
-    console(CONSOLE_DEBUG, "config.speed_test_api: %s", config.speed_test_api);
-    console(CONSOLE_DEBUG, "config.speed_test_api_key: %s", config.speed_test_api_key);
-    console(CONSOLE_DEBUG, "config.speed_test_interval: %d", config.speed_test_interval);
-    console(CONSOLE_DEBUG, "config.speed_test_backhaul_attempts: %d", config.speed_test_backhaul_attempts);
-    console(CONSOLE_DEBUG, "config.speed_test_latency_attempts: %d", config.speed_test_latency_attempts);
-    console(CONSOLE_DEBUG, "config.speed_test_upload_limit: %f", config.speed_test_upload_limit);
-    console(CONSOLE_DEBUG, "config.device_context_interval: %d", config.device_context_interval);
-    console(CONSOLE_DEBUG, "config.mqtt_broker_url: %s", config.mqtt_broker_url);
-    console(CONSOLE_DEBUG, "config.reboot_enabled: %d", config.reboot_enabled);
-    console(CONSOLE_DEBUG, "config.reboot_interval: %d", config.reboot_interval);
-    console(CONSOLE_DEBUG, "config.firmware_update_enabled: %d", config.firmware_update_enabled);
-    console(CONSOLE_DEBUG, "config.firmware_update_interval: %d", config.firmware_update_interval);
-    console(CONSOLE_DEBUG, "config.use_n_sysupgrade: %d", config.use_n_sysupgrade);
+    print_debug(&csl, "config.dev_env: %d", config.dev_env);
+    print_debug(&csl, "config.enabled: %d", config.enabled);
+    print_debug(&csl, "config.main_api: %s", config.main_api);
+    print_debug(&csl, "config.accounting_api: %s", config.accounting_api);
+    print_debug(&csl, "config.accounting_enabled: %d", config.accounting_enabled);
+    print_debug(&csl, "config.accounting_interval: %d", config.accounting_interval);
+    print_debug(&csl, "config.access_interval: %d", config.access_interval);
+    print_debug(&csl, "config.device_status_interval: %d", config.device_status_interval);
+    print_debug(&csl, "config.setup_interval: %d", config.setup_interval);
+    print_debug(&csl, "config.active_path: %s", config.active_path);
+    print_debug(&csl, "config.scripts_path: %s", config.scripts_path);
+    print_debug(&csl, "config.data_path: %s", config.data_path);
+    print_debug(&csl, "config.temp_path: %s", config.temp_path);
+    print_debug(&csl, "config.monitoring_enabled: %d", config.monitoring_enabled);
+    print_debug(&csl, "config.monitoring_interval: %d", config.monitoring_interval);
+    print_debug(&csl, "config.monitoring_minimum_interval: %d", config.monitoring_minimum_interval);
+    print_debug(&csl, "config.monitoring_maximum_interval: %d", config.monitoring_maximum_interval);
+    print_debug(&csl, "config.speed_test_enabled: %d", config.speed_test_enabled);
+    print_debug(&csl, "config.speed_test_api: %s", config.speed_test_api);
+    print_debug(&csl, "config.speed_test_api_key: %s", config.speed_test_api_key);
+    print_debug(&csl, "config.speed_test_interval: %d", config.speed_test_interval);
+    print_debug(&csl, "config.speed_test_backhaul_attempts: %d", config.speed_test_backhaul_attempts);
+    print_debug(&csl, "config.speed_test_latency_attempts: %d", config.speed_test_latency_attempts);
+    print_debug(&csl, "config.speed_test_upload_limit: %f", config.speed_test_upload_limit);
+    print_debug(&csl, "config.device_context_interval: %d", config.device_context_interval);
+    print_debug(&csl, "config.mqtt_broker_url: %s", config.mqtt_broker_url);
+    print_debug(&csl, "config.reboot_enabled: %d", config.reboot_enabled);
+    print_debug(&csl, "config.reboot_interval: %d", config.reboot_interval);
+    print_debug(&csl, "config.firmware_update_enabled: %d", config.firmware_update_enabled);
+    print_debug(&csl, "config.firmware_update_interval: %d", config.firmware_update_interval);
+    print_debug(&csl, "config.use_n_sysupgrade: %d", config.use_n_sysupgrade);
 }

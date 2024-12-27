@@ -9,7 +9,6 @@
 
 static Console csl = {
     .topic = "script_runner",
-    .level = CONSOLE_DEBUG,
 };
 
 void run_script_and_save_output(const char *script_path, const char *output_path) {

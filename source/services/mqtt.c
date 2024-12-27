@@ -14,7 +14,6 @@
 
 static Console csl = {
     .topic = "mqtt",
-    .level = CONSOLE_DEBUG,
 };
 
 typedef struct {

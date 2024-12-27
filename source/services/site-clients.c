@@ -27,7 +27,6 @@
 
 static Console csl = {
     .topic = "site-clients",
-    .level = CONSOLE_DEBUG,
 };
 
 typedef struct {

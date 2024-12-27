@@ -17,7 +17,6 @@
 
 static Console csl = {
     .topic = "device-info",
-    .level = CONSOLE_DEBUG,
 };
 
 char *get_os_version() {

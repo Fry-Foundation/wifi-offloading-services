@@ -9,7 +9,6 @@
 
 static Console csl = {
     .topic = "network check",
-    .level = CONSOLE_DEBUG,
 };
 
 // \brief Check if the device has internet connection with a single ping. Validating both IPv4 and IPv6

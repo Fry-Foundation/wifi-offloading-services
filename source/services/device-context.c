@@ -15,7 +15,6 @@
 
 static Console csl = {
     .topic = "device-context",
-    .level = CONSOLE_DEBUG,
 };
 
 typedef struct {

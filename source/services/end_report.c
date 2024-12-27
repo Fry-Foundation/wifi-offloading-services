@@ -13,7 +13,6 @@
 
 static Console csl = {
     .topic = "end_report",
-    .level = CONSOLE_DEBUG,
 };
 
 char data_path[256];

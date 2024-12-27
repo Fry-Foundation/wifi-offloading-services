@@ -25,7 +25,6 @@
 
 static Console csl = {
     .topic = "main",
-    .level = CONSOLE_DEBUG,
 };
 
 int main(int argc, char *argv[]) {

@@ -8,7 +8,6 @@
 
 static Console csl = {
     .topic = "http-requests",
-    .level = CONSOLE_DEBUG,
 };
 
 // HTTP GET request

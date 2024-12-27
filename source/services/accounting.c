@@ -19,7 +19,6 @@
 
 static Console csl = {
     .topic = "accounting",
-    .level = CONSOLE_DEBUG,
 };
 
 char command[MAX_BUFFER_SIZE];

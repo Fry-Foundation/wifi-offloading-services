@@ -7,7 +7,6 @@
 
 static Console cons = {
     .topic = "certificate audit",
-    .level = CONSOLE_DEBUG,
 };
 
 int validate_ca_cert(const char *ca_cert_path) {

@@ -9,7 +9,6 @@
 
 static Console csl = {
     .topic = "registration",
-    .level = CONSOLE_DEBUG,
 };
 
 #define REGISTER_ENDPOINT "access/register"

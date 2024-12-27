@@ -40,7 +40,6 @@ typedef struct {
 
 static Console csl = {
     .topic = "speed test",
-    .level = CONSOLE_DEBUG,
 };
 
 size_t write_callback(void *ptr, size_t size, size_t nmemb, void *userdata) {

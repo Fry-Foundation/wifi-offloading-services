@@ -14,13 +14,13 @@ typedef enum {
 // Define console structure
 typedef struct {
     const char *topic;
-    ConsoleLevel level;
 } Console;
+
+// Current level
+extern ConsoleLevel console_level;
 
 // Function declarations
 void set_console_level(ConsoleLevel level);
-void console(ConsoleLevel level, const char *format, ...);
-
 void print_error(Console *console, const char *format, ...);
 void print_warn(Console *console, const char *format, ...);
 void print_info(Console *console, const char *format, ...);

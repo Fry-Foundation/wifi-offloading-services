@@ -10,7 +10,6 @@
 
 static Console csl = {
    .topic = "reboot",
-   .level = CONSOLE_DEBUG,
 };
 void execute_reboot() {
     if (config.dev_env)

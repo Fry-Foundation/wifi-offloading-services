@@ -15,7 +15,6 @@
 
 static Console csl = {
     .topic = "monitoring",
-    .level = CONSOLE_DEBUG,
 };
 
 typedef struct {

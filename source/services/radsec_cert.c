@@ -20,7 +20,6 @@
 
 static Console csl = {
     .topic = "radsec cert",
-    .level = CONSOLE_DEBUG,
 };
 
 bool get_radsec_ca_cert(void *params) {

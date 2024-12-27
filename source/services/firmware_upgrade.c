@@ -22,7 +22,6 @@
 
 static Console csl = {
     .topic = "firmware-upgrade",
-    .level = CONSOLE_DEBUG,
 };
 
 typedef struct {
@@ -448,7 +447,6 @@ void firmware_upgrade_on_boot(Registration *registration, DeviceInfo *device_inf
         return;
     }
 
-    console(CONSOLE_DEBUG, "Starting firmware_upgrade_on_boot");
     print_debug(&csl, "starting firmware_upgrade_on_boot");
     char verify_status_url[256];
     snprintf(verify_status_url, sizeof(verify_status_url), "%s%s", config.accounting_api, VERIFY_STATUS_ENDPOINT);

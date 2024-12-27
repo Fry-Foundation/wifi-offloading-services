@@ -6,7 +6,6 @@
 
 static Console csl = {
     .topic = "config",
-    .level = CONSOLE_DEBUG,
 };
 
 Config config = {0};

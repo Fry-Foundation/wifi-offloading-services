@@ -11,7 +11,6 @@
 
 static Console csl = {
     .topic = "key_pair",
-    .level = CONSOLE_DEBUG,
 };
 
 // Generate a new key pair; note that we alias the type to control the allowed key algorithms

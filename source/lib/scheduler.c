@@ -10,7 +10,6 @@
 
 static Console csl = {
     .topic = "scheduler",
-    .level = CONSOLE_DEBUG,
 };
 
 Scheduler *init_scheduler() {

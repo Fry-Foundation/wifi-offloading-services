@@ -17,7 +17,6 @@
 
 static Console csl = {
     .topic = "access token",
-    .level = CONSOLE_DEBUG,
 };
 
 typedef struct {

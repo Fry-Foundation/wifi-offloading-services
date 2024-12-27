@@ -9,7 +9,6 @@
 
 static Console csl = {
     .topic = "env",
-    .level = CONSOLE_DEBUG,
 };
 
 typedef struct {

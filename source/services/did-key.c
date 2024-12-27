@@ -15,7 +15,6 @@
 
 static Console csl = {
     .topic = "did-key",
-    .level = CONSOLE_DEBUG,
 };
 
 // Remove whitespace and newline characters from a string

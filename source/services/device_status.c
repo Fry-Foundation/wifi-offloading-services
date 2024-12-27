@@ -14,7 +14,6 @@
 
 static Console csl = {
     .topic = "device-status",
-    .level = CONSOLE_DEBUG,
 };
 
 DeviceStatus device_status = Unknown;

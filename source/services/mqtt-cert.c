@@ -17,7 +17,6 @@
 
 static Console csl = {
     .topic = "mqtt cert",
-    .level = CONSOLE_DEBUG,
 };
 
 bool get_mqtt_ca_cert(void *params) {

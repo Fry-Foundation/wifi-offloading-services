@@ -18,7 +18,6 @@ typedef struct {
 
 static Console csl = {
     .topic = "commands",
-    .level = CONSOLE_DEBUG,
 };
 
 static FirmwareUpdateCommandContext firmware_update_command_context = {NULL, NULL, NULL, NULL};

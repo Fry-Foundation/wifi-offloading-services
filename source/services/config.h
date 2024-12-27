@@ -53,6 +53,8 @@ typedef struct {
 
     bool use_n_sysupgrade;
 
+    int diagnostic_interval;
+
     char active_path[PATH_SIZE];
     char scripts_path[PATH_SIZE];
     char data_path[PATH_SIZE];

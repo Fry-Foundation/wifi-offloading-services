@@ -29,6 +29,7 @@ CONFIG_REBOOT_INTERVAL = 88200
 CONFIG_FIRMWARE_UPDATE_ENABLED = 1
 CONFIG_FIRMWARE_UPDATE_INTERVAL = 86400
 CONFIG_USE_N_SYSUPGRADE = 0
+CONFIG_DIAGNOSTIC_INTERVAL = 600
 
 # Define paths
 SOURCE_PATH := source
@@ -117,6 +118,7 @@ run:
 	--config-firmware-update-enabled "$(CONFIG_FIRMWARE_UPDATE_ENABLED)" \
 	--config-firmware-update-interval "$(CONFIG_FIRMWARE_UPDATE_INTERVAL)" \
 	--config-use-n-sysupgrade"$(CONFIG_USE_N_SYSUPGRADE)" \
+	--config-diagnostic-interval"$(CONFIG_DIAGNOSTIC_INTERVAL)" \
 
 # Clean the build
 clean:

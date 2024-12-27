@@ -38,6 +38,7 @@ void init_config(int argc, char *argv[]) {
     config.firmware_update_enabled = true;
     config.firmware_update_interval = 86400;
     config.use_n_sysupgrade = false;
+    config.diagnostic_interval = 600;
 
     // Loop  through available daemon config parameters
     for (int i = 1; i < argc; i++) {
@@ -240,6 +241,12 @@ void init_config(int argc, char *argv[]) {
             config.use_n_sysupgrade = (use_n_sysupgrade == 0) ? false : true;
             continue;
         }
+
+        // Diagnostic interval
+        if (strcmp(argv[i], "--config-diagnostic-interval") == 0) {
+            config.diagnostic_interval = atoi(argv[i + 1]);
+            continue;
+        }
     }
 
     // Set active paths
@@ -287,4 +294,5 @@ void init_config(int argc, char *argv[]) {
     console(CONSOLE_DEBUG, "config.firmware_update_enabled: %d", config.firmware_update_enabled);
     console(CONSOLE_DEBUG, "config.firmware_update_interval: %d", config.firmware_update_interval);
     console(CONSOLE_DEBUG, "config.use_n_sysupgrade: %d", config.use_n_sysupgrade);
+    console(CONSOLE_DEBUG, "config.diagnostic_interval: %d", config.diagnostic_interval);
 }

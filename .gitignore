@@ -2,6 +2,7 @@
 dist
 build
 feed
+sdk
 
 # C
 *.d
@@ -66,4 +67,3 @@ compile_commands.json
 certificates/
 .env
 
-openwrt/

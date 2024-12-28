@@ -38,26 +38,16 @@ bash dev
 
 ## Compiling for OpenWrt
 
-Compilations are done using the OpenWrt build system.
+Compilations are done using the OpenWrt SDK.
 
-The script `compile` automates the process, **but the build system needs to be set up correctly**.
+The script `compile` automates the process, **but there are some prerequisites**.
 
 ### Requirements
 - Meet the [OpenWrt build system requirements](https://openwrt.org/docs/guide-developer/toolchain/install-buildsystem) on your local machine or VM 
 ```
 
-### Build system setup
-Install the tools and toolchain, and select your desired architecture in the `openwrt` repo:
-
-```bash
-# Install tools and toolchain
-make tools/install
-make toolchain/install
-
-```
-
 ### Build the package
-Run the `compile` script from the `wayru-os-services` repo:
+Run the `compile` script:
 
 ```bash
 bash compile

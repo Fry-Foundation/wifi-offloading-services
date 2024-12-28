@@ -1,102 +1,118 @@
 #!/bin/bash
 
-set -e
+start_time=$(date +%s)
 
-START_TIME=$(date +"%Y-%m-%d-%H%M%S")
+# Adjust these variables to your needs; defaults below are for the Comfast CF-E375AC (Genesis-like)
+RELEASE="23.05.4"
+TARGET="ath79"
+SUBTARGET="generic"
+
 CURRENT_DIR=$(pwd)
+
 TEMP_FEEDS_DIR="$CURRENT_DIR/feed"
 TEMP_FEEDS_NAME="wayru_custom"
+
 BUILD_DIR="$CURRENT_DIR/build"
-VERSIONED_DIR="$BUILD_DIR/$START_TIME"
-OPENWRT_DIR="$CURRENT_DIR/openwrt"
+FILE_TIMESTAMP=$(date +"%Y-%m-%d-%H%M%S")
+VERSIONED_DIR="$BUILD_DIR/$FILE_TIMESTAMP"
 
-# Clean up previous temp dirs
+SDK_DIR="$CURRENT_DIR/sdk"
+
+# Clean up and set up directories
+echo "Cleaning and setting up directories"📂
+echo "---------------------------------------"
 rm -rf "$TEMP_FEEDS_DIR"
-
 mkdir -p "$BUILD_DIR"
 mkdir -p "$VERSIONED_DIR"
 mkdir -p "$TEMP_FEEDS_DIR/admin/wayru-os-services"
 
-# Clone OpenWrt repository in a temporary location
-# Check if the OpenWrt directory already exists, and if it does, skip the clone step
-if [ -d "$OPENWRT_DIR" ]; then
-    echo -e "\nOpenWrt repository already exists ... skipping clone step"
-else
-    echo -e "\nCloning OpenWrt repository"
-    echo "---------------------------------------"
-    git clone https://git.openwrt.org/openwrt/openwrt.git "$OPENWRT_DIR"
-fi
-
-cd "$OPENWRT_DIR"
-git checkout v23.05.4  # Cambiar a la rama/tag deseada
-CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-echo "Current branch is '$CURRENT_BRANCH'"
-
-# Copy relevant files to the temp feed directory
+# Set up build source in temp feed dir
+echo "Copying build source to temp feed directory"
+echo "---------------------------------------"
 cp -r "$CURRENT_DIR/Makefile" "$TEMP_FEEDS_DIR/admin/wayru-os-services/"
 cp -r "$CURRENT_DIR/VERSION" "$TEMP_FEEDS_DIR/admin/wayru-os-services/"
 cp -r "$CURRENT_DIR/source" "$TEMP_FEEDS_DIR/admin/wayru-os-services/"
 
-# Set up target in .config
-echo -e "\nConfiguring build target... ⚙️"
+# Download OpenWRT SDK (if not already downloaded)
+if [ ! -d "$SDK_DIR" ]; then
+    echo "Downloading OpenWrt SDK ..."
+    echo "---------------------------------------"
+    curl -o sdk.tar.xz "https://archive.openwrt.org/releases/$RELEASE/targets/$TARGET/$SUBTARGET/openwrt-sdk-$RELEASE-$TARGET-${SUBTARGET}_gcc-12.3.0_musl.Linux-x86_64.tar.xz"
+    tar -xf sdk.tar.xz
+    mv "openwrt-sdk-$RELEASE-$TARGET-${SUBTARGET}_gcc-12.3.0_musl.Linux-x86_64" $SDK_DIR
+    rm sdk.tar.xz
+else
+    echo "OpenWrt SDK already downloaded"
+    echo "---------------------------------------"
+fi
+
+# Configure feeds
+echo "Configuring SDK feeds"
+echo "---------------------------------------"
+cd $SDK_DIR
+echo "src-link $TEMP_FEEDS_NAME $TEMP_FEEDS_DIR" > feeds.conf
+cat feeds.conf.default >> feeds.conf
+
+# Remove some of the default feeds
+sed -i '/luci/d' feeds.conf
+sed -i '/telephony/d' feeds.conf
+sed -i '/routing/d' feeds.conf
+
+# Update feeds
+echo "Updating feeds ..."
+echo "---------------------------------------"
+./scripts/feeds update -a
+
+# Prepare the wayru-os-services package
+echo "Preparing wayru-os-services package"
+echo "---------------------------------------"
+./scripts/feeds install wayru-os-services
+
+# Configure SDK
+echo "Configuring SDK"
 echo "---------------------------------------"
 
-cat <<EOT >> .config
-CONFIG_TARGET_ath79=y
-CONFIG_TARGET_ath79_generic=y
-CONFIG_TARGET_ath79_generic_DEVICE_comfast_cf-e375ac=y
-CONFIG_PACKAGE_wayru-os-services=y
-EOT
-
-echo -e "\nApplying configuration with make defconfig... 🔧"
+# Deselect default settings that build all packages
+rm .config
+touch .config
+echo "# CONFIG_ALL_NONSHARED is not set" >> .config
+echo "# CONFIG_ALL_KMODS is not set" >> .config
+echo "# CONFIG_ALL is not set" >> .config
+echo "CONFIG_PACKAGE_wayru-os-services=y" >> .config
 make defconfig
 
-# Read the compile target
+# Build
+make package/wayru-os-services/download || exit 1
+make package/wayru-os-services/prepare || exit 1
+make package/wayru-os-services/compile || exit 1
+# make -j1 V=sc package/wayru-os-services/compile || exit 1
+
+# Finding compile target
 CONFIG_LINE=$(grep 'CONFIG_TARGET_ARCH_PACKAGES=' '.config')
 
 if [ -z "$CONFIG_LINE" ]; then
-	echo "Error: Compile target not found in the configuration file"
-	echo "Please make sure the wayru-os repo/openwrt is set up correctly"
+	echo "Error: Compile target not found in the configuration file; cannot determine the output directory"
+    echo "Please check the output manually to find the compiled package"
 	exit 1
 fi
 
 COMPILE_TARGET=$(echo $CONFIG_LINE | sed -E 's/CONFIG_TARGET_ARCH_PACKAGES="([^"]+)"/\1/')
-echo "Compile target is '$COMPILE_TARGET'"
-
-# Build system clean up
-echo -e "\nSetting up the build environment... 🛠️"
-echo "---------------------------------------"
-make clean
-# rm -rf feeds
-
-# Configure custom feed
-echo -e "\nUpdating and installing feeds... 🔄"
-echo "---------------------------------------"
-echo "src-link $TEMP_FEEDS_NAME $TEMP_FEEDS_DIR" > feeds.conf
-cat feeds.conf.default >> feeds.conf
-sed -i '/luci/d' feeds.conf
-sed -i '/telephony/d' feeds.conf
-sed -i '/routing/d' feeds.conf
-sed -i '/wayru_os_feed/d' feeds.conf
-./scripts/feeds update -a
-./scripts/feeds install -a
-
-# Make sure our package is selected for compilation
-echo "CONFIG_PACKAGE_wayru-os-services=y" >> .config
-make defconfig
-
-# Compile
-echo -e "\nBuilding... 🏗️"
-echo "---------------------------------------"
-make toolchain/install
-make tools/install
-# make -j"$(nproc)" package/wayru-os-services/compile || exit 1
-make -j1 V=sc package/wayru-os-services/compile || exit 1
 
 # Move the compiled package to the build directory
-echo -e "\nMoving compiled package... 📦"
+echo "Moving compiled package"
 echo "---------------------------------------"
 mv "bin/packages/$COMPILE_TARGET/$TEMP_FEEDS_NAME"/* "$VERSIONED_DIR"
 
-echo -e "\nDone! ✨"
+# Clean up
+echo "Cleaning up"
+echo "---------------------------------------"
+make package/wayru-os-services/clean
+
+end_time=$(date +%s) # Seconds since epoch
+elapsed_time=$((end_time - start_time))
+
+echo "Done! Took $elapsed_time seconds"
+echo "---------------------------------------"
+
 exit 0
+

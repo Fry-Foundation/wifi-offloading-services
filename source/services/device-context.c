@@ -58,28 +58,28 @@ void parse_and_update_device_context(DeviceContext *device_context, char *device
 
     json_object *site_json = NULL;
     if (!json_object_object_get_ex(json, "site", &site_json)) {
-        print_error(&csl, "failed to get site from device context json");
+        print_debug(&csl, "failed to get site from device context json");
         json_object_put(json);
         return;
     }
 
     json_object *site_id_json = NULL;
     if (!json_object_object_get_ex(site_json, "id", &site_id_json)) {
-        print_error(&csl, "failed to get site id from device context json");
+        print_debug(&csl, "failed to get site id from device context json; device might not be part of a site");
         json_object_put(json);
         return;
     }
 
     json_object *site_name_json = NULL;
     if (!json_object_object_get_ex(site_json, "name", &site_name_json)) {
-        print_error(&csl, "failed to get site name from device context json");
+        print_debug(&csl, "failed to get site name from device context json");
         json_object_put(json);
         return;
     }
 
     json_object *site_mac_json = NULL;
     if (!json_object_object_get_ex(site_json, "mac", &site_mac_json)) {
-        print_error(&csl, "failed to get site mac from device context json");
+        print_debug(&csl, "failed to get site mac from device context json");
         json_object_put(json);
         return;
     }
@@ -102,11 +102,12 @@ DeviceContext *init_device_context(Registration *registration, AccessToken *acce
 
     char *device_context_json = request_device_context(registration, access_token);
     if (device_context_json == NULL) {
-        print_error(&csl, "failed to request device context");
+        print_debug(&csl, "failed to request device context");
         return device_context;
     }
 
     parse_and_update_device_context(device_context, device_context_json);
+    print_info(&csl, "device context initialized");
     return device_context;
 }
 
@@ -115,11 +116,12 @@ void device_context_task(Scheduler *sch, void *task_context) {
 
     char *device_context_json = request_device_context(context->registration, context->access_token);
     if (device_context_json == NULL) {
-        print_error(&csl, "failed to request device context");
+        print_debug(&csl, "failed to request device context");
         return;
     }
 
     parse_and_update_device_context(context->device_context, device_context_json);
+    print_info(&csl, "device context checked");
     schedule_task(sch, time(NULL) + config.device_context_interval, device_context_task, "device context", context);
 }
 

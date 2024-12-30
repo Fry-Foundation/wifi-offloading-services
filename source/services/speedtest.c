@@ -1,5 +1,4 @@
 #include "lib/console.h"
-#include "lib/http-requests.h"
 #include "lib/scheduler.h"
 #include "services/config.h"
 #include "services/gen_id.h"
@@ -62,7 +61,7 @@ TestResult measure_download_speed(char *access_token) {
         .speed_mbps = 0.0,
     };
 
-    print_info(&csl, "Starting download speed test...");
+    print_debug(&csl, "Starting download speed test...");
     curl = curl_easy_init();
     if (!curl) {
         print_error(&csl, "Failed to initialize curl");
@@ -94,8 +93,8 @@ TestResult measure_download_speed(char *access_token) {
         double duration = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6; // Time in seconds
         double speed_mbps = (total_bytes * 8) / (duration * 1e6); // Calculate speed in Mbps
         double total_mb = total_bytes / (1024.0 * 1024.0); // Calculate total downloaded in MB
-        print_info(&csl, "Download Speed: %.2f Mbps", speed_mbps);
-        print_info(&csl, "Total Downloaded: %.2f MB", total_mb);
+        print_debug(&csl, "Download Speed: %.2f Mbps", speed_mbps);
+        print_debug(&csl, "Total Downloaded: %.2f MB", total_mb);
         result.speed_mbps = speed_mbps;
     }
 
@@ -137,7 +136,7 @@ TestResult measure_upload_speed(char *access_token) {
         .speed_mbps = 0.0,
     };
 
-    print_info(&csl,"Starting upload speed test...");
+    print_debug(&csl,"Starting upload speed test...");
     curl = curl_easy_init();
     if (!curl) {
         print_error(&csl,"Failed to initialize curl\n");
@@ -172,9 +171,9 @@ TestResult measure_upload_speed(char *access_token) {
     } else {
         double duration = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6;
         double speed_mbps = (bytes_sent * 8.0) / (duration * 1e6); // Speed in Mbps
-        print_info(&csl,"Upload complete");
-        print_info(&csl,"Upload Speed: %.2f Mbps", speed_mbps);
-        print_info(&csl,"Total Uploaded: %.2f MB", bytes_sent / (1024.0 * 1024.0));
+        print_debug(&csl,"Upload complete");
+        print_debug(&csl,"Upload Speed: %.2f Mbps", speed_mbps);
+        print_debug(&csl,"Total Uploaded: %.2f MB", bytes_sent / (1024.0 * 1024.0));
         result.speed_mbps = speed_mbps;
     }
 
@@ -224,7 +223,7 @@ SpeedTestResult speed_test(char *bearer_token) {
         .download_speed_mbps = 0.0,
     };
 
-    print_info(&csl, "Starting speed test");
+    print_info(&csl, "Starting speed test ...");
 
     TestResult download_result = measure_download_speed(bearer_token);
     if (download_result.is_error) {
@@ -244,7 +243,7 @@ SpeedTestResult speed_test(char *bearer_token) {
     result.upload_speed_mbps = upload_result.speed_mbps;
     result.download_speed_mbps = download_result.speed_mbps;
 
-    print_info(&csl, "Speed test complete");
+    print_info(&csl, "Speed test complete, upload: %.2f Mbps, download: %.2f Mbps", result.upload_speed_mbps, result.download_speed_mbps);
 
     return result;
 }
@@ -252,13 +251,13 @@ SpeedTestResult speed_test(char *bearer_token) {
 void speedtest_task(Scheduler *sch, void *task_context) {
     SpeedTestTaskContext *context = (SpeedTestTaskContext *)task_context;
 
-    print_info(&csl, "Starting speedtest task");
+    print_debug(&csl, "Starting speedtest task");
     int interval = 0;
     int failed = 0;
     double upload_speed = 0.0;
     double download_speed = 0.0;
     float latency = get_average_latency("www.google.com");
-    print_info(&csl, "Average latency: %.2f ms", latency);
+    print_debug(&csl, "Average latency: %.2f ms", latency);
     // while (interval < config.speed_test_backhaul_attempts) {
     //     SpeedTestResult result = speed_test(context->access_token->token);
     //     upload_speed += result.upload_speed_mbps;
@@ -269,15 +268,15 @@ void speedtest_task(Scheduler *sch, void *task_context) {
     // double upload_speed_mbps = upload_speed / interval;
     // double download_speed_mbps = download_speed / interval;
 
-    // print_info(&csl, "Average upload speed: %.2f Mbps", upload_speed_mbps);
-    // print_info(&csl, "Average download speed: %.2f Mbps", download_speed_mbps);
+    // print_debug(&csl, "Average upload speed: %.2f Mbps", upload_speed_mbps);
+    // print_debug(&csl, "Average download speed: %.2f Mbps", download_speed_mbps);
     SpeedTestResult result = speed_test(context->access_token->token);
 
     time_t now;
     time(&now);
     char measurementid[256];
     generate_id(measurementid, sizeof(measurementid), context->registration->wayru_device_id, now);
-    print_info(&csl, "Measurement ID for speedtest: %s", measurementid);
+    print_debug(&csl, "Measurement ID for speedtest: %s", measurementid);
     json_object *speedtest_data = json_object_new_object();
     json_object_object_add(speedtest_data, "measurement_id", json_object_new_string(measurementid));
     json_object_object_add(speedtest_data, "device_id", json_object_new_string(context->registration->wayru_device_id));
@@ -287,7 +286,7 @@ void speedtest_task(Scheduler *sch, void *task_context) {
     json_object_object_add(speedtest_data, "latency", json_object_new_double(latency));
     const char *speedtest_data_str = json_object_to_json_string(speedtest_data);
 
-    print_info(&csl, "Publishing speedtest results");
+    print_debug(&csl, "Publishing speedtest results");
     publish_mqtt(context->mosq, "monitoring/speedtest", speedtest_data_str, 0);
 
     json_object_put(speedtest_data);

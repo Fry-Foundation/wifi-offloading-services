@@ -22,7 +22,7 @@ void save_device_registration(char *device_registration_json) {
 
     FILE *file = fopen(registration_file_path, "w");
     if (file == NULL) {
-        print_error(&csl, "failed to open device registration file");
+        print_error(&csl, "failed to open device registration file for writing; did not save registration");
         return;
     }
 
@@ -38,7 +38,7 @@ char *read_device_registration() {
 
     FILE *file = fopen(registration_file_path, "r");
     if (file == NULL) {
-        print_error(&csl, "failed to open device registration file");
+        print_debug(&csl, "failed to open device registration file");
         return NULL;
     }
 
@@ -136,27 +136,26 @@ Registration *init_registration(char *mac, char *model, char *brand, char *openw
     json_object_put(json_body);
 
     if (result.is_error) {
-        print_error(&csl, "failed to register device");
-        print_error(&csl, "error: %s", result.error);
+        print_error(&csl, "failed to register device, error: %s", result.error);
         return false;
     }
 
     if (result.response_buffer == NULL) {
-        print_error(&csl, "failed to register device");
-        print_error(&csl, "no response received");
+        print_error(&csl, "failed to register device, no response received");
         return false;
     }
 
     // Parse response
     registration = parse_device_registration(result.response_buffer);
     if (registration->wayru_device_id == NULL || registration->access_key == NULL) {
-        print_error(&csl, "failed to register device");
+        print_error(&csl, "failed to register device, no device id or access key received");
         free(result.response_buffer);
         return false;
     }
 
     // Save registration
     save_device_registration(result.response_buffer);
+    print_info(&csl, "registration initialized");
 
     // Cleanup
     free(result.response_buffer);

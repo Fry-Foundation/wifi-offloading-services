@@ -22,8 +22,7 @@ int env_variable_count = 0;
 void load_env(const char *filename) {
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
-        print_error(&csl, "failed to open .env file");
-
+        print_debug(&csl, "failed to open .env file");
         return;
     }
 

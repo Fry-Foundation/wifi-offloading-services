@@ -270,6 +270,7 @@ AccessToken *init_access_token(Registration *registration) {
         return access_token;
     }
 
+    print_info(&csl, "access token initialized");
     free(access_token_json_str);
     return access_token;
 }

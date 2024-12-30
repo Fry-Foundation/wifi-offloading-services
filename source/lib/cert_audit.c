@@ -12,7 +12,7 @@ static Console cons = {
 int validate_ca_cert(const char *ca_cert_path) {
     FILE *ca_file = fopen(ca_cert_path, "r");
     if (!ca_file) {
-        print_error(&cons, "Error opening CA certificate: %s", ca_cert_path);
+        print_debug(&cons, "Error opening CA certificate: %s", ca_cert_path);
         return 0;
     }
 
@@ -25,7 +25,7 @@ int validate_ca_cert(const char *ca_cert_path) {
 
     int is_ca = X509_check_ca(ca_cert);
     if (is_ca) {
-        print_info(&cons, "The certificate %s is valid and is a CA.", ca_cert_path);
+        print_debug(&cons, "The certificate %s is valid and is a CA.", ca_cert_path);
     } else {
         print_error(&cons, "The certificate %s is not a CA.", ca_cert_path);
     }
@@ -37,7 +37,7 @@ int validate_ca_cert(const char *ca_cert_path) {
 int validate_key_cert_match(const char *keyFile, const char *certFile) {
     FILE *key_fp = fopen(keyFile, "r");
     if (!key_fp) {
-        print_error(&cons, "Error could not open the .key file");
+        print_debug(&cons, "Error could not open the .key file");
         return -1;
     }
 

@@ -265,10 +265,9 @@ int init_site_clients_fifo() {
             print_error(&csl, "failed to create site clients fifo directory");
             return -1;
         }
-        print_info(&csl, "Directory created: %s", fifo_dir);
+        print_debug(&csl, "directory created: %s", fifo_dir);
     } else {
-        printf("Directory already exists: %s\n", fifo_dir);
-        print_info(&csl, "Directory already exists: %s", fifo_dir);
+        print_debug(&csl, "directory already exists: %s", fifo_dir);
     }
 
     // Create the FIFO file if it doesn't exist

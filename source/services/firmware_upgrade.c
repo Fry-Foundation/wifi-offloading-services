@@ -514,6 +514,7 @@ void firmware_upgrade_on_boot(Registration *registration, DeviceInfo *device_inf
 
     const char *status_value = json_object_get_string(status);
     print_debug(&csl, "firmware status on boot: %s", status_value);
+    print_info(&csl, "firmware status on boot complete");
 
     json_object_put(parsed_response);
     free(result.response_buffer);

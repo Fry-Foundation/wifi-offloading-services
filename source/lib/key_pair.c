@@ -63,7 +63,7 @@ bool save_private_key_in_pem(EVP_PKEY *pkey, char *private_key_filepath) {
     }
 
     fclose(private_key_file);
-    print_info(&csl, "Private key written to %s", private_key_filepath);
+    print_debug(&csl, "Private key written to %s", private_key_filepath);
     return true;
 }
 
@@ -84,7 +84,7 @@ bool save_public_key_in_pem(EVP_PKEY *pkey, char *public_key_filepath) {
     }
 
     fclose(public_key_file);
-    print_info(&csl, "Public key written to %s", public_key_filepath);
+    print_debug(&csl, "Public key written to %s", public_key_filepath);
     return true;
 }
 
@@ -92,7 +92,7 @@ bool save_public_key_in_pem(EVP_PKEY *pkey, char *public_key_filepath) {
 EVP_PKEY *load_private_key_from_pem(char *private_key_filepath) {
     FILE *private_key_file = fopen(private_key_filepath, "rb");
     if (!private_key_file) {
-        print_error(&csl, "Error opening private key file for reading");
+        print_debug(&csl, "Failed to open private key file for reading");
         ERR_print_errors_fp(stderr);
         return NULL;
     }
@@ -113,13 +113,13 @@ EVP_PKEY *load_private_key_from_pem(char *private_key_filepath) {
 char *get_public_key_pem_string(EVP_PKEY *pkey) {
     BIO *bio = BIO_new(BIO_s_mem());
     if (!bio) {
-        print_error(&csl, "Error creating BIO");
+        print_error(&csl, "Failed to create BIO");
         ERR_print_errors_fp(stderr);
         return NULL;
     }
 
     if (PEM_write_bio_PUBKEY(bio, pkey) != 1) {
-        print_error(&csl, "Error writing public key to BIO");
+        print_error(&csl, "Failed to write public key to BIO");
         ERR_print_errors_fp(stderr);
         BIO_free(bio);
         return NULL;
@@ -129,7 +129,7 @@ char *get_public_key_pem_string(EVP_PKEY *pkey) {
     long bio_size = BIO_get_mem_data(bio, &public_key_pem_string);
     char *public_key_pem_string_copy = malloc(bio_size + 1);
     if (!public_key_pem_string_copy) {
-        print_error(&csl, "Error allocating memory for public key string");
+        print_error(&csl, "Failed to allocate memory for public key string");
         ERR_print_errors_fp(stderr);
         BIO_free(bio);
         return NULL;
@@ -147,7 +147,7 @@ char *get_public_key_pem_string(EVP_PKEY *pkey) {
 X509 *load_certificate(const char *cert_path) {
     FILE *cert_file = fopen(cert_path, "rb");
     if (!cert_file) {
-        print_error(&csl, "Unable to open certificate file: %s", cert_path);
+        print_debug(&csl, "Unable to open certificate file: %s", cert_path);
         return NULL;
     }
     X509 *cert = PEM_read_X509(cert_file, NULL, NULL, NULL);
@@ -159,13 +159,13 @@ X509 *load_certificate(const char *cert_path) {
 int verify_certificate(const char *cert_path, const char *ca_cert_path) {
     X509 *cert = load_certificate(cert_path);
     if (!cert) {
-        print_error(&csl, "Failed to load certificate: %s", cert_path);
+        print_debug(&csl, "Failed to load certificate: %s", cert_path);
         return 0;
     }
 
     X509 *ca_cert = load_certificate(ca_cert_path);
     if (!ca_cert) {
-        print_error(&csl, "Failed to load CA certificate: %s", ca_cert_path);
+        print_debug(&csl, "Failed to load CA certificate: %s", ca_cert_path);
         X509_free(cert);
         return 0;
     }
@@ -192,7 +192,7 @@ int verify_certificate(const char *cert_path, const char *ca_cert_path) {
 
     int ret = X509_verify_cert(ctx);
     if (ret == 1) {
-        print_info(&csl, "Certificate is valid.");
+        print_debug(&csl, "Certificate is valid.");
     } else {
         int err = X509_STORE_CTX_get_error(ctx);
         print_error(&csl, "Certificate verification failed: %s", X509_verify_cert_error_string(err));

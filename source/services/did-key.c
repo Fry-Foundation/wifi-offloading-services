@@ -136,6 +136,8 @@ char *get_did_public_key_or_generate_keypair() {
                         exit(1);
                     }
 
+                    print_info(&csl, "DID key pair generated successfully");
+
                     EVP_PKEY_free(pkey);
                     return public_key_pem;
                 }

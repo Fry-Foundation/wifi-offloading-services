@@ -41,7 +41,7 @@ bool get_mqtt_ca_cert(void *params) {
         print_error(&csl, "Failed to download MQTT CA certificate: %s", result.error);
         return false;
     } else {
-        print_info(&csl, "MQTT CA certificate downloaded successfully");
+        print_debug(&csl, "MQTT CA certificate downloaded successfully");
     }
 
     // Verify that the downloaded CA certificate is valid
@@ -57,7 +57,7 @@ bool attempt_ca_cert(AccessToken *access_token){
     config.delay_seconds = 30;
     bool result = retry(&config);
     if (result == true) {
-        print_info(&csl,"CA certificate is available");
+        print_info(&csl,"MQTT CA certificate is ready");
         return true;
     } else {
         print_error(&csl, "No CA certificate after %d attempts ... exiting", config.attempts);
@@ -95,17 +95,17 @@ bool generate_and_sign_cert(void *params) {
     int initial_key_cert_match_result = validate_key_cert_match(key_path, cert_path);
 
     if (initial_verify_result == 1 && initial_key_cert_match_result == 1 ) {
-        print_info(&csl, "MQTT certificate exists is valid. No further action required.");
+        print_debug(&csl, "MQTT certificate exists is valid. No further action required.");
         return true;
     } else {
-        print_info(&csl, "MQTT certificate does not exist or is not valid. Generating a new one.");
+        print_debug(&csl, "MQTT certificate does not exist or is not valid. Generating a new one.");
     }
 
     // Generate private key
     print_debug(&csl, "Generating private key ...");
     EVP_PKEY *pkey = generate_key_pair(Rsa);
     bool save_pkey_result = save_private_key_in_pem(pkey, key_path);
-    print_info(&csl, "Save private key result: %d", save_pkey_result);
+    print_debug(&csl, "Save private key result: %d", save_pkey_result);
 
     // Generate CSR
     print_debug(&csl, "Generating CSR ...");
@@ -151,7 +151,7 @@ bool generate_and_sign_cert(void *params) {
     print_debug(&csl, "Verifying signed certificate ...");
     int verify_result = verify_certificate(cert_path, ca_path);
     if (verify_result == 1) {
-        print_info(&csl, "Certificate verification successful.");
+        print_debug(&csl, "Certificate verification successful.");
     } else {
         print_error(&csl, "Certificate verification failed.");
         return false;
@@ -160,7 +160,7 @@ bool generate_and_sign_cert(void *params) {
     print_debug(&csl, "Verifying if new key matches certificate...");
     int key_cert_match_result = validate_key_cert_match(key_path, cert_path);
     if(key_cert_match_result == 1){
-        print_info(&csl, "Key matches certificate");
+        print_debug(&csl, "Key matches certificate");
         return true;
     }else{
         print_error(&csl, "Key does not match certificate");
@@ -176,7 +176,7 @@ bool attempt_generate_and_sign(AccessToken *access_token){
     config.delay_seconds = 30;
     bool result = retry(&config);
     if (result == true) {
-        print_info(&csl, "Certificate generated and signed successfully");
+        print_info(&csl, "MQTT cert is ready");
         return true;
     } else {
         print_error(&csl, "Failed to generate and sign certificate after %d attempts ... exiting", config.attempts);

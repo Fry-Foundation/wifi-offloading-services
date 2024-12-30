@@ -138,13 +138,13 @@ void monitoring_task(Scheduler *sch, void *task_context) {
     json_object *json_device_data = json_object_new_object();
     char measurementid[256];
     generate_id(measurementid, sizeof(measurementid), context->registration->wayru_device_id, now);
-    print_info(&csl, "measurement ID for deviceData: %s", measurementid);
+    print_debug(&csl, "measurement ID for deviceData: %s", measurementid);
     createjson(&device_data, json_device_data, now, context->registration, measurementid, context->os_name,
                context->os_version, context->os_services_version, context->public_ip);
 
     const char *device_data_str = json_object_to_json_string(json_device_data);
 
-    print_info(&csl, "device data: %s", device_data_str);
+    print_debug(&csl, "device data: %s", device_data_str);
     publish_mqtt(context->mosq, "monitoring/device-data", device_data_str, 0);
 
     json_object_put(json_device_data);

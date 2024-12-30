@@ -35,15 +35,12 @@ void on_connect(struct mosquitto *mosq, void *obj, int reason_code) {
 
     if (reason_code) {
         print_error(&csl, "unable to connect to the broker. %s", mosquitto_connack_string(reason_code));
-        // exit (1);
     } else {
-        print_info(&csl, "connected to the broker.");
+        print_info(&csl, "connected to the broker");
     }
 }
 
 void on_disconnect(struct mosquitto *mosq, void *obj, int reason_code) {
-    print_info(&csl, "disconnected from the broker. Reason code: %d", reason_code);
-
     static int retry_count = 0;
     const int max_retries = 3;
     const int initial_retry_delay = 5; // 5 seconds
@@ -72,7 +69,8 @@ void on_disconnect(struct mosquitto *mosq, void *obj, int reason_code) {
             print_error(&csl, "reconnection attempt failed; error code is %d", rc);
         }
     } else if (retry_count >= max_retries) {
-        print_error(&csl, "maximum reconnection attempts reached. Giving up and exiting...");
+        print_error(&csl, "maximum reconnection attempts reached. Giving up and exiting ...");
+        clean_up_mosquitto(&mosq);
         exit(1);
     }
 }
@@ -86,24 +84,24 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
 }
 
 void on_publish(struct mosquitto *mosq, void *obj, int mid) {
-    print_info(&csl, "message has been published, mid %d", mid);
+    print_info(&csl, "message has been published, message id %d", mid);
 }
 
 void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos, const int *granted_qos) {
-    print_info(&csl, "subscribed to a topic, mid %d", mid);
+    print_info(&csl, "subscribed to a topic, message id %d", mid);
 }
 
 void subscribe_mqtt(struct mosquitto *mosq, char *topic, int qos, MessageCallback callback) {
     if (topic_callbacks_count >= MAX_TOPIC_CALLBACKS) {
-        print_error(&csl, "maximum number of topic callbacks reached.");
+        print_error(&csl, "maximum number of topic callbacks reached");
         return;
     }
 
     int rc = mosquitto_subscribe(mosq, NULL, topic, qos);
     if (rc != MOSQ_ERR_SUCCESS) {
-        print_error(&csl, "unable to subscribe to the topic. %s", mosquitto_strerror(rc));
+        print_error(&csl, "unable to subscribe to the topic '%s'", mosquitto_strerror(rc));
     } else {
-        print_info(&csl, "subscribed to the topic %s successfully.", topic);
+        print_info(&csl, "subscribed to the topic %s successfully", topic);
         topic_callbacks[topic_callbacks_count].topic = strdup(topic);
         topic_callbacks[topic_callbacks_count].callback = callback;
         topic_callbacks_count++;

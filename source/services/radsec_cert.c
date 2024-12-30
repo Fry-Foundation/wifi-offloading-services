@@ -60,7 +60,7 @@ bool attempt_radsec_ca_cert(AccessToken *access_token) {
     config.delay_seconds = 30;
     bool result = retry(&config);
     if (result == true) {
-        print_info(&csl, "RadSec CA certificate is valid");
+        print_debug(&csl, "RadSec CA certificate is valid");
         return true;
     } else {
         print_error(&csl, "Failed to download RadSec CA certificate after %d attempts ... exiting", config.attempts);
@@ -103,7 +103,7 @@ bool generate_and_sign_radsec_cert(void *params) {
     int initial_key_cert_match_result = validate_key_cert_match(key_path, cert_path);
 
     if (initial_verify_result == 1 && initial_key_cert_match_result == 1) {
-        print_info(&csl, "RadSec certificate already exists and is valid. No further action required.");
+        print_debug(&csl, "RadSec certificate already exists and is valid. No further action required.");
         return true;
     } else {
         print_debug(&csl, "RadSec certificate does not exist or is invalid. Generating a new one.");
@@ -113,7 +113,7 @@ bool generate_and_sign_radsec_cert(void *params) {
     print_debug(&csl, "Generating private key ...");
     EVP_PKEY *pkey = generate_key_pair(Rsa);
     bool save_pkey_result = save_private_key_in_pem(pkey, key_path);
-    print_info(&csl, "Save private key result: %d", save_pkey_result);
+    print_debug(&csl, "Save private key result: %d", save_pkey_result);
 
     // Generate CSR
     print_debug(&csl, "Generating CSR ...");
@@ -159,7 +159,7 @@ bool generate_and_sign_radsec_cert(void *params) {
     print_debug(&csl, "Checking if the signed certificate is valid ...");
     int verify_result = verify_certificate(cert_path, ca_path);
     if (verify_result == 1) {
-        print_info(&csl, "RadSec certificate signed and saved successfully");
+        print_debug(&csl, "RadSec certificate signed and saved successfully");
     } else {
         print_error(&csl, "RadSec certificate is not valid");
         return false;
@@ -168,7 +168,7 @@ bool generate_and_sign_radsec_cert(void *params) {
     print_debug(&csl, "Checking if the certificate matches the key ...");
     int key_cert_match_result = validate_key_cert_match(key_path, cert_path);
     if (key_cert_match_result == 1) {
-        print_info(&csl, "RadSec certificate matches the key");
+        print_debug(&csl, "RadSec certificate matches the key");
         return true;
     } else {
         print_error(&csl, "RadSec certificate does not match the key");
@@ -196,7 +196,7 @@ bool attempt_generate_and_sign_radsec(AccessToken *access_token, Registration *r
     free(radsec_params);
 
     if (result == true) {
-        print_info(&csl, "RadSec certificate generated and signed successfully");
+        print_info(&csl, "RadSec certificate is ready");
         return true;
     } else {
         print_error(&csl, "Failed to generate and sign RadSec certificate after %d attempts ... exiting", config.attempts);

@@ -48,7 +48,7 @@ void init_diagnostic_service(void) {
 void update_led_status(bool internet_connected) {
     if (internet_connected) {
         print_info(&csl, "Internet is connected. Setting LED to indicate connectivity.");
-        set_led_trigger(GREEN_LED_TRIGGER, "default-one"); // Solid green
+        set_led_trigger(GREEN_LED_TRIGGER, "default-on"); // Solid green
         set_led_trigger(RED_LED_TRIGGER, "none");
         set_led_trigger(BLUE_LED_TRIGGER, "none");
     } else {

@@ -55,7 +55,7 @@ void on_disconnect(struct mosquitto *mosq, void *obj, int reason_code) {
     }
 
     // Attempt to reconnect if the disconnection was unexpected
-    if (reason_code != 0 && retry_count < max_retries) {
+    while (reason_code != 0 && retry_count < max_retries) {
         retry_count++;
         int delay = initial_retry_delay * (1 << (retry_count - 1)); // Exponential backoff
         print_info(&csl, "reconnecting in %d seconds (attempt %d/%d)...", delay, retry_count, max_retries);
@@ -68,7 +68,9 @@ void on_disconnect(struct mosquitto *mosq, void *obj, int reason_code) {
         } else {
             print_error(&csl, "reconnection attempt failed; error code is %d", rc);
         }
-    } else if (retry_count >= max_retries) {
+    }
+
+    if (retry_count >= max_retries) {
         print_error(&csl, "maximum reconnection attempts reached. Giving up and exiting ...");
         clean_up_mosquitto(&mosq);
         exit(1);
@@ -111,7 +113,7 @@ void subscribe_mqtt(struct mosquitto *mosq, char *topic, int qos, MessageCallbac
 void publish_mqtt(struct mosquitto *mosq, char *topic, const char *message, int qos) {
     int rc = mosquitto_publish(mosq, NULL, topic, strlen(message), message, qos, false);
     if (rc != MOSQ_ERR_SUCCESS) {
-        print_error(&csl, "unable to publish message. %s\n", mosquitto_strerror(rc));
+        print_error(&csl, "unable to publish message. %s", mosquitto_strerror(rc));
     }
 }
 

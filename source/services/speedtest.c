@@ -286,7 +286,7 @@ void speedtest_task(Scheduler *sch, void *task_context) {
     json_object_object_add(speedtest_data, "latency", json_object_new_double(latency));
     const char *speedtest_data_str = json_object_to_json_string(speedtest_data);
 
-    print_debug(&csl, "Publishing speedtest results");
+    print_info(&csl, "publishing speedtest to monitoring/speedtest");
     publish_mqtt(context->mosq, "monitoring/speedtest", speedtest_data_str, 0);
 
     json_object_put(speedtest_data);

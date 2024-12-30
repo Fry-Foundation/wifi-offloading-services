@@ -77,6 +77,8 @@ void diagnostic_task(Scheduler *sch, void *task_context) {
     // Update LED status
     update_led_status(internet_status);
 
+    print_info(&csl, "Diagnostic task completed, internet status: %s", internet_status ? "connected" : "disconnected");
+
     // Reschedule the task for 10 minutes later
     print_debug(&csl, "Rescheduling diagnostic task for 10 minutes later");
     schedule_task(sch, time(NULL) + config.diagnostic_interval, diagnostic_task, "diagnostic_task", context);

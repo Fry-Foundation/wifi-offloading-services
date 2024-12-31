@@ -1,6 +1,7 @@
 #include "mqtt.h"
 #include "services/access_token.h"
 #include "services/env.h"
+#include "services/exit_handler.h"
 #include "services/registration.h"
 #include <lib/console.h>
 #include <services/mqtt-cert.h>
@@ -44,7 +45,7 @@ void on_disconnect(struct mosquitto *mosq, void *obj, int reason_code) {
     static int retry_count = 0;
     const int max_retries = 3;
     const int initial_retry_delay = 5; // 5 seconds
-    
+
     // Log the disconnection reason
     if (reason_code == 0) {
         print_info(&csl, "disconnected from the broker");
@@ -73,7 +74,7 @@ void on_disconnect(struct mosquitto *mosq, void *obj, int reason_code) {
     if (retry_count >= max_retries) {
         print_error(&csl, "maximum reconnection attempts reached. Giving up and exiting ...");
         clean_up_mosquitto(&mosq);
-        exit(1);
+        cleanup_and_exit(1);
     }
 }
 

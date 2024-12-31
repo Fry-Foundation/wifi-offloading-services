@@ -2,6 +2,7 @@
 #include "lib/console.h"
 #include "lib/key_pair.h"
 #include "services/config.h"
+#include "services/exit_handler.h"
 #include <ctype.h>
 #include <openssl/evp.h>
 #include <stdbool.h>
@@ -122,7 +123,7 @@ char *get_did_public_key_or_generate_keypair() {
                     bool save_private_result = save_private_key_in_pem(pkey, private_key_filepath);
                     if (!save_private_result) {
                         print_error(&csl, "Failed to save private key");
-                        exit(1);
+                        cleanup_and_exit(1);
                     }
 
                     // Save the public key
@@ -133,7 +134,7 @@ char *get_did_public_key_or_generate_keypair() {
                     bool save_public_result = save_public_key_in_pem(pkey, public_key_filepath);
                     if (!save_public_result) {
                         print_error(&csl, "Failed to save public key");
-                        exit(1);
+                        cleanup_and_exit(1);
                     }
 
                     print_info(&csl, "DID key pair generated successfully");
@@ -147,6 +148,8 @@ char *get_did_public_key_or_generate_keypair() {
         }
 
         print_error(&csl, "Failed to generate key pair after %d attempts", KEY_GENERATION_RETRIES);
-        exit(1);
+        cleanup_and_exit(1);
     }
+
+    return NULL;
 }

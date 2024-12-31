@@ -3,6 +3,7 @@
 #include "lib/console.h"
 #include "lib/script_runner.h"
 #include "services/did-key.h"
+#include "services/exit_handler.h"
 #include <json-c/json.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -197,7 +198,7 @@ char *get_id() {
     }
     if (retry_count == MAX_RETRIES) {
         print_error(&csl, "unable to obtain UUID after %d attempts. Exiting.", MAX_RETRIES);
-        exit(1);
+        cleanup_and_exit(1);
     }
 
     return id;

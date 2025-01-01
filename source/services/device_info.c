@@ -103,7 +103,7 @@ char *get_os_services_version() {
         return NULL;
     }
 
-    print_info(&csl, "services version is: %s", os_services_version);
+    print_debug(&csl, "services version is: %s", os_services_version);
 
     return os_services_version;
 }
@@ -244,6 +244,8 @@ DeviceInfo *init_device_info() {
     device_info->os_name = get_os_name();
     device_info->did_public_key = get_did_public_key_or_generate_keypair();
 
+    print_info(&csl, "device info initialized");
+
     return device_info;
 }
 
@@ -258,4 +260,5 @@ void clean_device_info(DeviceInfo *device_info) {
     free(device_info->device_id);
     free(device_info->public_ip);
     free(device_info->did_public_key);
+    print_info(&csl, "cleaned device info");
 }

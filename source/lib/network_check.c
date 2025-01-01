@@ -43,13 +43,13 @@ bool internet_check() {
     config.retry_func = ping;
     config.retry_params = "google.com";
     config.attempts = 5;
-    config.delay_seconds = 30;    
+    config.delay_seconds = 30;
     bool result = retry(&config);
     if (result == true) {
         print_info(&csl, "Internet connection is available");
         return true;
     } else {
-        print_error(&csl, "No internet connection after %d attempts ... exiting", config.attempts);
+        print_error(&csl, "No internet connection after %d attempts", config.attempts);
         return false;
     }
 }
@@ -58,6 +58,7 @@ bool internet_check() {
 bool wayru_health() {
     char url[256];
     snprintf(url, sizeof(url), "%s/health", config.accounting_api);
+    print_info(&csl, "Wayru health url %s", url);
     HttpGetOptions get_wayru_options = {
         .url = url,
         .bearer_token = NULL,

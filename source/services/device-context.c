@@ -147,9 +147,8 @@ void clean_device_context(DeviceContext *device_context) {
         if (device_context->site->id != NULL) free(device_context->site->id);
         if (device_context->site->name != NULL) free(device_context->site->name);
         if (device_context->site->mac != NULL) free(device_context->site->mac);
-
         free(device_context->site);
     }
-
     free(device_context);
+    print_info(&csl, "cleaned device context");
 }

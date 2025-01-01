@@ -30,19 +30,13 @@ static Console csl = {
 };
 
 int main(int argc, char *argv[]) {
+    print_info(&csl, "starting wayru-os-services");
+
     // Signal handlers
     setup_signal_handlers();
 
-    // Scheduler
-    Scheduler *sch = init_scheduler();
-    register_cleanup((cleanup_callback)clean_scheduler, sch);
-
     // Config
     init_config(argc, argv);
-
-    // DeviceInfo
-    DeviceInfo *device_info = init_device_info();
-    register_cleanup((cleanup_callback)clean_device_info, device_info);
 
     // Internet check
     bool internet_status = internet_check();
@@ -51,6 +45,10 @@ int main(int argc, char *argv[]) {
     // Wayru check
     bool wayru_status = wayru_check();
     if (!wayru_status) cleanup_and_exit(1);
+
+    // DeviceInfo
+    DeviceInfo *device_info = init_device_info();
+    register_cleanup((cleanup_callback)clean_device_info, device_info);
 
     // Registration
     Registration *registration =
@@ -95,7 +93,11 @@ int main(int argc, char *argv[]) {
     int site_clients_fifo_fd = init_site_clients_fifo();
     register_cleanup((cleanup_callback)clean_site_clients_fifo, &site_clients_fifo_fd);
 
-    // Schedule service tasks and run
+    // Scheduler
+    Scheduler *sch = init_scheduler();
+    register_cleanup((cleanup_callback)clean_scheduler, sch);
+
+    // Schedule service tasks
     access_token_service(sch, access_token, registration, mosq);
     device_context_service(sch, device_context, registration, access_token);
     device_status_service(sch, device_info, registration->wayru_device_id, access_token);

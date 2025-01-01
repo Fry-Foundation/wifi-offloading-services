@@ -73,8 +73,9 @@ void on_disconnect(struct mosquitto *mosq, void *obj, int reason_code) {
 
     if (retry_count >= max_retries) {
         print_error(&csl, "maximum reconnection attempts reached. Giving up and exiting ...");
-        clean_up_mosquitto(&mosq);
-        cleanup_and_exit(1);
+        // clean_up_mosquitto(&mosq);
+        // cleanup_and_exit(1);
+        request_cleanup_and_exit();
     }
 }
 
@@ -233,6 +234,7 @@ void clean_up_mosquitto(struct mosquitto **mosq) {
 
     mosquitto_destroy(*mosq);
     mosquitto_lib_cleanup();
+    print_info(&csl, "cleaned mqtt client");
 }
 
 struct mosquitto *init_mqtt(Registration *registration, AccessToken *access_token) {

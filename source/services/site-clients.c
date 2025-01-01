@@ -346,4 +346,6 @@ void clean_site_clients_fifo(int *site_fifo_fd) {
         print_error(&csl, "failed to unlink site clients fifo, path: %s", fifo_path);
     }
     unlink(fifo_path);
+
+    print_info(&csl, "cleaned site clients fifo");
 }

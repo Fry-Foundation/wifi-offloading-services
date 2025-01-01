@@ -4,6 +4,7 @@
 #include "lib/network_check.h"
 #include "services/device_info.h"
 #include "services/config.h"
+#include "services/exit_handler.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -73,6 +74,9 @@ void diagnostic_task(Scheduler *sch, void *task_context) {
 
     // Check internet connectivity
     bool internet_status = internet_check();
+    if (!internet_status) {
+        cleanup_and_exit(1);
+    }
 
     // Update LED status
     update_led_status(internet_status);

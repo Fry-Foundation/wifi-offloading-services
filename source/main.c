@@ -105,7 +105,7 @@ int main(int argc, char *argv[]) {
     accounting_service(sch);
     monitoring_service(sch, mosq, registration);
     firmware_upgrade_check(sch, device_info, registration, access_token);
-    start_diagnostic_service(sch, device_info); 
+    start_diagnostic_service(sch, device_info, access_token);
     site_clients_service(sch, mosq, site_clients_fifo_fd, device_context->site);
     speedtest_service(sch, mosq, registration, access_token);
     commands_service(mosq, device_info, registration, access_token);

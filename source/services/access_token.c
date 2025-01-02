@@ -338,7 +338,7 @@ void clean_access_token(AccessToken *access_token) {
     print_info(&csl, "cleaned access token");
 }
 
-bool is_token_valid(const AccessToken *access_token) {
+bool is_token_valid(AccessToken *access_token) {
     if (access_token == NULL || access_token->token == NULL) {
         print_error(&csl, "Invalid access token object or token is NULL");
         return false;
@@ -359,11 +359,4 @@ bool is_token_valid(const AccessToken *access_token) {
 
     print_debug(&csl, "Access token is valid");
     return true;
-}
-
-void validate_or_exit(const AccessToken *access_token) {
-    if (!is_token_valid(access_token)) {
-        print_error(&csl, "Access token is invalid. Closing wayru-os-services.");
-        ///Cerrar proceso
-    }
 }

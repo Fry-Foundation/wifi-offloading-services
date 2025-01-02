@@ -18,5 +18,6 @@ void access_token_service(Scheduler *sch,
                           Registration *registration,
                           struct mosquitto *mosq);
 void clean_access_token(AccessToken *access_token);
+bool is_token_valid(AccessToken *access_token);
 
 #endif /* ACCESS_TOKEN_H */

@@ -22,6 +22,7 @@ static Console csl = {
 
 typedef struct {
     DeviceInfo *device_info;
+    AccessToken *access_token;
     Scheduler *scheduler;
 } DiagnosticTaskContext;
 
@@ -73,21 +74,21 @@ void diagnostic_task(Scheduler *sch, void *task_context) {
         bool internet_status = internet_check();
         print_info(&csl, "Diagnostic task for led, internet status: %s", internet_status ? "connected" : "disconnected");
         update_led_status(internet_status);
-    }    
-
-    // Check broker connection
+    }
 
     // Check valid token
-    validate_or_exit();
-    
+    if (!is_token_valid(context->access_token)) {
+        print_error(&csl, "Access token is invalid. Exiting.");
+        request_cleanup_and_exit();
+    }
+
     // Reschedule the task for 10 minutes later
     print_debug(&csl, "Rescheduling diagnostic task for 2 minutes later");
     schedule_task(sch, time(NULL) + config.diagnostic_interval, diagnostic_task, "diagnostic_task", context);
 }
 
 // Start diagnostic service
-void start_diagnostic_service(Scheduler *scheduler, DeviceInfo *device_info) {
-
+void start_diagnostic_service(Scheduler *scheduler, DeviceInfo *device_info, AccessToken *access_token) {
     DiagnosticTaskContext *context = (DiagnosticTaskContext *)malloc(sizeof(DiagnosticTaskContext));
     if (context == NULL) {
         print_error(&csl, "Failed to allocate memory for diagnostic task context");
@@ -96,6 +97,7 @@ void start_diagnostic_service(Scheduler *scheduler, DeviceInfo *device_info) {
 
     context->scheduler = scheduler;
     context->device_info = device_info;
+    context->access_token = access_token;
 
     print_debug(&csl, "Scheduling diagnostic service");
 

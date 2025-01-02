@@ -1,5 +1,6 @@
 #include "mqtt.h"
 #include "services/access_token.h"
+#include "services/diagnostic.h"
 #include "services/env.h"
 #include "services/exit_handler.h"
 #include "services/registration.h"
@@ -75,8 +76,11 @@ void on_disconnect(struct mosquitto *mosq, void *obj, int reason_code) {
         print_error(&csl, "maximum reconnection attempts reached. Giving up and exiting ...");
         // clean_up_mosquitto(&mosq);
         // cleanup_and_exit(1);
+        update_led_status(false);
         request_cleanup_and_exit();
     }
+
+    update_led_status(true);
 }
 
 void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg) {

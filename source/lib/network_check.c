@@ -4,6 +4,7 @@
 #include "lib/retry.h"
 #include "lib/console.h"
 #include "services/config.h"
+#include "services/diagnostic.h"
 #include "stdbool.h"
 #include <unistd.h>
 
@@ -47,9 +48,11 @@ bool internet_check() {
     bool result = retry(&config);
     if (result == true) {
         print_info(&csl, "Internet connection is available");
+        update_led_status(true);
         return true;
     } else {
         print_error(&csl, "No internet connection after %d attempts", config.attempts);
+        update_led_status(false);
         return false;
     }
 }
@@ -85,9 +88,11 @@ bool wayru_check(){
     bool result = retry(&config);
     if (result == true) {
         print_info(&csl, "Wayru is reachable");
+        update_led_status(true);
         return true;
     } else {
         print_error(&csl, "Wayru is not reachable after %d attempts ... exiting", config.attempts);
+        update_led_status(false);
         return false;
     }
 }

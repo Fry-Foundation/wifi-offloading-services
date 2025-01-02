@@ -21,10 +21,10 @@ static Console csl = {
 };
 
 typedef struct {
-    DeviceInfo *device_info;
     AccessToken *access_token;
-    Scheduler *scheduler;
 } DiagnosticTaskContext;
+
+static DeviceInfo *diagnostic_device_info;
 
 // Write to LED trigger
 static void set_led_trigger(const char *led_path, const char *mode) {
@@ -40,46 +40,53 @@ static void set_led_trigger(const char *led_path, const char *mode) {
 }
 
 // Initialize LED states
-void init_diagnostic_service(void) {
+void init_diagnostic_service(DeviceInfo *device_info) {
     print_debug(&csl, "Initializing LED diagnostic service");
     set_led_trigger(RED_LED_TRIGGER, "timer");
     set_led_trigger(BLUE_LED_TRIGGER, "timer");
     set_led_trigger(GREEN_LED_TRIGGER, "none");
+
+    diagnostic_device_info = device_info;
 }
 
 // Update LED status based on internet connectivity
-void update_led_status(bool internet_connected) {
-    if (internet_connected) {
-        print_info(&csl, "Internet is connected. Setting LED to indicate connectivity.");
-        set_led_trigger(GREEN_LED_TRIGGER, "default-on"); // Solid green
-        set_led_trigger(RED_LED_TRIGGER, "none");
-        set_led_trigger(BLUE_LED_TRIGGER, "none");
-    } else {
-        print_info(&csl, "No internet connectivity. Setting LED to indicate disconnection.");
-        set_led_trigger(GREEN_LED_TRIGGER, "none");
-        set_led_trigger(RED_LED_TRIGGER, "timer"); // Blinking red
-        set_led_trigger(BLUE_LED_TRIGGER, "none");
+void update_led_status(bool ok) {
+    if (strcmp(diagnostic_device_info->name, "Genesis") == 0) {
+        print_info(&csl, "Device is Genesis. Updating LEDs.");
+        if (ok) {
+            print_info(&csl, "Internet is connected. Setting LED to indicate connectivity.");
+            set_led_trigger(GREEN_LED_TRIGGER, "default-on"); // Solid green
+            set_led_trigger(RED_LED_TRIGGER, "none");
+            set_led_trigger(BLUE_LED_TRIGGER, "none");
+        } else {
+            print_info(&csl, "No internet connectivity. Setting LED to indicate disconnection.");
+            set_led_trigger(GREEN_LED_TRIGGER, "none");
+            set_led_trigger(RED_LED_TRIGGER, "timer"); // Blinking red
+            set_led_trigger(BLUE_LED_TRIGGER, "none");
+        }
     }
 }
 
 // Diagnostic task to check internet and update LED status
 void diagnostic_task(Scheduler *sch, void *task_context) {
-    DiagnosticTaskContext *context = (DiagnosticTaskContext *)task_context;
-
     print_info(&csl, "Running diagnostic task");
 
-    // Run LED update only if device is Genesis
-    if (strcmp(context->device_info->name, "Genesis") == 0) {
-        print_info(&csl, "Device is Genesis. Running LED diagnostic task.");
-        bool internet_status = internet_check();
-        print_info(&csl, "Diagnostic task for led, internet status: %s", internet_status ? "connected" : "disconnected");
-        update_led_status(internet_status);
+    // Check internet status
+    bool internet_status = internet_check();
+    update_led_status(internet_status);
+    print_info(&csl, "Diagnostic internet status: %s", internet_status ? "connected" : "disconnected");
+    if (!internet_status) {
+        print_error(&csl, "No internet connection. Requesting exit.");
+        request_cleanup_and_exit();
+        return;
     }
 
     // Check valid token
+    DiagnosticTaskContext *context = (DiagnosticTaskContext *)task_context;
     if (!is_token_valid(context->access_token)) {
-        print_error(&csl, "Access token is invalid. Exiting.");
+        print_error(&csl, "Access token is invalid. Requesting exit.");
         request_cleanup_and_exit();
+        return;
     }
 
     // Reschedule the task for 10 minutes later
@@ -88,15 +95,13 @@ void diagnostic_task(Scheduler *sch, void *task_context) {
 }
 
 // Start diagnostic service
-void start_diagnostic_service(Scheduler *scheduler, DeviceInfo *device_info, AccessToken *access_token) {
+void start_diagnostic_service(Scheduler *scheduler, AccessToken *access_token) {
     DiagnosticTaskContext *context = (DiagnosticTaskContext *)malloc(sizeof(DiagnosticTaskContext));
     if (context == NULL) {
         print_error(&csl, "Failed to allocate memory for diagnostic task context");
         return;
     }
 
-    context->scheduler = scheduler;
-    context->device_info = device_info;
     context->access_token = access_token;
 
     print_debug(&csl, "Scheduling diagnostic service");

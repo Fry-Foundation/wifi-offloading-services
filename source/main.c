@@ -38,6 +38,13 @@ int main(int argc, char *argv[]) {
     // Config
     init_config(argc, argv);
 
+    // DeviceInfo
+    DeviceInfo *device_info = init_device_info();
+    register_cleanup((cleanup_callback)clean_device_info, device_info);
+
+    // Diagnostic Init
+    init_diagnostic_service(device_info);
+
     // Internet check
     bool internet_status = internet_check();
     if (!internet_status) cleanup_and_exit(1);
@@ -45,10 +52,6 @@ int main(int argc, char *argv[]) {
     // Wayru check
     bool wayru_status = wayru_check();
     if (!wayru_status) cleanup_and_exit(1);
-
-    // DeviceInfo
-    DeviceInfo *device_info = init_device_info();
-    register_cleanup((cleanup_callback)clean_device_info, device_info);
 
     // Registration
     Registration *registration =
@@ -105,7 +108,7 @@ int main(int argc, char *argv[]) {
     accounting_service(sch);
     monitoring_service(sch, mosq, registration);
     firmware_upgrade_check(sch, device_info, registration, access_token);
-    start_diagnostic_service(sch, device_info, access_token);
+    start_diagnostic_service(sch, access_token);
     site_clients_service(sch, mosq, site_clients_fifo_fd, device_context->site);
     speedtest_service(sch, mosq, registration, access_token);
     commands_service(mosq, device_info, registration, access_token);

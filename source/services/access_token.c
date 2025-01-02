@@ -333,9 +333,9 @@ void clean_access_token(AccessToken *access_token) {
         if (access_token->token != NULL) {
             free(access_token->token);
         }
-
         free(access_token);
     }
+    print_info(&csl, "cleaned access token");
 }
 
 bool is_token_valid(const AccessToken *access_token) {

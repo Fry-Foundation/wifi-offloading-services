@@ -1,4 +1,5 @@
 #include "scheduler.h"
+#include "services/exit_handler.h"
 #include <lib/console.h>
 #include <stdalign.h>
 #include <stdio.h>
@@ -23,6 +24,7 @@ Scheduler *init_scheduler() {
 
 void clean_scheduler(Scheduler *sch) {
     if (sch == NULL) {
+        print_debug(&csl, "no scheduler found, skipping cleanup");
         return;
     }
 
@@ -40,6 +42,7 @@ void clean_scheduler(Scheduler *sch) {
     }
 
     free(sch);
+    print_info(&csl, "cleaned scheduler");
 }
 
 Task *create_task(time_t execute_at, TaskFunction task_function, const char *detail, void *task_context) {
@@ -172,7 +175,12 @@ void execute_tasks(Scheduler *sch) {
 void run_tasks(Scheduler *sch) {
     print_debug(&csl, "Running tasks");
     while (1) {
+        if (is_shutdown_requested()) {
+            print_info(&csl, "Shutdown requested, stopping task execution");
+            break;
+        }
         execute_tasks(sch);
         sleep(SLEEP_SECONDS);
     }
+    cleanup_and_exit(0);
 }

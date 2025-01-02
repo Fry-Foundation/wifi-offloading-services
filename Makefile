@@ -58,6 +58,7 @@ define Build/Compile
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/reboot.o -c $(PKG_BUILD_DIR)/services/reboot.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/radsec_cert.o -c $(PKG_BUILD_DIR)/services/radsec_cert.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/diagnostic.o -c $(PKG_BUILD_DIR)/services/diagnostic.c
+		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/exit_handler.o -c $(PKG_BUILD_DIR)/services/exit_handler.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/console.o -c $(PKG_BUILD_DIR)/lib/console.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/curl_helpers.o -c $(PKG_BUILD_DIR)/lib/curl_helpers.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/key_pair.o -c $(PKG_BUILD_DIR)/lib/key_pair.c
@@ -95,57 +96,21 @@ define Build/Compile
 			$(PKG_BUILD_DIR)/services/reboot.o \
 			$(PKG_BUILD_DIR)/services/radsec_cert.o \
 			$(PKG_BUILD_DIR)/services/diagnostic.o \
+			$(PKG_BUILD_DIR)/services/exit_handler.o \
 			$(PKG_BUILD_DIR)/lib/console.o \
 			$(PKG_BUILD_DIR)/lib/curl_helpers.o \
 			$(PKG_BUILD_DIR)/lib/key_pair.o \
 			$(PKG_BUILD_DIR)/lib/http-requests.o \
 			$(PKG_BUILD_DIR)/lib/scheduler.o \
 			$(PKG_BUILD_DIR)/lib/script_runner.o \
-			-o $(PKG_BUILD_DIR)/wayru-os-services \
-			-lcurl -ljson-c -lssl -lcrypto -lmosquitto \
 			$(PKG_BUILD_DIR)/lib/network_check.o \
 			$(PKG_BUILD_DIR)/lib/cert_audit.o \
 			$(PKG_BUILD_DIR)/lib/retry.o \
 			$(PKG_BUILD_DIR)/lib/result.o \
-			$(PKG_BUILD_DIR)/lib/csr.o
+			$(PKG_BUILD_DIR)/lib/csr.o \
+			-o $(PKG_BUILD_DIR)/wayru-os-services \
+			-lcurl -ljson-c -lssl -lcrypto -lmosquitto
 endef
-
-# define Build/Compile
-# 		$(TARGET_CC) $(TARGET_CFLAGS) -g -O0 -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/main.o -c $(PKG_BUILD_DIR)/main.c
-# 		$(TARGET_CC) $(TARGET_CFLAGS) -g -O0 -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/access.o -c $(PKG_BUILD_DIR)/services/access.c
-# 		$(TARGET_CC) $(TARGET_CFLAGS) -g -O0 -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/accounting.o -c $(PKG_BUILD_DIR)/services/accounting.c
-# 		$(TARGET_CC) $(TARGET_CFLAGS) -g -O0 -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/config.o -c $(PKG_BUILD_DIR)/services/config.c
-# 		$(TARGET_CC) $(TARGET_CFLAGS) -g -O0 -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/device_info.o -c $(PKG_BUILD_DIR)/services/device_info.c
-# 		$(TARGET_CC) $(TARGET_CFLAGS) -g -O0 -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/device_status.o -c $(PKG_BUILD_DIR)/services/device_status.c
-# 		$(TARGET_CC) $(TARGET_CFLAGS) -g -O0 -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/did-key.o -c $(PKG_BUILD_DIR)/services/did-key.c
-# 		$(TARGET_CC) $(TARGET_CFLAGS) -g -O0 -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/end_report.o -c $(PKG_BUILD_DIR)/services/end_report.c
-# 		$(TARGET_CC) $(TARGET_CFLAGS) -g -O0 -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/setup.o -c $(PKG_BUILD_DIR)/services/setup.c
-# 		$(TARGET_CC) $(TARGET_CFLAGS) -g -O0 -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/console.o -c $(PKG_BUILD_DIR)/lib/console.c
-# 		$(TARGET_CC) $(TARGET_CFLAGS) -g -O0 -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/curl_helpers.o -c $(PKG_BUILD_DIR)/lib/curl_helpers.c
-# 		$(TARGET_CC) $(TARGET_CFLAGS) -g -O0 -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/key_pair.o -c $(PKG_BUILD_DIR)/lib/key_pair.c
-# 		$(TARGET_CC) $(TARGET_CFLAGS) -g -O0 -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/requests.o -c $(PKG_BUILD_DIR)/lib/requests.c
-# 		$(TARGET_CC) $(TARGET_CFLAGS) -g -O0 -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/scheduler.o -c $(PKG_BUILD_DIR)/lib/scheduler.c
-# 		$(TARGET_CC) $(TARGET_CFLAGS) -g -O0 -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/lib/script_runner.o -c $(PKG_BUILD_DIR)/lib/script_runner.c
-
-# 		$(TARGET_CC) $(TARGET_LDFLAGS) \
-# 			$(PKG_BUILD_DIR)/main.o \
-# 			$(PKG_BUILD_DIR)/services/access.o \
-# 			$(PKG_BUILD_DIR)/services/accounting.o \
-# 			$(PKG_BUILD_DIR)/services/config.o \
-# 			$(PKG_BUILD_DIR)/services/device_info.o \
-# 			$(PKG_BUILD_DIR)/services/device_status.o \
-# 			$(PKG_BUILD_DIR)/services/did-key.o \
-# 			$(PKG_BUILD_DIR)/services/end_report.o \
-# 			$(PKG_BUILD_DIR)/services/setup.o \
-# 			$(PKG_BUILD_DIR)/lib/console.o \
-# 			$(PKG_BUILD_DIR)/lib/curl_helpers.o \
-# 			$(PKG_BUILD_DIR)/lib/key_pair.o \
-# 			$(PKG_BUILD_DIR)/lib/requests.o \
-# 			$(PKG_BUILD_DIR)/lib/scheduler.o \
-# 			$(PKG_BUILD_DIR)/lib/script_runner.o \
-# 			-o $(PKG_BUILD_DIR)/wayru-os-services \
-# 			-lcurl -ljson-c -lssl -lcrypto
-# endef
 
 # Package install instructions
 # - Create the required directories

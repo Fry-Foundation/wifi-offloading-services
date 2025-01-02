@@ -165,6 +165,7 @@ Registration *init_registration(char *mac, char *model, char *brand, char *openw
 
 void clean_registration(Registration *registration) {
     if (registration == NULL) {
+        print_debug(&csl, "no registration found, skipping cleanup");
         return;
     }
 
@@ -177,4 +178,6 @@ void clean_registration(Registration *registration) {
         free(registration->access_key);
         registration->access_key = NULL;
     }
+
+    print_info(&csl, "cleaned registration");
 }

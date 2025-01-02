@@ -315,12 +315,37 @@ void site_clients_service(Scheduler *sch, struct mosquitto *mosq, int site_fifo_
     site_clients_task(sch, context);
 }
 
-void clean_site_clients_fifo(int site_fifo_fd) {
-    if (site_fifo_fd != -1) {
-        close(site_fifo_fd);
+void clean_site_clients_fifo(int *site_fifo_fd) {
+    if (site_fifo_fd == NULL) {
+        print_error(&csl, "site clients fifo fd is NULL");
+        return;
     }
 
+    // Close the FIFO file descriptor if it is valid (non-negative)
+    if (*site_fifo_fd >= 0) {
+        if (close(*site_fifo_fd) == 0) {
+            print_info(&csl, "site clients fifo closed, fifo_fd: %d", *site_fifo_fd);
+        } else {
+            print_error(&csl, "failed to close site clients fifo, fifo_fd: %d", *site_fifo_fd);
+        }
+        *site_fifo_fd = -1;
+    } else {
+        print_warn(&csl, "site clients fifo already closed or invalid, fifo_fd: %d", *site_fifo_fd);
+    }
+
+    // Build the FIFO file path and unlink it
     char fifo_path[256];
-    snprintf(fifo_path, sizeof(fifo_path), "%s/%s", config.data_path, SITE_CLIENTS_FIFO);
+    if (snprintf(fifo_path, sizeof(fifo_path), "%s/wayru-os-services/%s", config.temp_path, SITE_CLIENTS_FIFO) >= (int)sizeof(fifo_path)) {
+        print_error(&csl, "site clients fifo path exceeds buffer size");
+        return;
+    }
+
+    if (unlink(fifo_path) == 0) {
+        print_info(&csl, "site clients fifo unlinked, path: %s", fifo_path);
+    } else {
+        print_error(&csl, "failed to unlink site clients fifo, path: %s", fifo_path);
+    }
     unlink(fifo_path);
+
+    print_info(&csl, "cleaned site clients fifo");
 }

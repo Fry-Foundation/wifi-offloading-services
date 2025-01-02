@@ -5,6 +5,7 @@
 #include "services/device_info.h"
 #include "services/config.h"
 #include "services/access_token.h"
+#include "services/exit_handler.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

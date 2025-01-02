@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #define ACCESS_TOKEN_ENDPOINT "access"
 #define ACCESS_TOKEN_FILE "access-token.json"
@@ -335,4 +336,34 @@ void clean_access_token(AccessToken *access_token) {
         free(access_token);
     }
     print_info(&csl, "cleaned access token");
+}
+
+bool is_token_valid(const AccessToken *access_token) {
+    if (access_token == NULL || access_token->token == NULL) {
+        print_error(&csl, "Invalid access token object or token is NULL");
+        return false;
+    }
+
+    time_t current_time = time(NULL);
+    if (current_time == ((time_t)-1)) {
+        print_error(&csl, "Failed to get the current time");
+        return false;
+    }
+
+        print_debug(&csl, "Current time: %ld, Expires at: %ld", current_time, access_token->expires_at_seconds);
+
+    if (current_time >= access_token->expires_at_seconds) {
+        print_debug(&csl, "Access token has expired");
+        return false;
+    }
+
+    print_debug(&csl, "Access token is valid");
+    return true;
+}
+
+void validate_or_exit(const AccessToken *access_token) {
+    if (!is_token_valid(access_token)) {
+        print_error(&csl, "Access token is invalid. Closing wayru-os-services.");
+        ///Cerrar proceso
+    }
 }

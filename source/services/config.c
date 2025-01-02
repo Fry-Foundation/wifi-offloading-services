@@ -42,7 +42,7 @@ void init_config(int argc, char *argv[]) {
     config.firmware_update_enabled = true;
     config.firmware_update_interval = 86400;
     config.use_n_sysupgrade = false;
-    config.diagnostic_interval = 600;
+    config.diagnostic_interval = 120;
 
     // Loop  through available daemon config parameters
     for (int i = 1; i < argc; i++) {

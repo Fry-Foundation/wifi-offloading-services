@@ -44,16 +44,12 @@ static Console csl = {
 };
 
 size_t write_callback(void *ptr, size_t size, size_t nmemb, void *userdata) {
-    size_t *total_bytes = (size_t *)userdata;
-    *total_bytes += size * nmemb; // Count total bytes downloaded
-    return size * nmemb;
+    return size * nmemb; // Not doing anything with the data
 }
 
 TestResult measure_download_speed(char *access_token) {
     CURL *curl;
     CURLcode res;
-    size_t total_bytes = 0;
-    struct timeval start, end;
     char url[256];
     strcpy(url, config.speed_test_api);
     strcat(url, "/");
@@ -68,36 +64,37 @@ TestResult measure_download_speed(char *access_token) {
     if (!curl) {
         print_error(&csl, "Failed to initialize curl");
         result.is_error = true;
-        curl_easy_cleanup(curl);
         return result;
     }
-    print_debug(&csl, "Downloading file");
+
     struct curl_slist *headers = NULL;
     char auth_header[1024];
     snprintf(auth_header, sizeof(auth_header), "Access-Token: %s", access_token);
     headers = curl_slist_append(headers, auth_header);
+
     char bearer_header[1024];
     snprintf(bearer_header, sizeof(bearer_header), "Authorization: Bearer %s", config.speed_test_api_key);
     headers = curl_slist_append(headers, bearer_header);
+
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(curl, CURLOPT_URL, url);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &total_bytes);
 
-    gettimeofday(&start, NULL);
+    print_debug(&csl, "Downloading file");
     res = curl_easy_perform(curl);
-    gettimeofday(&end, NULL);
 
     if (res != CURLE_OK) {
         print_error(&csl, "Error on download: %s", curl_easy_strerror(res));
         result.is_error = true;
     } else {
-        double duration = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6; // Time in seconds
-        double speed_mbps = (total_bytes * 8) / (duration * 1e6); // Calculate speed in Mbps
-        double total_mb = total_bytes / (1024.0 * 1024.0); // Calculate total downloaded in MB
-        print_info(&csl, "Download Speed: %.2f Mbps", speed_mbps);
-        print_info(&csl, "Total Downloaded: %.2f MB", total_mb);
-        result.speed_mbps = speed_mbps;
+        curl_off_t speed_bps;
+        curl_easy_getinfo(curl, CURLINFO_SPEED_DOWNLOAD_T, &speed_bps); // Obtain download speed from CURLINFO_SPEED_DOWNLOAD_T
+        result.speed_mbps = speed_bps * 8 / 1e6; // Convert to Mbps
+        print_info(&csl, "Download Speed: %.2f Mbps", result.speed_mbps);
+
+        curl_off_t total_bytes;
+        curl_easy_getinfo(curl, CURLINFO_SIZE_DOWNLOAD_T, &total_bytes); // Obtain total bytes downloaded from CURLINFO_SIZE_DOWNLOAD_T
+        print_info(&csl, "Total Downloaded: %.2f MB", total_bytes / (1024.0 * 1024.0));
     }
 
     curl_easy_cleanup(curl);
@@ -109,7 +106,7 @@ size_t upload_callback(void *ptr, size_t size, size_t nitems, void *userdata) {
     size_t *bytes_sent = (size_t *)userdata;
     size_t max_to_send = size * nitems;
 
-    // If we've already sent the maximum amount, return 0 to signal end of upload
+    // If we have already sent the maximum amount of data, return 0
     if (*bytes_sent >= UPLOAD_LIMIT) {
         return 0;
     }
@@ -171,12 +168,17 @@ TestResult measure_upload_speed(char *access_token) {
         print_error(&csl,"Error on upload: %s", curl_easy_strerror(res));
         result.is_error = true;
     } else {
+        // Calculate the duration of the upload
         double duration = (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) / 1e6;
-        double speed_mbps = (bytes_sent * 8.0) / (duration * 1e6); // Speed in Mbps
+
+        // Calculate the upload speed
+        curl_off_t speed_bps;
+        curl_easy_getinfo(curl, CURLINFO_SPEED_UPLOAD_T, &speed_bps);
+        result.speed_mbps = speed_bps * 8.0 / 1e6; // Convert to Mbps
+
         print_info(&csl,"Upload complete");
-        print_info(&csl,"Upload Speed: %.2f Mbps", speed_mbps);
+        print_info(&csl,"Upload Speed: %.2f Mbps", result.speed_mbps);
         print_info(&csl,"Total Uploaded: %.2f MB", bytes_sent / (1024.0 * 1024.0));
-        result.speed_mbps = speed_mbps;
     }
 
     curl_easy_cleanup(curl);
@@ -216,6 +218,36 @@ float get_average_latency(const char *hostname) {
     } else {
         return -1;
     }
+}
+
+void test(char* bearer_token) {
+    SpeedTestResult result = {
+        .is_error = false,
+        .upload_speed_mbps = 0.0,
+        .download_speed_mbps = 0.0,
+    };
+
+    print_info(&csl, "Starting speed test");
+
+    TestResult download_result = measure_download_speed(bearer_token);
+    if (download_result.is_error) {
+        print_error(&csl, "Download test failed");
+        result.is_error = true;
+        return result;
+    }
+
+    TestResult upload_result = measure_upload_speed(bearer_token);
+    if (upload_result.is_error) {
+        print_error(&csl, "Upload test failed");
+        result.is_error = true;
+        return result;
+    }
+
+    result.is_error = false;
+    result.upload_speed_mbps = upload_result.speed_mbps;
+    result.download_speed_mbps = download_result.speed_mbps;
+
+    print_info(&csl, "Speed test complete");
 }
 
 SpeedTestResult speed_test(char *bearer_token) {

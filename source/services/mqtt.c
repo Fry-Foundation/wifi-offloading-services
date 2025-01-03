@@ -76,11 +76,11 @@ void on_disconnect(struct mosquitto *mosq, void *obj, int reason_code) {
         print_error(&csl, "maximum reconnection attempts reached. Giving up and exiting ...");
         // clean_up_mosquitto(&mosq);
         // cleanup_and_exit(1);
-        update_led_status(false);
+        update_led_status(false, "MQTT check");
         request_cleanup_and_exit();
     }
 
-    update_led_status(true);
+    update_led_status(true, "MQTT check");
 }
 
 void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg) {

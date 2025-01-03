@@ -48,11 +48,11 @@ bool internet_check() {
     bool result = retry(&config);
     if (result == true) {
         print_info(&csl, "Internet connection is available");
-        update_led_status(true);
+        update_led_status(true, "Internet check");
         return true;
     } else {
         print_error(&csl, "No internet connection after %d attempts", config.attempts);
-        update_led_status(false);
+        update_led_status(false, "Internet check");
         return false;
     }
 }
@@ -88,11 +88,11 @@ bool wayru_check(){
     bool result = retry(&config);
     if (result == true) {
         print_info(&csl, "Wayru is reachable");
-        update_led_status(true);
+        update_led_status(true, "Wayru health check");
         return true;
     } else {
         print_error(&csl, "Wayru is not reachable after %d attempts ... exiting", config.attempts);
-        update_led_status(false);
+        update_led_status(false, "Wayru health check");
         return false;
     }
 }

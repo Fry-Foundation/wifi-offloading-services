@@ -12,6 +12,6 @@ void init_diagnostic_service(DeviceInfo *device_info);
 void start_diagnostic_service(Scheduler *scheduler, AccessToken *access_token);
 
 // Update the LED status based on internet connectivity
-void update_led_status(bool ok);
+void update_led_status(bool ok, const char *context);
 
 #endif // DIAGNOSTIC_H

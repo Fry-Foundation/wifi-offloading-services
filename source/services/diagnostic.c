@@ -42,24 +42,30 @@ static void set_led_trigger(const char *led_path, const char *mode) {
 // Initialize LED states
 void init_diagnostic_service(DeviceInfo *device_info) {
     print_debug(&csl, "Initializing LED diagnostic service");
-    set_led_trigger(RED_LED_TRIGGER, "timer");
-    set_led_trigger(BLUE_LED_TRIGGER, "timer");
-    set_led_trigger(GREEN_LED_TRIGGER, "none");
+
+        if (strcmp(device_info->name, "Genesis") == 0) {
+        print_info(&csl, "Device is Genesis. Setting initial LED states.");
+        set_led_trigger(RED_LED_TRIGGER, "timer");
+        set_led_trigger(BLUE_LED_TRIGGER, "timer");
+        set_led_trigger(GREEN_LED_TRIGGER, "none");
+    } else {
+        print_info(&csl, "Device is not Genesis. Skipping LED initialization.");
+    }
 
     diagnostic_device_info = device_info;
 }
 
 // Update LED status based on internet connectivity
-void update_led_status(bool ok) {
+void update_led_status(bool ok, const char *context) {
     if (strcmp(diagnostic_device_info->name, "Genesis") == 0) {
-        print_info(&csl, "Device is Genesis. Updating LEDs.");
+        print_info(&csl, "Device is Genesis. Updating LEDs. Context: %s", context);
         if (ok) {
-            print_info(&csl, "Internet is connected. Setting LED to indicate connectivity.");
+            print_info(&csl, "Setting LED to indicate connectivity.");
             set_led_trigger(GREEN_LED_TRIGGER, "default-on"); // Solid green
             set_led_trigger(RED_LED_TRIGGER, "none");
             set_led_trigger(BLUE_LED_TRIGGER, "none");
         } else {
-            print_info(&csl, "No internet connectivity. Setting LED to indicate disconnection.");
+            print_info(&csl, "Setting LED to indicate disconnection.");
             set_led_trigger(GREEN_LED_TRIGGER, "none");
             set_led_trigger(RED_LED_TRIGGER, "timer"); // Blinking red
             set_led_trigger(BLUE_LED_TRIGGER, "none");
@@ -73,7 +79,7 @@ void diagnostic_task(Scheduler *sch, void *task_context) {
 
     // Check internet status
     bool internet_status = internet_check();
-    update_led_status(internet_status);
+    //update_led_status(internet_status, "Internet check - Diagnostic task");
     print_info(&csl, "Diagnostic internet status: %s", internet_status ? "connected" : "disconnected");
     if (!internet_status) {
         print_error(&csl, "No internet connection. Requesting exit.");

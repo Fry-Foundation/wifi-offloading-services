@@ -16,7 +16,6 @@
 #include "services/registration.h"
 #include "services/setup.h"
 #include "services/site-clients.h"
-#include "services/speedtest.h"
 #include "services/diagnostic.h"
 #include "services/exit_handler.h"
 #include "lib/network_check.h"
@@ -110,7 +109,6 @@ int main(int argc, char *argv[]) {
     firmware_upgrade_check(sch, device_info, registration, access_token);
     start_diagnostic_service(sch, access_token);
     site_clients_service(sch, mosq, site_clients_fifo_fd, device_context->site);
-    speedtest_service(sch, mosq, registration, access_token);
     commands_service(mosq, device_info, registration, access_token);
     reboot_service(sch);
 

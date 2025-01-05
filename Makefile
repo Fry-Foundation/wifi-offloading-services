@@ -17,7 +17,7 @@ define Package/wayru-os-services
   SECTION:=admin
   CATEGORY:=Administration
   TITLE:=Wayru config daemon and scripts
-  DEPENDS:=+libcurl +libjson-c +libopenssl +libmosquitto
+  DEPENDS:=+libcurl +libjson-c +libopenssl +libmosquitto-ssl
 endef
 
 # Package description; a more verbose description on what our package does

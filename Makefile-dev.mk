@@ -12,6 +12,15 @@ CONFIG_MONITORING_ENABLED = 1
 CONFIG_MONITORING_INTERVAL = 900
 CONFIG_MONITORING_MINIMUM_INTERVAL = 300
 CONFIG_MONITORING_MAXIMUM_INTERVAL = 900
+CONFIG_SPEED_TEST_ENABLED = 1
+CONFIG_SPEED_TEST_API = https://speedtest.api.internal.wayru.tech
+CONFIG_SPEED_TEST_API_KEY = nwde9UEXUDRcUp6hTuasrpmTcTP8Gxn2
+CONFIG_SPEED_TEST_INTERVAL = 10800
+CONFIG_SPEED_TEST_MINIMUM_INTERVAL = 1#10800
+CONFIG_SPEED_TEST_MAXIMUM_INTERVAL = 50#21600
+CONFIG_SPEED_TEST_BACKHAUL_ATTEMPTS = 3
+CONFIG_SPEED_TEST_LATENCY_ATTEMPTS = 4
+CONFIG_SPEED_TEST_UPLOAD_LIMIT = 800
 CONFIG_DEVICE_CONTEXT_INTERVAL = 900
 CONFIG_SITE_CLIENTS_INTERVAL = 10
 CONFIG_MQTT_BROKER_URL = mqtt.wayru.tech
@@ -92,6 +101,15 @@ run:
 	--config-monitoring-interval "$(CONFIG_MONITORING_INTERVAL)" \
 	--config-monitoring-minimum-interval "$(CONFIG_MONITORING_MINIMUM_INTERVAL)" \
 	--config-monitoring-maximum-interval "$(CONFIG_MONITORING_MAXIMUM_INTERVAL)" \
+	--config-speed-test-enabled "$(CONFIG_SPEED_TEST_ENABLED)" \
+	--config-speed-test-api "$(CONFIG_SPEED_TEST_API)" \
+	--config-speed-test-api-key "$(CONFIG_SPEED_TEST_API_KEY)" \
+	--config-speed-test-interval "$(CONFIG_SPEED_TEST_INTERVAL)" \
+	--config-speed-test-minimum-interval "$(CONFIG_SPEED_TEST_MINIMUM_INTERVAL)" \
+	--config-speed-test-maximum-interval "$(CONFIG_SPEED_TEST_MAXIMUM_INTERVAL)" \
+	--config-speed-test-backhaul-attempts "$(CONFIG_SPEED_TEST_BACKHAUL_ATTEMPTS)" \
+	--config-speed-test-latency-attempts "$(CONFIG_SPEED_TEST_LATENCY_ATTEMPTS)" \
+	--config-speed-test-upload-limit "$(CONFIG_SPEED_TEST_UPLOAD_LIMIT)" \
 	--config-device-context-interval "$(CONFIG_DEVICE_CONTEXT_INTERVAL)" \
 	--config-site-clients-interval "$(CONFIG_SITE_CLIENTS_INTERVAL)" \
 	--config-mqtt-broker-url "$(CONFIG_MQTT_BROKER_URL)" \
@@ -100,7 +118,7 @@ run:
 	--config-firmware-update-enabled "$(CONFIG_FIRMWARE_UPDATE_ENABLED)" \
 	--config-firmware-update-interval "$(CONFIG_FIRMWARE_UPDATE_INTERVAL)" \
 	--config-use-n-sysupgrade"$(CONFIG_USE_N_SYSUPGRADE)" \
-	--config-diagnostic-interval"$(CONFIG_DIAGNOSTIC_INTERVAL)"
+	--config-diagnostic-interval"$(CONFIG_DIAGNOSTIC_INTERVAL)" \
 
 # Clean the build
 clean:

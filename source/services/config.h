@@ -32,6 +32,16 @@ typedef struct {
     bool firmware_update_enabled;
     int firmware_update_interval;
 
+    bool speed_test_enabled;
+    char speed_test_api[API_SIZE];
+    char speed_test_api_key[API_KEY_SIZE];
+    int speed_test_interval;
+    int speed_test_minimum_interval;
+    int speed_test_maximum_interval;
+    int speed_test_backhaul_attempts;
+    int speed_test_latency_attempts;
+    int speed_test_upload_limit;
+
     int device_context_interval;
 
     int site_clients_interval;

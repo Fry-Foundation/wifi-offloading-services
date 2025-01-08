@@ -26,8 +26,6 @@ void init_config(int argc, char *argv[]) {
     config.monitoring_minimum_interval = 300;
     config.monitoring_maximum_interval = 900;
     config.speed_test_enabled = true;
-    strcpy(config.speed_test_api, "https://speedtest.wayru.tech");
-    strcpy(config.speed_test_api_key,"nwde9UEXUDRcUp6hTuasrpmTcTP8Gxn2");
     config.speed_test_interval = 10800;
     config.speed_test_minimum_interval = 10800;
     config.speed_test_maximum_interval = 21600;
@@ -144,18 +142,6 @@ void init_config(int argc, char *argv[]) {
         if (strcmp(argv[i], "--config-speed-test-enabled") == 0) {
             int speed_test_enabled = atoi(argv[i + 1]);
             config.speed_test_enabled = (speed_test_enabled == 1) ? true : false;
-            continue;
-        }
-
-        // Speed test api
-        if (strcmp(argv[i], "--config-speed-test-api") == 0) {
-            snprintf(config.speed_test_api, sizeof(config.speed_test_api), "%s", argv[i + 1]);
-            continue;
-        }
-
-        // Speed test api key
-        if (strcmp(argv[i], "--config-speed-test-api-key") == 0) {
-            snprintf(config.speed_test_api_key, sizeof(config.speed_test_api_key), "%s", argv[i + 1]);
             continue;
         }
 
@@ -285,8 +271,6 @@ void init_config(int argc, char *argv[]) {
     print_debug(&csl, "config.monitoring_minimum_interval: %d", config.monitoring_minimum_interval);
     print_debug(&csl, "config.monitoring_maximum_interval: %d", config.monitoring_maximum_interval);
     print_debug(&csl, "config.speed_test_enabled: %d", config.speed_test_enabled);
-    print_debug(&csl, "config.speed_test_api: %s", config.speed_test_api);
-    print_debug(&csl, "config.speed_test_api_key: %s", config.speed_test_api_key);
     print_debug(&csl, "config.speed_test_interval: %d", config.speed_test_interval);
     print_debug(&csl, "config.speed_test_backhaul_attempts: %d", config.speed_test_backhaul_attempts);
     print_debug(&csl, "config.speed_test_latency_attempts: %d", config.speed_test_latency_attempts);

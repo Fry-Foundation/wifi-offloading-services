@@ -24,6 +24,11 @@ start_service() {
 	local monitoring_interval
 	local monitoring_minimum_interval
 	local monitoring_maximum_interval
+	local speed_test_enabled
+	local speed_test_interval
+	local speed_test_minimum_interval
+	local speed_test_maximum_interval
+	local speed_test_latency_attempts
 	local device_context_interval
 	local site_clients_interval
 	local mqtt_broker_url
@@ -47,6 +52,11 @@ start_service() {
 	config_get monitoring_interval wayru_os_services1 monitoring_interval
 	config_get monitoring_minimum_interval wayru_os_services1 monitoring_minimum_interval
 	config_get monitoring_maximum_interval wayru_os_services1 monitoring_maximum_interval
+	config_get speed_test_enabled wayru_os_services1 speed_test_enabled
+	config_get speed_test_interval wayru_os_services1 speed_test_interval
+	config_get speed_test_minimum_interval wayru_os_services1 speed_test_minimum_interval
+	config_get speed_test_maximum_interval wayru_os_services1 speed_test_maximum_interval
+	config_get speed_test_latency_attempts wayru_os_services1 speed_test_latency_attempts
 	config_get device_context_interval wayru_os_services1 device_context_interval
 	config_get site_clients_interval wayru_os_services1 site_clients_interval
 	config_get mqtt_broker_url wayru_os_services1 mqtt_broker_url
@@ -70,6 +80,11 @@ start_service() {
 	logger -t "wayru-os-services" "Monitoring Interval: $monitoring_interval"
 	logger -t "wayru-os-services" "Monitoring Minimum Interval: $monitoring_minimum_interval"
 	logger -t "wayru-os-services" "Monitoring Maximum Interval: $monitoring_maximum_interval"
+	logger -t "wayru-os-services" "Speed Test Enabled: $speed_test_enabled"
+	logger -t "wayru-os-services" "Speed Test Interval: $speed_test_interval"
+	logger -t "wayru-os-services" "Speed Test Minimum Interval: $speed_test_minimum_interval"
+	logger -t "wayru-os-services" "Speed Test Maximum Interval: $speed_test_maximum_interval"
+	logger -t "wayru-os-services" "Speed Test Latency Attempts: $speed_test_latency_attempts"
 	logger -t "wayru-os-services" "Device Context Interval: $device_context_interval"
 	logger -t "wayru-os-services" "Site Clients Interval: $site_clients_interval"
 	logger -t "wayru-os-services" "MQTT Broker URL: $mqtt_broker_url"
@@ -96,6 +111,11 @@ start_service() {
 		--config-monitoring-interval "$monitoring_interval" \
 		--config-monitoring-minimum-interval "$monitoring_minimum_interval" \
 		--config-monitoring-maximum-interval "$monitoring_maximum_interval" \
+		--config-speed-test-enabled "$speed_test_enabled" \
+		--config-speed-test-interval "$speed_test_interval" \
+		--config-speed-test-minimum-interval "$speed_test_minimum_interval" \
+		--config-speed-test-maximum-interval "$speed_test_maximum_interval" \
+		--config-speed-test-latency-attempts "$speed_test_latency_attempts" \
 		--config-device-context-interval "$device_context_interval" \
 		--config-site-clients-interval "$site_clients_interval" \
 		--config-mqtt-broker-url "$mqtt_broker_url" \

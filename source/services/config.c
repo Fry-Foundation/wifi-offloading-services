@@ -25,6 +25,11 @@ void init_config(int argc, char *argv[]) {
     config.monitoring_interval = 900;
     config.monitoring_minimum_interval = 300;
     config.monitoring_maximum_interval = 900;
+    config.speed_test_enabled = true;
+    config.speed_test_interval = 10800;
+    config.speed_test_minimum_interval = 10800;
+    config.speed_test_maximum_interval = 21600;
+    config.speed_test_latency_attempts = 4;
     config.device_context_interval = 900;
     config.site_clients_interval = 60;
     strcpy(config.mqtt_broker_url, "mqtt.wayru.tech");
@@ -131,6 +136,37 @@ void init_config(int argc, char *argv[]) {
             continue;
         }
 
+        // Speed test flag
+        if (strcmp(argv[i], "--config-speed-test-enabled") == 0) {
+            int speed_test_enabled = atoi(argv[i + 1]);
+            config.speed_test_enabled = (speed_test_enabled == 1) ? true : false;
+            continue;
+        }
+
+        // Speed test interval
+        if (strcmp(argv[i], "--config-speed-test-interval") == 0) {
+            config.speed_test_interval = atoi(argv[i + 1]);
+            continue;
+        }
+
+        // Speed test minimum interval
+        if (strcmp(argv[i], "--config-speed-test-minimum-interval") == 0) {
+            config.speed_test_minimum_interval = atoi(argv[i + 1]);
+            continue;
+        }
+
+        // Speed test maximum interval
+        if (strcmp(argv[i], "--config-speed-test-maximum-interval") == 0) {
+            config.speed_test_maximum_interval = atoi(argv[i + 1]);
+            continue;
+        }
+
+        // Speed test latency attempts
+        if (strcmp(argv[i], "--config-speed-test-latency-attempts") == 0) {
+            config.speed_test_latency_attempts = atoi(argv[i + 1]);
+            continue;
+        }
+
         // Device context interval
         if (strcmp(argv[i], "--config-device-context-interval") == 0) {
             config.device_context_interval = atoi(argv[i + 1]);
@@ -220,6 +256,9 @@ void init_config(int argc, char *argv[]) {
     print_debug(&csl, "config.monitoring_interval: %d", config.monitoring_interval);
     print_debug(&csl, "config.monitoring_minimum_interval: %d", config.monitoring_minimum_interval);
     print_debug(&csl, "config.monitoring_maximum_interval: %d", config.monitoring_maximum_interval);
+    print_debug(&csl, "config.speed_test_enabled: %d", config.speed_test_enabled);
+    print_debug(&csl, "config.speed_test_interval: %d", config.speed_test_interval);
+    print_debug(&csl, "config.speed_test_latency_attempts: %d", config.speed_test_latency_attempts);
     print_debug(&csl, "config.device_context_interval: %d", config.device_context_interval);
     print_debug(&csl, "config.mqtt_broker_url: %s", config.mqtt_broker_url);
     print_debug(&csl, "config.reboot_enabled: %d", config.reboot_enabled);

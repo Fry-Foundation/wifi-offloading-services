@@ -36,9 +36,7 @@ typedef struct {
     int speed_test_interval;
     int speed_test_minimum_interval;
     int speed_test_maximum_interval;
-    int speed_test_backhaul_attempts;
     int speed_test_latency_attempts;
-    int speed_test_upload_limit;
 
     int device_context_interval;
 

@@ -29,9 +29,7 @@ void init_config(int argc, char *argv[]) {
     config.speed_test_interval = 10800;
     config.speed_test_minimum_interval = 10800;
     config.speed_test_maximum_interval = 21600;
-    config.speed_test_backhaul_attempts = 3;
     config.speed_test_latency_attempts = 4;
-    config.speed_test_upload_limit = 800;
     config.device_context_interval = 900;
     config.site_clients_interval = 60;
     strcpy(config.mqtt_broker_url, "mqtt.wayru.tech");
@@ -163,21 +161,9 @@ void init_config(int argc, char *argv[]) {
             continue;
         }
 
-        // Speed test backhaul attempts
-        if (strcmp(argv[i], "--config-speed-test-backhaul-attempts") == 0) {
-            config.speed_test_backhaul_attempts = atoi(argv[i + 1]);
-            continue;
-        }
-
         // Speed test latency attempts
         if (strcmp(argv[i], "--config-speed-test-latency-attempts") == 0) {
             config.speed_test_latency_attempts = atoi(argv[i + 1]);
-            continue;
-        }
-
-        // Speed test upload limit
-        if (strcmp(argv[i], "--config-speed-test-upload-limit") == 0) {
-            config.speed_test_upload_limit = atof(argv[i + 1]);
             continue;
         }
 
@@ -272,9 +258,7 @@ void init_config(int argc, char *argv[]) {
     print_debug(&csl, "config.monitoring_maximum_interval: %d", config.monitoring_maximum_interval);
     print_debug(&csl, "config.speed_test_enabled: %d", config.speed_test_enabled);
     print_debug(&csl, "config.speed_test_interval: %d", config.speed_test_interval);
-    print_debug(&csl, "config.speed_test_backhaul_attempts: %d", config.speed_test_backhaul_attempts);
     print_debug(&csl, "config.speed_test_latency_attempts: %d", config.speed_test_latency_attempts);
-    print_debug(&csl, "config.speed_test_upload_limit: %f", config.speed_test_upload_limit);
     print_debug(&csl, "config.device_context_interval: %d", config.device_context_interval);
     print_debug(&csl, "config.mqtt_broker_url: %s", config.mqtt_broker_url);
     print_debug(&csl, "config.reboot_enabled: %d", config.reboot_enabled);

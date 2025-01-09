@@ -18,7 +18,6 @@
 #include <time.h>
 
 #define SPEEDTEST_ENDPOINT "monitoring/speedtest"
-#define UPLOAD_LIMIT (config.speed_test_upload_limit * 1024 * 1024)
 
 typedef struct {
     struct mosquitto *mosq;

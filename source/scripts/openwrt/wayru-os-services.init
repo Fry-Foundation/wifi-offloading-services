@@ -28,9 +28,7 @@ start_service() {
 	local speed_test_interval
 	local speed_test_minimum_interval
 	local speed_test_maximum_interval
-	local speed_test_backhaul_attempts
 	local speed_test_latency_attempts
-	local speed_test_upload_limit
 	local device_context_interval
 	local site_clients_interval
 	local mqtt_broker_url
@@ -58,9 +56,7 @@ start_service() {
 	config_get speed_test_interval wayru_os_services1 speed_test_interval
 	config_get speed_test_minimum_interval wayru_os_services1 speed_test_minimum_interval
 	config_get speed_test_maximum_interval wayru_os_services1 speed_test_maximum_interval
-	config_get speed_test_backhaul_attempts wayru_os_services1 speed_test_backhaul_attempts
 	config_get speed_test_latency_attempts wayru_os_services1 speed_test_latency_attempts
-	config_get speed_test_upload_limit wayru_os_services1 speed_test_upload_limit
 	config_get device_context_interval wayru_os_services1 device_context_interval
 	config_get site_clients_interval wayru_os_services1 site_clients_interval
 	config_get mqtt_broker_url wayru_os_services1 mqtt_broker_url
@@ -88,9 +84,7 @@ start_service() {
 	logger -t "wayru-os-services" "Speed Test Interval: $speed_test_interval"
 	logger -t "wayru-os-services" "Speed Test Minimum Interval: $speed_test_minimum_interval"
 	logger -t "wayru-os-services" "Speed Test Maximum Interval: $speed_test_maximum_interval"
-	logger -t "wayru-os-services" "Speed Test Backhaul Attempts: $speed_test_backhaul_attempts"
 	logger -t "wayru-os-services" "Speed Test Latency Attempts: $speed_test_latency_attempts"
-	logger -t "wayru-os-services" "Speed Test Upload Limit: $speed_test_upload_limit"
 	logger -t "wayru-os-services" "Device Context Interval: $device_context_interval"
 	logger -t "wayru-os-services" "Site Clients Interval: $site_clients_interval"
 	logger -t "wayru-os-services" "MQTT Broker URL: $mqtt_broker_url"
@@ -121,9 +115,7 @@ start_service() {
 		--config-speed-test-interval "$speed_test_interval" \
 		--config-speed-test-minimum-interval "$speed_test_minimum_interval" \
 		--config-speed-test-maximum-interval "$speed_test_maximum_interval" \
-		--config-speed-test-backhaul-attempts "$speed_test_backhaul_attempts" \
 		--config-speed-test-latency-attempts "$speed_test_latency_attempts" \
-		--config-speed-test-upload-limit "$speed_test_upload_limit" \
 		--config-device-context-interval "$device_context_interval" \
 		--config-site-clients-interval "$site_clients_interval" \
 		--config-mqtt-broker-url "$mqtt_broker_url" \

@@ -89,8 +89,8 @@ int main(int argc, char *argv[]) {
     register_cleanup((cleanup_callback)clean_device_context, device_context);
 
     // MQTT
-    struct mosquitto *mosq = init_mqtt(registration, access_token);
-    register_cleanup((cleanup_callback)clean_up_mosquitto, &mosq);
+    Mosq *mosq = init_mqtt(registration, access_token);
+    register_cleanup((cleanup_callback)cleanup_mqtt, &mosq);
 
     // Site clients fifo
     int site_clients_fifo_fd = init_site_clients_fifo();
@@ -102,6 +102,7 @@ int main(int argc, char *argv[]) {
 
     // Schedule service tasks
     access_token_service(sch, access_token, registration, mosq);
+    mqtt_service(sch, mosq);
     device_context_service(sch, device_context, registration, access_token);
     device_status_service(sch, device_info, registration->wayru_device_id, access_token);
     setup_service(sch, device_info, registration->wayru_device_id, access_token);

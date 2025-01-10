@@ -25,6 +25,10 @@ static Console csl = {
 };
 
 typedef struct {
+    Mosq *mosq;
+} MqttTaskContext;
+
+typedef struct {
     char *topic;
     MessageCallback callback;
 } TopicCallback;
@@ -201,14 +205,14 @@ struct mosquitto *init_mosquitto(Registration *registration, AccessToken *access
     }
 
     // Start the event loop (threaded version, but works fine on single core devices like the Genesis)
-    rc = mosquitto_loop_start(mosq);
-    if (rc != MOSQ_ERR_SUCCESS) {
-        print_error(&csl, "unable to start the event loop. %s\n", mosquitto_strerror(rc));
-        mosquitto_disconnect(mosq);
-        mosquitto_destroy(mosq);
-        mosquitto_lib_cleanup();
-        return NULL;
-    }
+    // rc = mosquitto_loop_start(mosq);
+    // if (rc != MOSQ_ERR_SUCCESS) {
+    //     print_error(&csl, "unable to start the event loop. %s\n", mosquitto_strerror(rc));
+    //     mosquitto_disconnect(mosq);
+    //     mosquitto_destroy(mosq);
+    //     mosquitto_lib_cleanup();
+    //     return NULL;
+    // }
 
     return mosq;
 }
@@ -224,7 +228,53 @@ void refresh_mosquitto_access_token(struct mosquitto *mosq, AccessToken *access_
     print_info(&csl, "mosquitto client access token refreshed.");
 }
 
-void clean_up_mosquitto(struct mosquitto **mosq) {
+void mqtt_task(Scheduler *sch, void *task_context) {
+    MqttTaskContext *context = (MqttTaskContext *)task_context;
+    print_info(&csl, "running mqtt task");
+    int res = mosquitto_loop(context->mosq, -1, 1);
+    switch (res) {
+        case MOSQ_ERR_SUCCESS:
+            print_info(&csl, "mosquitto loop success");
+            break;
+        case MOSQ_ERR_INVAL:
+            print_error(&csl, "mosquitto loop invalid parameters");
+            break;
+        case MOSQ_ERR_NOMEM:
+            print_error(&csl, "mosquitto loop out of memory");
+            break;
+        case MOSQ_ERR_NO_CONN:
+            print_error(&csl, "mosquitto loop no connection");
+            break;
+        case MOSQ_ERR_CONN_LOST:
+            print_error(&csl, "mosquitto loop connection lost");
+            break;
+        case MOSQ_ERR_PROTOCOL:
+            print_error(&csl, "mosquitto loop protocol error");
+            break;
+        case MOSQ_ERR_ERRNO:
+            print_error(&csl, "mosquitto loop error");
+            break;
+        default:
+            print_error(&csl, "mosquitto loop unknown result");
+            break;
+    }
+    schedule_task(sch, time(NULL) + 60, mqtt_task, "mqtt task", context);
+}
+
+void mqtt_service(Scheduler *sch, Mosq *mosq) {
+    MqttTaskContext *context = (MqttTaskContext *)malloc(sizeof(MqttTaskContext));
+    if (context == NULL) {
+        print_error(&csl, "failed to allocate memory for mqtt task context");
+        cleanup_and_exit(1);
+        return;
+    }
+
+    context->mosq = mosq;
+        
+    schedule_task(sch, time(NULL), mqtt_task, "mqtt task", context);
+}
+
+void cleanup_mqtt(Mosq **mosq) {
     mosquitto_disconnect(*mosq);
 
     for (int i = 0; i < topic_callbacks_count; i++) {

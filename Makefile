@@ -22,7 +22,7 @@ endef
 
 # Package description; a more verbose description on what our package does
 define Package/wayru-os-services/description
-  Services for access, setup, and accounting for wayru-os
+  Services for access and accounting for wayru-os
 endef
 
 # Package preparation instructions; create the build directory and copy the source code.
@@ -42,7 +42,6 @@ define Build/Compile
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/device_status.o -c $(PKG_BUILD_DIR)/services/device_status.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/did-key.o -c $(PKG_BUILD_DIR)/services/did-key.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/end_report.o -c $(PKG_BUILD_DIR)/services/end_report.c
-		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/setup.o -c $(PKG_BUILD_DIR)/services/setup.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/mqtt-cert.o -c $(PKG_BUILD_DIR)/services/mqtt-cert.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/mqtt.o -c $(PKG_BUILD_DIR)/services/mqtt.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/monitoring.o -c $(PKG_BUILD_DIR)/services/monitoring.c
@@ -80,7 +79,6 @@ define Build/Compile
 			$(PKG_BUILD_DIR)/services/device_status.o \
 			$(PKG_BUILD_DIR)/services/did-key.o \
 			$(PKG_BUILD_DIR)/services/end_report.o \
-			$(PKG_BUILD_DIR)/services/setup.o \
 			$(PKG_BUILD_DIR)/services/mqtt-cert.o \
 			$(PKG_BUILD_DIR)/services/mqtt.o \
 			$(PKG_BUILD_DIR)/services/monitoring.o \

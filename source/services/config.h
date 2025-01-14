@@ -22,8 +22,6 @@ typedef struct {
 
     int device_status_interval;
 
-    int setup_interval;
-
     bool monitoring_enabled;
     int monitoring_interval;
     int monitoring_minimum_interval;

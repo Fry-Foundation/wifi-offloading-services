@@ -18,7 +18,6 @@ start_service() {
 	local accounting_api
 	local access_interval
 	local device_status_interval
-	local setup_interval
 	local console_log_level
 	local monitoring_enabled
 	local monitoring_interval
@@ -46,7 +45,6 @@ start_service() {
 	config_get accounting_api wayru_os_services1 accounting_api
 	config_get access_interval wayru_os_services1 access_interval
 	config_get device_status_interval wayru_os_services1 device_status_interval
-	config_get setup_interval wayru_os_services1 setup_interval
 	config_get console_log_level wayru_os_services1 console_log_level
 	config_get monitoring_enabled wayru_os_services1 monitoring_enabled
 	config_get monitoring_interval wayru_os_services1 monitoring_interval
@@ -74,7 +72,6 @@ start_service() {
 	logger -t "wayru-os-services" "Accounting API: $accounting_api"
 	logger -t "wayru-os-services" "Access Interval: $access_interval"
 	logger -t "wayru-os-services" "Device Status Interval: $device_status_interval"
-	logger -t "wayru-os-services" "Setup Interval: $setup_interval"
 	logger -t "wayru-os-services" "Console Log Level: $console_log_level"
 	logger -t "wayru-os-services" "Monitoring Enabled: $monitoring_enabled"
 	logger -t "wayru-os-services" "Monitoring Interval: $monitoring_interval"
@@ -105,7 +102,6 @@ start_service() {
 		--config-accounting-api "$accounting_api" \
 		--config-access-interval "$access_interval" \
 		--config-device-status-interval "$device_status_interval" \
-		--config-setup-interval "$setup_interval" \
 		--config-console-log-level "$console_log_level" \
 		--config-monitoring-enabled "$monitoring_enabled" \
 		--config-monitoring-interval "$monitoring_interval" \

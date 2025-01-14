@@ -14,7 +14,6 @@
 #include "services/radsec_cert.h"
 #include "services/reboot.h"
 #include "services/registration.h"
-#include "services/setup.h"
 #include "services/site-clients.h"
 #include "services/speedtest.h"
 #include "services/diagnostic.h"
@@ -104,7 +103,6 @@ int main(int argc, char *argv[]) {
     access_token_service(sch, access_token, registration, mosq);
     device_context_service(sch, device_context, registration, access_token);
     device_status_service(sch, device_info, registration->wayru_device_id, access_token);
-    setup_service(sch, device_info, registration->wayru_device_id, access_token);
     accounting_service(sch);
     monitoring_service(sch, mosq, registration);
     firmware_upgrade_check(sch, device_info, registration, access_token);

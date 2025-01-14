@@ -1,7 +1,6 @@
 # wayru-os-services
 Services for wayru-os:
 - Access key
-- Setup / onboarding
 - Accounting
 
 ## Dependencies
@@ -99,7 +98,7 @@ On OpenWrt:
 gdb /usr/bin/wayru-os-services
 
 # Within the gdb process
-(gdb) set args --config-enabled "1" --config-main-api "https://api.internal.wayru.tech" --config-accounting-enabled "1" --config-accounting-interval "120" --config-accounting-api "https://wifi.api.internal.wayru.tech" --config-access-interval "120" --config-device-status-interval "120" --config-setup-interval "300" --config-console-log-level "4"
+(gdb) set args --config-enabled "1" --config-main-api "https://api.internal.wayru.tech" --config-accounting-enabled "1" --config-accounting-interval "120" --config-accounting-api "https://wifi.api.internal.wayru.tech" --config-access-interval "120" --config-device-status-interval "120" --config-console-log-level "4"
 
 (gdb) break main.c:20
 

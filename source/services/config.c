@@ -20,7 +20,6 @@ void init_config(int argc, char *argv[]) {
     config.accounting_interval = 300;
     config.access_interval = 10800;
     config.device_status_interval = 120;
-    config.setup_interval = 120;
     config.monitoring_enabled = true;
     config.monitoring_interval = 900;
     config.monitoring_minimum_interval = 300;
@@ -95,12 +94,6 @@ void init_config(int argc, char *argv[]) {
         // Device status interval
         if (strcmp(argv[i], "--config-device-status-interval") == 0) {
             config.device_status_interval = atoi(argv[i + 1]);
-            continue;
-        }
-
-        // Setup interval
-        if (strcmp(argv[i], "--config-setup-interval") == 0) {
-            config.setup_interval = atoi(argv[i + 1]);
             continue;
         }
 
@@ -247,7 +240,6 @@ void init_config(int argc, char *argv[]) {
     print_debug(&csl, "config.accounting_interval: %d", config.accounting_interval);
     print_debug(&csl, "config.access_interval: %d", config.access_interval);
     print_debug(&csl, "config.device_status_interval: %d", config.device_status_interval);
-    print_debug(&csl, "config.setup_interval: %d", config.setup_interval);
     print_debug(&csl, "config.active_path: %s", config.active_path);
     print_debug(&csl, "config.scripts_path: %s", config.scripts_path);
     print_debug(&csl, "config.data_path: %s", config.data_path);

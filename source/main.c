@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
 
     // Schedule service tasks
     access_token_service(sch, access_token, registration, mosq);
-    mqtt_service(sch, mosq);
+    mqtt_service(sch, mosq, registration, access_token);
     device_context_service(sch, device_context, registration, access_token);
     device_status_service(sch, device_info, registration->wayru_device_id, access_token);
     setup_service(sch, device_info, registration->wayru_device_id, access_token);

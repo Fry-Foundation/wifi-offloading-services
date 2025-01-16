@@ -26,6 +26,8 @@ static Console csl = {
 
 typedef struct {
     Mosq *mosq;
+    Registration *registration;
+    AccessToken *access_token;
 } MqttTaskContext;
 
 typedef struct {
@@ -71,6 +73,7 @@ void on_disconnect(struct mosquitto *mosq, void *obj, int reason_code) {
         if (rc == MOSQ_ERR_SUCCESS) {
             print_info(&csl, "reconnected successfully.");
             retry_count = 0; // Reset retry count on success
+            break;
         } else {
             print_error(&csl, "reconnection attempt failed; error code is %d", rc);
         }
@@ -217,6 +220,86 @@ struct mosquitto *init_mosquitto(Registration *registration, AccessToken *access
     return mosq;
 }
 
+struct mosquitto *reinit_mosquitto(Mosq *mosq, Registration *registration, AccessToken *access_token) {
+    
+    const char *mqtt_user = access_token->token;
+    const char *mqtt_password = "any";
+    print_debug(&csl, "user is %s", mqtt_user);
+    print_debug(&csl, "password is %s", mqtt_password);
+
+    //Reinitialize the Mosquitto client instance
+    int rc = mosquitto_reinitialise(mosq, registration->wayru_device_id, CLEAN_SESSION, NULL);
+    if (rc != MOSQ_ERR_SUCCESS){
+        print_error(&csl, "unable to reinitialise Mosquitto client instance. %s\n", mosquitto_strerror(rc));
+        cleanup_mqtt(&mosq);
+        mosquitto_lib_cleanup();
+        return NULL;
+    }
+    
+    if (!mosq) {
+        print_error(&csl, "unable to reinitialise Mosquitto client instance.\n");
+        cleanup_mqtt(&mosq);
+        mosquitto_lib_cleanup();
+        return NULL;
+    }
+
+    int pw_set = mosquitto_username_pw_set(mosq, mqtt_user, mqtt_password);
+    if (pw_set != MOSQ_ERR_SUCCESS) {
+        print_error(&csl, "unable to set username and password. %s\n", mosquitto_strerror(pw_set));
+        mosquitto_destroy(mosq);
+        mosquitto_lib_cleanup();
+        return NULL;
+    }
+
+    char ca_path[256];
+    char key_path[256];
+    char crt_path[256];
+
+    snprintf(ca_path, sizeof(ca_path), "%s/%s", config.data_path, MQTT_CA_FILE_NAME);
+    snprintf(key_path, sizeof(key_path), "%s/%s", config.data_path, MQTT_KEY_FILE_NAME);
+    snprintf(crt_path, sizeof(crt_path), "%s/%s", config.data_path, MQTT_CERT_FILE_NAME);
+
+    print_debug(&csl, "CA Path: %s", &ca_path);
+    print_debug(&csl, "Key Path: %s", &key_path);
+    print_debug(&csl, "Crt Path: %s", &crt_path);
+
+    int tls_set = mosquitto_tls_set(mosq, ca_path, NULL, crt_path, key_path, NULL);
+    if (tls_set != MOSQ_ERR_SUCCESS) {
+        print_error(&csl, "unable to set TLS. %s\n", mosquitto_strerror(tls_set));
+        mosquitto_destroy(mosq);
+        mosquitto_lib_cleanup();
+        return NULL;
+    }
+
+    int tls_opts_set = mosquitto_tls_opts_set(mosq, TLS_VERIFY, TLS_VERSION, NULL);
+    if (tls_opts_set != MOSQ_ERR_SUCCESS) {
+        print_error(&csl, "unable to set TLS options. %s\n", mosquitto_strerror(tls_opts_set));
+        mosquitto_destroy(mosq);
+        mosquitto_lib_cleanup();
+        return NULL;
+    }
+    // Set callbacks
+    mosquitto_connect_callback_set(mosq, on_connect);
+    mosquitto_disconnect_callback_set(mosq, on_disconnect);
+    mosquitto_message_callback_set(mosq, on_message);
+    mosquitto_publish_callback_set(mosq, on_publish);
+    mosquitto_subscribe_callback_set(mosq, on_subscribe);
+
+    // Connect to an MQTT broker
+    rc = mosquitto_connect(mosq, config.mqtt_broker_url, PORT, KEEP_ALIVE);
+    if (rc != MOSQ_ERR_SUCCESS) {
+        print_error(&csl, "unable to connect to broker. %s\n", mosquitto_strerror(rc));
+        mosquitto_destroy(mosq);
+        mosquitto_lib_cleanup();
+        return NULL;
+    }
+
+    //to-do resubscribe to topics
+
+    return mosq;
+}
+
+
 // @todo should probably exit the program if refresh fails
 void refresh_mosquitto_access_token(struct mosquitto *mosq, AccessToken *access_token) {
     int pw_set = mosquitto_username_pw_set(mosq, access_token->token, "any");
@@ -256,12 +339,23 @@ void mqtt_task(Scheduler *sch, void *task_context) {
             break;
         default:
             print_error(&csl, "mosquitto loop unknown result");
-            break;
+            print_info(&csl, "reinitializing mosquitto client");
+            context->mosq = reinit_mosquitto(context->mosq, context->registration, context->access_token);
+            if(context->mosq == NULL) {
+                print_error(&csl, "failed to reinitialize mosquitto client");
+                cleanup_and_exit(1);
+            }
+            print_info(&csl, "mosquitto client reinitialized successfully");
+            refresh_mosquitto_access_token(context->mosq, context->access_token);
+            print_info(&csl, "retrying mqtt task");
+            //to-do threshold
+            mqtt_task(sch, context);
+            return;
     }
-    schedule_task(sch, time(NULL) + 60, mqtt_task, "mqtt task", context);
+    schedule_task(sch, time(NULL) + 30, mqtt_task, "mqtt task", context);
 }
 
-void mqtt_service(Scheduler *sch, Mosq *mosq) {
+void mqtt_service(Scheduler *sch, Mosq *mosq, Registration *registration, AccessToken *access_token) {
     MqttTaskContext *context = (MqttTaskContext *)malloc(sizeof(MqttTaskContext));
     if (context == NULL) {
         print_error(&csl, "failed to allocate memory for mqtt task context");
@@ -270,6 +364,8 @@ void mqtt_service(Scheduler *sch, Mosq *mosq) {
     }
 
     context->mosq = mosq;
+    context->registration = registration;
+    context->access_token = access_token;
         
     schedule_task(sch, time(NULL), mqtt_task, "mqtt task", context);
 }

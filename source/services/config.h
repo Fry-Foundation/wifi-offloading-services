@@ -43,6 +43,8 @@ typedef struct {
     int site_clients_interval;
 
     char mqtt_broker_url[API_SIZE];
+    int mqtt_keepalive;
+    int mqtt_task_interval;
 
     bool reboot_enabled;
     int reboot_interval;

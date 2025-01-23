@@ -148,11 +148,11 @@ void print_tasks(Scheduler *sch) {
 void execute_tasks(Scheduler *sch) {
     time_t now = time(NULL);
 
-    print_debug(&csl, "-------------------------------------------------");
-    print_debug(&csl, "Executing tasks, time is now: %ld", now);
-    print_debug(&csl, "Task count: %d", get_task_count(sch));
-    print_tasks(sch);
-    print_debug(&csl, "-------------------------------------------------");
+    // print_debug(&csl, "-------------------------------------------------");
+    // print_debug(&csl, "Executing tasks, time is now: %ld", now);
+    // print_debug(&csl, "Task count: %d", get_task_count(sch));
+    // print_tasks(sch);
+    // print_debug(&csl, "-------------------------------------------------");
 
     while (sch->head && difftime(sch->head->execute_at, now) <= 0) {
         // Get the task at the head of the list

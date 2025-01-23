@@ -10,6 +10,12 @@ typedef void (*MessageCallback)(struct mosquitto *mosq, const struct mosquitto_m
 // type alias for struct mosquitto
 typedef struct mosquitto Mosq;
 
+typedef struct {
+    Mosq *mosq;
+    Registration *registration;
+    AccessToken *access_token;
+} MosqClient;
+
 Mosq *init_mqtt(Registration *registration, AccessToken *access_token);
 void refresh_mosquitto_access_token(Mosq *mosq, AccessToken *access_token);
 void publish_mqtt(Mosq *mosq, char *topic, const char *message, int qos);

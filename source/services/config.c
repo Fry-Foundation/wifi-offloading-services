@@ -33,6 +33,8 @@ void init_config(int argc, char *argv[]) {
     config.device_context_interval = 900;
     config.site_clients_interval = 60;
     strcpy(config.mqtt_broker_url, "mqtt.wayru.tech");
+    config.mqtt_keepalive = 60;
+    config.mqtt_task_interval = 30;
     config.reboot_enabled = true;
     config.reboot_interval = 88200;
     config.firmware_update_enabled = true;
@@ -185,6 +187,18 @@ void init_config(int argc, char *argv[]) {
             continue;
         }
 
+        // Mqtt keepalive
+        if (strcmp(argv[i], "--config-mqtt-keepalive") == 0) {
+            config.mqtt_keepalive = atoi(argv[i + 1]);
+            continue;
+        }
+
+        // Mqtt task interval
+        if (strcmp(argv[i], "--config-mqtt-task-interval") == 0) {
+            config.mqtt_task_interval = atoi(argv[i + 1]);
+            continue;
+        }
+
         // Reboot flag
         if (strcmp(argv[i], "--config-reboot-enabled") == 0) {
             int reboot_enabled = atoi(argv[i + 1]);
@@ -261,6 +275,8 @@ void init_config(int argc, char *argv[]) {
     print_debug(&csl, "config.speed_test_latency_attempts: %d", config.speed_test_latency_attempts);
     print_debug(&csl, "config.device_context_interval: %d", config.device_context_interval);
     print_debug(&csl, "config.mqtt_broker_url: %s", config.mqtt_broker_url);
+    print_debug(&csl, "config.mqtt_keepalive: %d", config.mqtt_keepalive);
+    print_debug(&csl, "config.mqtt_task_interval: %d", config.mqtt_task_interval);
     print_debug(&csl, "config.reboot_enabled: %d", config.reboot_enabled);
     print_debug(&csl, "config.reboot_interval: %d", config.reboot_interval);
     print_debug(&csl, "config.firmware_update_enabled: %d", config.firmware_update_enabled);

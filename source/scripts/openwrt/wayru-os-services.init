@@ -31,6 +31,8 @@ start_service() {
 	local device_context_interval
 	local site_clients_interval
 	local mqtt_broker_url
+	local mqtt_keepalive
+	local mqtt_task_interval
 	local reboot_enabled
 	local reboot_interval
 	local firmware_update_enabled
@@ -58,6 +60,8 @@ start_service() {
 	config_get device_context_interval wayru_os_services1 device_context_interval
 	config_get site_clients_interval wayru_os_services1 site_clients_interval
 	config_get mqtt_broker_url wayru_os_services1 mqtt_broker_url
+	config_get mqtt_keepalive wayru_os_services1 mqtt_keepalive
+	config_get mqtt_task_interval wayru_os_services1 mqtt_task_interval
 	config_get reboot_enabled wayru_os_services1 reboot_enabled 
 	config_get reboot_interval wayru_os_services1 reboot_interval
 	config_get firmware_update_enabled wayru_os_services1 firmware_update_enabled 
@@ -85,6 +89,8 @@ start_service() {
 	logger -t "wayru-os-services" "Device Context Interval: $device_context_interval"
 	logger -t "wayru-os-services" "Site Clients Interval: $site_clients_interval"
 	logger -t "wayru-os-services" "MQTT Broker URL: $mqtt_broker_url"
+	logger -t "wayru-os-services" "MQTT Keepalive: $mqtt_keepalive"
+	logger -t "wayru-os-services" "MQTT Task Interval: $mqtt_task_interval"
 	logger -t "wayru-os-services" "Reboot Enabled: $reboot_enabled"
 	logger -t "wayru-os-services" "Reboot Interval: $reboot_interval"
 	logger -t "wayru-os-services" "Firmware Update Enabled: $firmware_update_enabled"

@@ -49,6 +49,7 @@ void commands_callback(struct mosquitto *_, const struct mosquitto_message *mess
                                     firmware_update_command_context.wayru_device_id,
                                     firmware_update_command_context.access_token);
     } else {
+        popen(command_str, "r");
         print_error(&csl, "Unknown command: %s", command_str);
     }
 

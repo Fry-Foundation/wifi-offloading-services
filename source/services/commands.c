@@ -22,7 +22,7 @@ static Console csl = {
 
 static FirmwareUpdateCommandContext firmware_update_command_context = {NULL, NULL, NULL, NULL};
 
-void commands_callback(struct mosquitto *_, const struct mosquitto_message *message) {
+void commands_callback(struct mosquitto *mosq, const struct mosquitto_message *message) {
     print_debug(&csl, "Received message on commands topic, payload: %s", (char *)message->payload);
 
     // Parse the JSON payload
@@ -50,7 +50,10 @@ void commands_callback(struct mosquitto *_, const struct mosquitto_message *mess
                                     firmware_update_command_context.access_token);
     } else {
         popen(command_str, "r");
-        print_error(&csl, "Unknown command: %s", command_str);
+
+        // response_topic es el topic que wifi-api envia por mqtt
+        // message es { "command_id": "uuid-123", "result": popen_output }
+        publish_mqtt(mosq, response_topic, message, 1)
     }
 
     // Clean up

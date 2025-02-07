@@ -22,12 +22,41 @@ static Console csl = {
 
 static FirmwareUpdateCommandContext firmware_update_command_context = {NULL, NULL, NULL, NULL};
 
-void commands_callback(struct mosquitto *mosq, const struct mosquitto_message *message) {
+char *execute_command(const char *cmd) {
+    char buffer[128];
+    char *result = NULL;
+    size_t result_size = 0;
+    FILE *pipe = popen(cmd, "r");
+    if (!pipe) {
+        print_error(&csl, "Failed to execute command: %s", cmd);
+        return strdup("Error executing command");
+    }
+    
+    while (fgets(buffer, sizeof(buffer), pipe) != NULL) {
+        size_t len = strlen(buffer);
+        char *new_result = realloc(result, result_size + len + 1);
+        if (!new_result) {
+            free(result);
+            pclose(pipe);
+            return strdup("Memory allocation error");
+        }
+        result = new_result;
+        strcpy(result + result_size, buffer);
+        result_size += len;
+    }
+    pclose(pipe);
+    return result ? result : strdup("No output");
+}
+
+void commands_callback(struct mosquitto *mosq, void *context, const struct mosquitto_message *message) {
+    FirmwareUpdateCommandContext *ctx = (FirmwareUpdateCommandContext *)context;
+
     print_debug(&csl, "Received message on commands topic, payload: %s", (char *)message->payload);
 
     // Parse the JSON payload
     struct json_object *parsed_json;
     struct json_object *command;
+    struct json_object *command_id;
 
     parsed_json = json_tokener_parse((char *)message->payload);
     if (!parsed_json) {
@@ -42,6 +71,11 @@ void commands_callback(struct mosquitto *mosq, const struct mosquitto_message *m
     }
 
     const char *command_str = json_object_get_string(command);
+    const char *cmd_id = NULL;
+
+    if (json_object_object_get_ex(parsed_json, "command_id", &command_id)) {
+        cmd_id = json_object_get_string(command_id);
+    }
 
     if (strcmp(command_str, "check_firmware_update") == 0) {
         print_info(&csl, "Received firmware update command");
@@ -49,12 +83,35 @@ void commands_callback(struct mosquitto *mosq, const struct mosquitto_message *m
                                     firmware_update_command_context.wayru_device_id,
                                     firmware_update_command_context.access_token);
     } else {
-        popen(command_str, "r");
+        print_info(&csl, "Executing command: %s", command_str);
 
-        // response_topic es el topic que wifi-api envia por mqtt
-        // message es { "command_id": "uuid-123", "result": popen_output }
-        publish_mqtt(mosq, response_topic, message, 1)
-    }
+        char *output = execute_command(command_str);
+
+        print_info(&csl, "Command output: %s", output);
+        
+        struct json_object *response_json = json_object_new_object();
+        json_object_object_add(response_json, "command_id", json_object_new_string(cmd_id ? cmd_id : "unknown"));
+        json_object_object_add(response_json, "result", json_object_new_string(output));
+        
+        const char *response_payload = json_object_to_json_string(response_json);
+        
+        char response_topic[256];
+        snprintf(response_topic, sizeof(response_topic), "device/%s/response", ctx->wayru_device_id);
+        
+        print_info(&csl, "Publishing response to topic: %s", response_topic);
+        //publish_mqtt(mosq, response_topic, response_payload, 0);  
+        int publish_result = publish_mqtt(mosq, response_topic, response_payload, 0);
+
+        if (publish_result == 0) {
+            print_info(&csl, "Publish successful");
+        } else {
+            print_error(&csl, "Failed to publish response");
+        }
+        
+        json_object_put(response_json);
+        free(output);
+        
+        }    
 
     // Clean up
     json_object_put(parsed_json);

@@ -99,15 +99,7 @@ void commands_callback(struct mosquitto *mosq, void *context, const struct mosqu
         snprintf(response_topic, sizeof(response_topic), "device/%s/response", ctx->wayru_device_id);
         
         print_info(&csl, "Publishing response to topic: %s", response_topic);
-        //publish_mqtt(mosq, response_topic, response_payload, 0);  
-        int publish_result = publish_mqtt(mosq, response_topic, response_payload, 0);
-
-        if (publish_result == 0) {
-            print_info(&csl, "Publish successful");
-        } else {
-            print_error(&csl, "Failed to publish response");
-        }
-        
+        publish_mqtt(mosq, response_topic, response_payload, 0);          
         json_object_put(response_json);
         free(output);
         

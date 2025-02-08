@@ -75,11 +75,11 @@ int main(int argc, char *argv[]) {
     bool generate_and_sign_result = attempt_generate_and_sign(access_token);
     if (!generate_and_sign_result) cleanup_and_exit(1);
 
-    // bool radsec_cert_result = attempt_radsec_ca_cert(access_token);
-    // if (!radsec_cert_result) cleanup_and_exit(1);
+    bool radsec_cert_result = attempt_radsec_ca_cert(access_token);
+    if (!radsec_cert_result) cleanup_and_exit(1);
 
-    // bool generate_and_sign_radsec_result = attempt_generate_and_sign_radsec(access_token, registration);
-    // if (!generate_and_sign_radsec_result) cleanup_and_exit(1);
+    bool generate_and_sign_radsec_result = attempt_generate_and_sign_radsec(access_token, registration);
+    if (!generate_and_sign_radsec_result) cleanup_and_exit(1);
 
     install_radsec_cert();
 

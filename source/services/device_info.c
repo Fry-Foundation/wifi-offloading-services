@@ -173,6 +173,14 @@ DeviceProfile get_device_profile() {
 }
 
 char *get_id() {
+
+    DeviceProfile device_profile = get_device_profile();
+
+    if (strcmp(device_profile.model, "Odyssey") == 0) {
+        print_info(&csl, "Device is Odyssey, skipping openwisp UUID retrieval");
+        return NULL; 
+    }    
+
     char script_file[256];
     snprintf(script_file, sizeof(script_file), "%s%s", config.scripts_path, "/get-uuid.sh");
     char *id = NULL;

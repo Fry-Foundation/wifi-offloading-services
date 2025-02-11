@@ -15,7 +15,6 @@ CONFIG_SPEED_TEST_MINIMUM_INTERVAL = 10800
 CONFIG_SPEED_TEST_MAXIMUM_INTERVAL = 21600
 CONFIG_SPEED_TEST_LATENCY_ATTEMPTS = 4
 CONFIG_DEVICE_CONTEXT_INTERVAL = 900
-CONFIG_SITE_CLIENTS_INTERVAL = 10
 CONFIG_MQTT_BROKER_URL = broker.internal.wayru.tech
 CONFIG_MQTT_KEEPALIVE = 60
 CONFIG_MQTT_TASK_INTERVAL = 30
@@ -100,7 +99,6 @@ run:
 	--config-speed-test-maximum-interval "$(CONFIG_SPEED_TEST_MAXIMUM_INTERVAL)" \
 	--config-speed-test-latency-attempts "$(CONFIG_SPEED_TEST_LATENCY_ATTEMPTS)" \
 	--config-device-context-interval "$(CONFIG_DEVICE_CONTEXT_INTERVAL)" \
-	--config-site-clients-interval "$(CONFIG_SITE_CLIENTS_INTERVAL)" \
 	--config-mqtt-broker-url "$(CONFIG_MQTT_BROKER_URL)" \
 	--config-reboot-enabled "$(CONFIG_REBOOT_ENABLED)" \
 	--config-reboot-interval "$(CONFIG_REBOOT_INTERVAL)" \

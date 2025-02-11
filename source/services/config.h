@@ -35,8 +35,6 @@ typedef struct {
 
     int device_context_interval;
 
-    int site_clients_interval;
-
     char mqtt_broker_url[API_SIZE];
     int mqtt_keepalive;
     int mqtt_task_interval;

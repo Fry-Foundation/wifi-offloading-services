@@ -27,7 +27,6 @@ start_service() {
 	local speed_test_maximum_interval
 	local speed_test_latency_attempts
 	local device_context_interval
-	local site_clients_interval
 	local mqtt_broker_url
 	local mqtt_keepalive
 	local mqtt_task_interval
@@ -55,7 +54,6 @@ start_service() {
 	config_get speed_test_maximum_interval wayru_os_services1 speed_test_maximum_interval
 	config_get speed_test_latency_attempts wayru_os_services1 speed_test_latency_attempts
 	config_get device_context_interval wayru_os_services1 device_context_interval
-	config_get site_clients_interval wayru_os_services1 site_clients_interval
 	config_get mqtt_broker_url wayru_os_services1 mqtt_broker_url
 	config_get mqtt_keepalive wayru_os_services1 mqtt_keepalive
 	config_get mqtt_task_interval wayru_os_services1 mqtt_task_interval
@@ -83,7 +81,6 @@ start_service() {
 	logger -t "wayru-os-services" "Speed Test Maximum Interval: $speed_test_maximum_interval"
 	logger -t "wayru-os-services" "Speed Test Latency Attempts: $speed_test_latency_attempts"
 	logger -t "wayru-os-services" "Device Context Interval: $device_context_interval"
-	logger -t "wayru-os-services" "Site Clients Interval: $site_clients_interval"
 	logger -t "wayru-os-services" "MQTT Broker URL: $mqtt_broker_url"
 	logger -t "wayru-os-services" "MQTT Keepalive: $mqtt_keepalive"
 	logger -t "wayru-os-services" "MQTT Task Interval: $mqtt_task_interval"
@@ -114,7 +111,6 @@ start_service() {
 		--config-speed-test-maximum-interval "$speed_test_maximum_interval" \
 		--config-speed-test-latency-attempts "$speed_test_latency_attempts" \
 		--config-device-context-interval "$device_context_interval" \
-		--config-site-clients-interval "$site_clients_interval" \
 		--config-mqtt-broker-url "$mqtt_broker_url" \
 		--config-reboot-enabled "$reboot_enabled" \
 		--config-reboot-interval "$reboot_interval" \

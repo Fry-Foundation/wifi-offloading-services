@@ -28,7 +28,6 @@ void init_config(int argc, char *argv[]) {
     config.speed_test_maximum_interval = 21600;
     config.speed_test_latency_attempts = 4;
     config.device_context_interval = 900;
-    config.site_clients_interval = 60;
     strcpy(config.mqtt_broker_url, "mqtt.wayru.tech");
     config.mqtt_keepalive = 60;
     config.mqtt_task_interval = 30;
@@ -151,12 +150,6 @@ void init_config(int argc, char *argv[]) {
         // Device context interval
         if (strcmp(argv[i], "--config-device-context-interval") == 0) {
             config.device_context_interval = atoi(argv[i + 1]);
-            continue;
-        }
-
-        // Site clients interval
-        if (strcmp(argv[i], "--config-site-clients-interval") == 0) {
-            config.site_clients_interval = atoi(argv[i + 1]);
             continue;
         }
 

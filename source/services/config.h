@@ -15,9 +15,6 @@ typedef struct {
 
     char accounting_api[API_SIZE];
 
-    bool accounting_enabled;
-    int accounting_interval;
-
     int access_interval;
 
     int device_status_interval;
@@ -50,6 +47,8 @@ typedef struct {
     bool use_n_sysupgrade;
 
     int diagnostic_interval;
+
+    int nds_interval;
 
     char active_path[PATH_SIZE];
     char scripts_path[PATH_SIZE];

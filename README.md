@@ -42,7 +42,7 @@ Compilations are done using the OpenWrt SDK.
 The script `compile` automates the process, **but there are some prerequisites**.
 
 ### Requirements
-- Meet the [OpenWrt build system requirements](https://openwrt.org/docs/guide-developer/toolchain/install-buildsystem) on your local machine or VM 
+- Meet the [OpenWrt build system requirements](https://openwrt.org/docs/guide-developer/toolchain/install-buildsystem) on your local machine or VM
 ```
 
 ### Build the package
@@ -78,7 +78,7 @@ Make sure these are not checked:
 Also, within the **Kernel built options** submenu, make sure that these are checked:
 - Compile the kernel with debug filesystem enabled
 - Compile the kernel with symbol table information
-- Compile the kernel with debug information 
+- Compile the kernel with debug information
 
 ### Installing the debugger
 On your OpenWrt device, install `gdb`:
@@ -98,7 +98,7 @@ On OpenWrt:
 gdb /usr/bin/wayru-os-services
 
 # Within the gdb process
-(gdb) set args --config-enabled "1" --config-main-api "https://api.internal.wayru.tech" --config-accounting-enabled "1" --config-accounting-interval "120" --config-accounting-api "https://wifi.api.internal.wayru.tech" --config-access-interval "120" --config-device-status-interval "120" --config-console-log-level "4"
+(gdb) set args --config-enabled "1" --config-main-api "https://api.internal.wayru.tech" --config-accounting-enabled "1" --config-accounting-api "https://wifi.api.internal.wayru.tech" --config-access-interval "120" --config-device-status-interval "120" --config-console-log-level "4"
 
 (gdb) break main.c:20
 

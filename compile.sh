@@ -19,7 +19,7 @@ VERSIONED_DIR="$BUILD_DIR/$FILE_TIMESTAMP"
 SDK_DIR="$CURRENT_DIR/sdk"
 
 # Clean up and set up directories
-echo "Cleaning and setting up directories"📂
+echo "Cleaning and setting up directories"
 echo "---------------------------------------"
 rm -rf "$TEMP_FEEDS_DIR"
 mkdir -p "$BUILD_DIR"
@@ -115,4 +115,3 @@ echo "Done! Took $elapsed_time seconds"
 echo "---------------------------------------"
 
 exit 0
-

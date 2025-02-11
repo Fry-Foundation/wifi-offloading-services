@@ -1,9 +1,7 @@
 # Define development configuration
 CONFIG_ENABLED = 1
 CONFIG_MAIN_API = http://api.internal.wayru.tech
-CONFIG_ACCOUNTING_ENABLED = 1
-CONFIG_ACCOUNTING_INTERVAL = 300
-CONFIG_ACCOUNTING_API = http://localhost:4050
+CONFIG_ACCOUNTING_API = https://wifi.api.internal.wayru.tech
 CONFIG_ACCESS_INTERVAL = 10800
 CONFIG_DEVICE_STATUS_INTERVAL = 120
 CONFIG_LOG_LEVEL = 3
@@ -27,6 +25,7 @@ CONFIG_FIRMWARE_UPDATE_ENABLED = 1
 CONFIG_FIRMWARE_UPDATE_INTERVAL = 86400
 CONFIG_USE_N_SYSUPGRADE = 0
 CONFIG_DIAGNOSTIC_INTERVAL = 120
+CONFIG_NDS_INTERVAL = 60
 
 # Define paths
 SOURCE_PATH := source
@@ -87,8 +86,6 @@ run:
 	cd "$(DIST_PATH)" && ./$(EXECUTABLE) --dev \
 	--config-enabled "$(CONFIG_ENABLED)" \
 	--config-main-api "$(CONFIG_MAIN_API)" \
-	--config-accounting-enabled "$(CONFIG_ACCOUNTING_ENABLED)" \
-	--config-accounting-interval "$(CONFIG_ACCOUNTING_INTERVAL)" \
 	--config-accounting-api "$(CONFIG_ACCOUNTING_API)" \
 	--config-access-interval "$(CONFIG_ACCESS_INTERVAL)" \
 	--config-device-status-interval "$(CONFIG_DEVICE_STATUS_INTERVAL)" \
@@ -109,8 +106,9 @@ run:
 	--config-reboot-interval "$(CONFIG_REBOOT_INTERVAL)" \
 	--config-firmware-update-enabled "$(CONFIG_FIRMWARE_UPDATE_ENABLED)" \
 	--config-firmware-update-interval "$(CONFIG_FIRMWARE_UPDATE_INTERVAL)" \
-	--config-use-n-sysupgrade"$(CONFIG_USE_N_SYSUPGRADE)" \
-	--config-diagnostic-interval"$(CONFIG_DIAGNOSTIC_INTERVAL)" \
+	--config-use-n-sysupgrade" $(CONFIG_USE_N_SYSUPGRADE)" \
+	--config-diagnostic-interval" $(CONFIG_DIAGNOSTIC_INTERVAL)" \
+	--config-nds-interval" $(CONFIG_NDS_INTERVAL)"
 
 # Clean the build
 clean:

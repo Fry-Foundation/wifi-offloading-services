@@ -14,10 +14,8 @@ void init_config(int argc, char *argv[]) {
     // Initial values
     config.dev_env = false;
     config.enabled = true;
-    strcpy(config.main_api, "https://api.wayru.tech");
+    strcpy(config.main_api, "https://api.prod-2.wayru.tech");
     strcpy(config.accounting_api, "https://wifi.api.wayru.tech");
-    config.accounting_enabled = true;
-    config.accounting_interval = 300;
     config.access_interval = 10800;
     config.device_status_interval = 120;
     config.monitoring_enabled = true;
@@ -40,6 +38,7 @@ void init_config(int argc, char *argv[]) {
     config.firmware_update_interval = 86400;
     config.use_n_sysupgrade = false;
     config.diagnostic_interval = 120;
+    config.nds_interval = 60;
 
     // Loop  through available daemon config parameters
     for (int i = 1; i < argc; i++) {
@@ -71,19 +70,6 @@ void init_config(int argc, char *argv[]) {
         // Accounting api
         if (strcmp(argv[i], "--config-accounting-api") == 0) {
             snprintf(config.accounting_api, sizeof(config.accounting_api), "%s", argv[i + 1]);
-            continue;
-        }
-
-        // Accounting flag
-        if (strcmp(argv[i], "--config-accounting-enabled") == 0) {
-            int accounting_enabled = atoi(argv[i + 1]);
-            config.accounting_enabled = (accounting_enabled == 1) ? true : false;
-            continue;
-        }
-
-        // Accounting interval
-        if (strcmp(argv[i], "--config-accounting-interval") == 0) {
-            config.accounting_interval = atoi(argv[i + 1]);
             continue;
         }
 
@@ -230,6 +216,12 @@ void init_config(int argc, char *argv[]) {
             config.diagnostic_interval = atoi(argv[i + 1]);
             continue;
         }
+
+        // NDS interval
+        if (strcmp(argv[i], "--config-nds-interval") == 0) {
+            config.nds_interval = atoi(argv[i + 1]);
+            continue;
+        }
     }
 
     // Set active paths
@@ -250,8 +242,6 @@ void init_config(int argc, char *argv[]) {
     print_debug(&csl, "config.enabled: %d", config.enabled);
     print_debug(&csl, "config.main_api: %s", config.main_api);
     print_debug(&csl, "config.accounting_api: %s", config.accounting_api);
-    print_debug(&csl, "config.accounting_enabled: %d", config.accounting_enabled);
-    print_debug(&csl, "config.accounting_interval: %d", config.accounting_interval);
     print_debug(&csl, "config.access_interval: %d", config.access_interval);
     print_debug(&csl, "config.device_status_interval: %d", config.device_status_interval);
     print_debug(&csl, "config.active_path: %s", config.active_path);
@@ -275,4 +265,5 @@ void init_config(int argc, char *argv[]) {
     print_debug(&csl, "config.firmware_update_interval: %d", config.firmware_update_interval);
     print_debug(&csl, "config.use_n_sysupgrade: %d", config.use_n_sysupgrade);
     print_debug(&csl, "config.diagnostic_interval: %d", config.diagnostic_interval);
+    print_debug(&csl, "config.nds_interval: %d", config.nds_interval);
 }

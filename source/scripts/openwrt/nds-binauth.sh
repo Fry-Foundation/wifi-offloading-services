@@ -194,11 +194,11 @@ else
 
 	action=$(echo "$1" | awk -F"_" '{printf("%s", $NF)}')
 
-	# Send the deauth log to FAS if fas_secure_enabled = 3, if not =3 library call does nothing
-	if [ "$action" = "deauth" ]; then
-		returned=$(/usr/lib/opennds/libopennds.sh "send_to_fas_deauthed" "$loginfo")
-	fi
+    # Adds this event to Wayru's fifo (this gets processed by wayru-os-services and published to the MQTT broker)
+    fifo_path="/tmp/wayru-os-services/nds-fifo"
+    echo "$loginfo" > "$fifo_path" &
 fi
+
 
 # In the case of ThemeSpec, get the client id information from the cid database
 # Client variables found in the database are:
@@ -290,13 +290,6 @@ download_rate=0
 upload_quota=0
 download_quota=0
 exitlevel=0
-
-# Include custom binauth script
-custom_binauth_path="/etc/wayru-os-services/scripts/nds-binauth-custom.sh"
-
-if [ -e "$custom_binauth_path" ]; then
-	$custom_binauth_path $1 $2
-fi
 
 # Finally before exiting, output the session length, upload rate, download rate, upload quota and download quota (only effective for auth_client).
 # The custom binauth script migh change these values

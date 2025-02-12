@@ -1,7 +1,6 @@
 #include "lib/console.h"
 #include "lib/scheduler.h"
 #include "services/access_token.h"
-#include "services/accounting.h"
 #include "services/commands.h"
 #include "services/config.h"
 #include "services/device-context.h"
@@ -18,6 +17,7 @@
 #include "services/speedtest.h"
 #include "services/diagnostic.h"
 #include "services/exit_handler.h"
+#include "services/nds.h"
 #include "lib/network_check.h"
 #include <mosquitto.h>
 #include <stdbool.h>
@@ -46,11 +46,17 @@ int main(int argc, char *argv[]) {
 
     // Internet check
     bool internet_status = internet_check();
-    if (!internet_status) cleanup_and_exit(1);
+    if (!internet_status) {
+        update_led_status(false, "Internet check");
+        cleanup_and_exit(1);
+    }
 
     // Wayru check
     bool wayru_status = wayru_check();
-    if (!wayru_status) cleanup_and_exit(1);
+    if (!wayru_status) {
+        update_led_status(false, "Wayru check");
+        cleanup_and_exit(1);
+    }
 
     // Registration
     Registration *registration =
@@ -91,9 +97,12 @@ int main(int argc, char *argv[]) {
     Mosq *mosq = init_mqtt(registration, access_token);
     register_cleanup((cleanup_callback)cleanup_mqtt, &mosq);
 
-    // Site clients fifo
-    int site_clients_fifo_fd = init_site_clients_fifo();
-    register_cleanup((cleanup_callback)clean_site_clients_fifo, &site_clients_fifo_fd);
+    // NDS
+    NdsClient *nds_client = init_nds_client();
+    register_cleanup((cleanup_callback)clean_nds_fifo, &nds_client->fifo_fd);
+
+    // Site clients
+    init_site_clients(mosq, device_context->site, nds_client);
 
     // Scheduler
     Scheduler *sch = init_scheduler();
@@ -104,11 +113,10 @@ int main(int argc, char *argv[]) {
     mqtt_service(sch, mosq, registration, access_token);
     device_context_service(sch, device_context, registration, access_token);
     device_status_service(sch, device_info, registration->wayru_device_id, access_token);
-    accounting_service(sch);
+    nds_service(sch, mosq, device_context->site, nds_client, device_info);
     monitoring_service(sch, mosq, registration);
     firmware_upgrade_check(sch, device_info, registration, access_token);
     start_diagnostic_service(sch, access_token);
-    site_clients_service(sch, mosq, site_clients_fifo_fd, device_context->site);
     speedtest_service(sch, mosq, registration, access_token);
     commands_service(mosq, device_info, registration, access_token);
     reboot_service(sch);

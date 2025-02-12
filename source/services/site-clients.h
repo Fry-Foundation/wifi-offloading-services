@@ -1,12 +1,20 @@
 #ifndef SITE_CLIENTS_H
 #define SITE_CLIENTS_H
 
-#include "lib/scheduler.h"
-#include "mosquitto.h"
 #include "services/device-context.h"
+#include "services/mqtt.h"
+#include "services/nds.h"
 
-int init_site_clients_fifo();
-void site_clients_service(Scheduler *sch, struct mosquitto *mosq, int site_fifo_fd, Site *site);
-void clean_site_clients_fifo(int *site_fifo_fd);
+typedef enum {
+    Connect,
+    Disconnect
+} SiteEventType;
+
+typedef struct {
+    SiteEventType type;
+    char mac[18];
+} SiteEvent;
+
+void init_site_clients(Mosq *mosq, Site *site, NdsClient *nds_client);
 
 #endif // SITE_CLIENTS_H

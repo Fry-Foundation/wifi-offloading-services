@@ -42,16 +42,6 @@ static void set_led_trigger(const char *led_path, const char *mode) {
 // Initialize LED states
 void init_diagnostic_service(DeviceInfo *device_info) {
     print_debug(&csl, "Initializing LED diagnostic service");
-
-        if (strcmp(device_info->name, "Genesis") == 0) {
-        print_info(&csl, "Device is Genesis. Setting initial LED states.");
-        set_led_trigger(RED_LED_TRIGGER, "timer");
-        set_led_trigger(BLUE_LED_TRIGGER, "timer");
-        set_led_trigger(GREEN_LED_TRIGGER, "none");
-    } else {
-        print_info(&csl, "Device is not Genesis. Skipping LED initialization.");
-    }
-
     diagnostic_device_info = device_info;
 }
 

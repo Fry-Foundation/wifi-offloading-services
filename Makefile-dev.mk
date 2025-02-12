@@ -1,9 +1,7 @@
 # Define development configuration
 CONFIG_ENABLED = 1
 CONFIG_MAIN_API = http://api.internal.wayru.tech
-CONFIG_ACCOUNTING_ENABLED = 1
-CONFIG_ACCOUNTING_INTERVAL = 300
-CONFIG_ACCOUNTING_API = http://localhost:4050
+CONFIG_ACCOUNTING_API = https://wifi.api.internal.wayru.tech
 CONFIG_ACCESS_INTERVAL = 10800
 CONFIG_DEVICE_STATUS_INTERVAL = 120
 CONFIG_LOG_LEVEL = 3
@@ -17,7 +15,6 @@ CONFIG_SPEED_TEST_MINIMUM_INTERVAL = 10800
 CONFIG_SPEED_TEST_MAXIMUM_INTERVAL = 21600
 CONFIG_SPEED_TEST_LATENCY_ATTEMPTS = 4
 CONFIG_DEVICE_CONTEXT_INTERVAL = 900
-CONFIG_SITE_CLIENTS_INTERVAL = 10
 CONFIG_MQTT_BROKER_URL = broker.internal.wayru.tech
 CONFIG_MQTT_KEEPALIVE = 60
 CONFIG_MQTT_TASK_INTERVAL = 30
@@ -27,6 +24,7 @@ CONFIG_FIRMWARE_UPDATE_ENABLED = 1
 CONFIG_FIRMWARE_UPDATE_INTERVAL = 86400
 CONFIG_USE_N_SYSUPGRADE = 0
 CONFIG_DIAGNOSTIC_INTERVAL = 120
+CONFIG_NDS_INTERVAL = 60
 
 # Define paths
 SOURCE_PATH := source
@@ -87,8 +85,6 @@ run:
 	cd "$(DIST_PATH)" && ./$(EXECUTABLE) --dev \
 	--config-enabled "$(CONFIG_ENABLED)" \
 	--config-main-api "$(CONFIG_MAIN_API)" \
-	--config-accounting-enabled "$(CONFIG_ACCOUNTING_ENABLED)" \
-	--config-accounting-interval "$(CONFIG_ACCOUNTING_INTERVAL)" \
 	--config-accounting-api "$(CONFIG_ACCOUNTING_API)" \
 	--config-access-interval "$(CONFIG_ACCESS_INTERVAL)" \
 	--config-device-status-interval "$(CONFIG_DEVICE_STATUS_INTERVAL)" \
@@ -103,14 +99,14 @@ run:
 	--config-speed-test-maximum-interval "$(CONFIG_SPEED_TEST_MAXIMUM_INTERVAL)" \
 	--config-speed-test-latency-attempts "$(CONFIG_SPEED_TEST_LATENCY_ATTEMPTS)" \
 	--config-device-context-interval "$(CONFIG_DEVICE_CONTEXT_INTERVAL)" \
-	--config-site-clients-interval "$(CONFIG_SITE_CLIENTS_INTERVAL)" \
 	--config-mqtt-broker-url "$(CONFIG_MQTT_BROKER_URL)" \
 	--config-reboot-enabled "$(CONFIG_REBOOT_ENABLED)" \
 	--config-reboot-interval "$(CONFIG_REBOOT_INTERVAL)" \
 	--config-firmware-update-enabled "$(CONFIG_FIRMWARE_UPDATE_ENABLED)" \
 	--config-firmware-update-interval "$(CONFIG_FIRMWARE_UPDATE_INTERVAL)" \
-	--config-use-n-sysupgrade"$(CONFIG_USE_N_SYSUPGRADE)" \
-	--config-diagnostic-interval"$(CONFIG_DIAGNOSTIC_INTERVAL)" \
+	--config-use-n-sysupgrade" $(CONFIG_USE_N_SYSUPGRADE)" \
+	--config-diagnostic-interval" $(CONFIG_DIAGNOSTIC_INTERVAL)" \
+	--config-nds-interval" $(CONFIG_NDS_INTERVAL)"
 
 # Clean the build
 clean:

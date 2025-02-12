@@ -103,6 +103,8 @@ Registration *parse_device_registration(const char *device_registration_json) {
 Registration *init_registration(char *mac, char *model, char *brand, char *openwisp_device_id) {
     Registration *registration;
 
+    bool is_odyssey = strcmp(model, "Odyssey") == 0;
+
     char *registration_str = read_device_registration();
     if (registration_str != NULL) {
         registration = parse_device_registration(registration_str);
@@ -123,7 +125,12 @@ Registration *init_registration(char *mac, char *model, char *brand, char *openw
     json_object_object_add(json_body, "mac", json_object_new_string(mac));
     json_object_object_add(json_body, "model", json_object_new_string(model));
     json_object_object_add(json_body, "brand", json_object_new_string(brand));
-    json_object_object_add(json_body, "openwisp_device_id", json_object_new_string(openwisp_device_id));
+
+    if (!is_odyssey) {
+        json_object_object_add(json_body, "openwisp_device_id", json_object_new_string(openwisp_device_id));
+    }
+
+    //json_object_object_add(json_body, "openwisp_device_id", json_object_new_string(openwisp_device_id));
     const char *body = json_object_to_json_string(json_body);
     print_debug(&csl, "register device request body %s", body);
 

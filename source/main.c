@@ -107,7 +107,7 @@ int main(int argc, char *argv[]) {
     mqtt_service(sch, mosq, registration, access_token);
     device_context_service(sch, device_context, registration, access_token);
     device_status_service(sch, device_info, registration->wayru_device_id, access_token);
-    nds_service(sch, mosq, device_context->site, nds_client);
+    nds_service(sch, mosq, device_context->site, nds_client, device_info);
     monitoring_service(sch, mosq, registration);
     firmware_upgrade_check(sch, device_info, registration, access_token);
     start_diagnostic_service(sch, access_token);

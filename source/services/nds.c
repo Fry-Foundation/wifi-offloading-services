@@ -139,8 +139,12 @@ void nds_task(Scheduler *sch, void *task_context) {
 
         char *line = strtok(buffer, "\n");
         while (line != NULL) {
+            // Add gateway_mac to the event string: 
+            char event_with_mac[1024];
+            snprintf(event_with_mac, sizeof(event_with_mac), "%s gateway_mac=%s", line, ctx->device_info->mac);
+
             // Add to array
-            json_object_array_add(events_array, json_object_new_string(line));
+            json_object_array_add(events_array, json_object_new_string(event_with_mac));
             events_count++;
 
             // Get next line
@@ -171,7 +175,7 @@ void nds_task(Scheduler *sch, void *task_context) {
     schedule_task(sch, time(NULL) + config.nds_interval, nds_task, "nds", ctx);
 }
 
-void nds_service(Scheduler *sch, Mosq *mosq, Site *site, NdsClient *nds_client) {
+void nds_service(Scheduler *sch, Mosq *mosq, Site *site, NdsClient *nds_client, DeviceInfo *device_info) {
     NdsTaskContext *ctx = (NdsTaskContext *)malloc(sizeof(NdsTaskContext));
     if (ctx == NULL) {
         print_error(&csl, "failed to allocate memory for nds task context");
@@ -195,6 +199,7 @@ void nds_service(Scheduler *sch, Mosq *mosq, Site *site, NdsClient *nds_client) 
     ctx->mosq = mosq;
     ctx->site = site;
     ctx->client = nds_client;
+    ctx->device_info = device_info;
 
     nds_task(sch, ctx);
 }

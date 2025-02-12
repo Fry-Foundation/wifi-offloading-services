@@ -46,11 +46,17 @@ int main(int argc, char *argv[]) {
 
     // Internet check
     bool internet_status = internet_check();
-    if (!internet_status) cleanup_and_exit(1);
+    if (!internet_status) {
+        update_led_status(false, "Internet check");
+        cleanup_and_exit(1);
+    }
 
     // Wayru check
     bool wayru_status = wayru_check();
-    if (!wayru_status) cleanup_and_exit(1);
+    if (!wayru_status) {
+        update_led_status(false, "Wayru check");
+        cleanup_and_exit(1);
+    }
 
     // Registration
     Registration *registration =

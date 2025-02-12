@@ -141,7 +141,7 @@ void nds_task(Scheduler *sch, void *task_context) {
         while (line != NULL) {
             // Add gateway_mac to the event string: 
             char event_with_mac[1024];
-            snprintf(event_with_mac, sizeof(event_with_mac), "%s gateway_mac=%s", line, ctx->device_info->mac);
+            snprintf(event_with_mac, sizeof(event_with_mac), "%s, gatewaymac=%s", line, ctx->device_info->mac);
 
             // Add to array
             json_object_array_add(events_array, json_object_new_string(event_with_mac));

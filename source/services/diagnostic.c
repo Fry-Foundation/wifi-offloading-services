@@ -15,6 +15,7 @@
 #define GREEN_LED_TRIGGER "/sys/devices/platform/leds/leds/green:lan/trigger"
 #define RED_LED_TRIGGER "/sys/devices/platform/leds/leds/red:wan/trigger"
 #define BLUE_LED_TRIGGER "/sys/devices/platform/leds/leds/blue:wlan2g/trigger"
+#define BLUE_LED_TRIGGER_ODYSSEY "/sys/devices/platform/leds/leds/blue:wlan/trigger"
 
 static Console csl = {
     .topic = "diagnostic",
@@ -47,18 +48,22 @@ void init_diagnostic_service(DeviceInfo *device_info) {
 
 // Update LED status based on internet connectivity
 void update_led_status(bool ok, const char *context) {
-    if (strcmp(diagnostic_device_info->name, "Genesis") == 0) {
-        print_info(&csl, "Device is Genesis. Updating LEDs. Context: %s", context);
+    if (strcmp(diagnostic_device_info->name, "Genesis") == 0 || strcmp(diagnostic_device_info->name, "Odyssey") == 0) {
+        print_info(&csl, "Updating LEDs for device: %s", diagnostic_device_info->name, context);
+
+        const char *blue_led = strcmp(diagnostic_device_info->name, "Odyssey") == 0 ? BLUE_LED_TRIGGER_ODYSSEY : BLUE_LED_TRIGGER;
+
+        //print_info(&csl, "Device is Genesis. Updating LEDs. Context: %s", context);
         if (ok) {
-            print_info(&csl, "Setting LED to indicate connectivity.");
+            print_info(&csl, "Setting LED to indicate connectivity. Context: %s", context);
             set_led_trigger(GREEN_LED_TRIGGER, "default-on"); // Solid green
             set_led_trigger(RED_LED_TRIGGER, "none");
-            set_led_trigger(BLUE_LED_TRIGGER, "none");
+            set_led_trigger(blue_led, "none");
         } else {
-            print_info(&csl, "Setting LED to indicate disconnection.");
+            print_info(&csl, "Setting LED to indicate disconnection. Context: %s", context);
             set_led_trigger(GREEN_LED_TRIGGER, "none");
             set_led_trigger(RED_LED_TRIGGER, "timer"); // Blinking red
-            set_led_trigger(BLUE_LED_TRIGGER, "none");
+            set_led_trigger(blue_led, "none");
         }
     }
 }

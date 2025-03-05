@@ -38,6 +38,8 @@ void init_config(int argc, char *argv[]) {
     config.use_n_sysupgrade = false;
     config.diagnostic_interval = 120;
     config.nds_interval = 60;
+    strcpy(config.time_sync_server, "ptbtime1.ptb.de");
+    config.time_sync_interval = 3600;
 
     // Loop  through available daemon config parameters
     for (int i = 1; i < argc; i++) {
@@ -215,6 +217,18 @@ void init_config(int argc, char *argv[]) {
             config.nds_interval = atoi(argv[i + 1]);
             continue;
         }
+
+        // Time sync server
+        if (strcmp(argv[i], "--config-time-sync-server") == 0) {
+            snprintf(config.time_sync_server, sizeof(config.time_sync_server), "%s", argv[i + 1]);
+            continue;
+        }
+
+        // Time sync interval
+        if (strcmp(argv[i], "--config-time-sync-interval") == 0) {
+            config.time_sync_interval = atoi(argv[i + 1]);
+            continue;
+        }
     }
 
     // Set active paths
@@ -259,4 +273,6 @@ void init_config(int argc, char *argv[]) {
     print_debug(&csl, "config.use_n_sysupgrade: %d", config.use_n_sysupgrade);
     print_debug(&csl, "config.diagnostic_interval: %d", config.diagnostic_interval);
     print_debug(&csl, "config.nds_interval: %d", config.nds_interval);
+    print_debug(&csl, "config.time_sync_server: %s", config.time_sync_server);
+    print_debug(&csl, "config.time_sync_interval: %d", config.time_sync_interval);
 }

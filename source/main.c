@@ -19,6 +19,7 @@
 #include "services/exit_handler.h"
 #include "services/nds.h"
 #include "lib/network_check.h"
+#include "services/time_sync.h"
 #include <mosquitto.h>
 #include <stdbool.h>
 #include <unistd.h>
@@ -109,6 +110,7 @@ int main(int argc, char *argv[]) {
     register_cleanup((cleanup_callback)clean_scheduler, sch);
 
     // Schedule service tasks
+    time_sync_service(sch);
     access_token_service(sch, access_token, registration, mosq);
     mqtt_service(sch, mosq, registration, access_token);
     device_context_service(sch, device_context, registration, access_token);

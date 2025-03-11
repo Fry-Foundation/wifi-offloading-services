@@ -178,8 +178,8 @@ char *get_id() {
 
     if (strcmp(device_profile.model, "Odyssey") == 0) {
         print_info(&csl, "Device is Odyssey, skipping openwisp UUID retrieval");
-        return NULL; 
-    }    
+        return NULL;
+    }
 
     char script_file[256];
     snprintf(script_file, sizeof(script_file), "%s%s", config.scripts_path, "/get-uuid.sh");
@@ -236,6 +236,41 @@ char *get_os_name() {
     return os_name;
 }
 
+char *get_arch() {
+    if (config.dev_env) {
+        return strdup("x86_64");
+    }
+
+    static char arch[64] = {0};
+    FILE *f = fopen("/etc/openwrt_release", "r");
+    if (f == NULL) {
+        print_error(&csl, "error opening file");
+        return NULL;
+    }
+
+    char line[256];
+    while(fgets(line, sizeof(line), f)) {
+        if (strstr(line, "DISTRIB_ARCH=") == line) {
+            char *start = strchr(line, '\'');
+            if (start) {
+                start++; // Skip the opening quote
+                char *end = strchr(start, '\'');
+                if (end) {
+                    size_t len = end - start;
+                    if (len < sizeof(arch)) {
+                        strncpy(arch, start, len);
+                        arch[len] = '\0';
+                    }
+                }
+            }
+            break;
+        }
+    }
+
+    fclose(f);
+    return arch[0] ? arch : NULL;
+}
+
 DeviceInfo *init_device_info() {
     DeviceInfo *device_info = malloc(sizeof(DeviceInfo));
     device_info->os_version = get_os_version();
@@ -246,6 +281,8 @@ DeviceInfo *init_device_info() {
     device_info->name = device_profile.name;
     device_info->model = device_profile.model;
     device_info->brand = device_profile.brand;
+
+    device_info->arch = get_arch();
 
     device_info->device_id = get_id();
     device_info->public_ip = get_public_ip();

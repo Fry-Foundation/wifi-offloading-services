@@ -13,6 +13,7 @@ typedef struct {
     char *name;
     char *brand;
     char *model;
+    char *arch;
     char *public_ip;
     char *os_name;
     char *os_version;
@@ -26,5 +27,6 @@ char *get_os_version();
 char *get_os_services_version();
 char *get_os_name();
 char *get_public_ip();
+char *get_arch();
 
 #endif // DEVICE_INFO_H

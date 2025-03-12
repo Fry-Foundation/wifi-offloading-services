@@ -49,6 +49,7 @@ define Build/Compile
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/registration.o -c $(PKG_BUILD_DIR)/services/registration.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/access_token.o -c $(PKG_BUILD_DIR)/services/access_token.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/firmware_upgrade.o -c $(PKG_BUILD_DIR)/services/firmware_upgrade.c
+		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/package_update.o -c $(PKG_BUILD_DIR)/services/package_update.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/device-context.o -c $(PKG_BUILD_DIR)/services/device-context.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/nds.o -c $(PKG_BUILD_DIR)/services/nds.c
 		$(TARGET_CC) $(TARGET_CFLAGS) -I$(PKG_BUILD_DIR) -o $(PKG_BUILD_DIR)/services/site-clients.o -c $(PKG_BUILD_DIR)/services/site-clients.c
@@ -87,6 +88,7 @@ define Build/Compile
 			$(PKG_BUILD_DIR)/services/registration.o \
 			$(PKG_BUILD_DIR)/services/access_token.o \
 			$(PKG_BUILD_DIR)/services/firmware_upgrade.o \
+			$(PKG_BUILD_DIR)/services/package_update.o \
 			$(PKG_BUILD_DIR)/services/device-context.o \
 			$(PKG_BUILD_DIR)/services/nds.o \
 			$(PKG_BUILD_DIR)/services/site-clients.o \

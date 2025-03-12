@@ -338,22 +338,22 @@ void send_firmware_check_request(const char *codename,
     // Extract fields
     bool error_occurred = false;
     if (!json_object_object_get_ex(parsed_response, "updateAvailable", &updateAvailable)) {
-        print_error(&csl, "updateAvailable field missing or invalid");
+        print_warn(&csl, "updateAvailable field missing or invalid");
         error_occurred = true;
     }
 
     if (!json_object_object_get_ex(parsed_response, "url", &url)) {
-        print_error(&csl, "url field missing or invalid");
+        print_warn(&csl, "url field missing or invalid");
         url = NULL;
     }
 
     if (!json_object_object_get_ex(parsed_response, "latestVersion", &latestVersion)) {
-        print_error(&csl, "latestVersion field missing or invalid");
+        print_warn(&csl, "latestVersion field missing or invalid");
         error_occurred = true;
     }
 
     if (!json_object_object_get_ex(parsed_response, "id", &id)) {
-        print_error(&csl, "id field missing or invalid, setting to default");
+        print_warn(&csl, "id field missing or invalid, setting to default");
         id = NULL;
     }
 

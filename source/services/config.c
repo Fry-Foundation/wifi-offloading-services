@@ -16,6 +16,7 @@ void init_config(int argc, char *argv[]) {
     config.enabled = true;
     strcpy(config.main_api, "https://api.prod-2.wayru.tech");
     strcpy(config.accounting_api, "https://wifi.api.wayru.tech");
+    strcpy(config.updates_api, "https://updates.api.wayru.tech");
     config.access_interval = 10800;
     config.device_status_interval = 120;
     config.monitoring_enabled = true;
@@ -36,6 +37,8 @@ void init_config(int argc, char *argv[]) {
     config.firmware_update_enabled = true;
     config.firmware_update_interval = 86400;
     config.use_n_sysupgrade = false;
+    config.package_update_enabled = true;
+    config.package_update_interval = 20000;
     config.diagnostic_interval = 120;
     config.nds_interval = 60;
     strcpy(config.time_sync_server, "ptbtime1.ptb.de");
@@ -71,6 +74,12 @@ void init_config(int argc, char *argv[]) {
         // Accounting api
         if (strcmp(argv[i], "--config-accounting-api") == 0) {
             snprintf(config.accounting_api, sizeof(config.accounting_api), "%s", argv[i + 1]);
+            continue;
+        }
+
+        // Updates endpoint
+        if (strcmp(argv[i], "--config-updates-endpoint") == 0) {
+            snprintf(config.updates_api, sizeof(config.updates_api), "%s", argv[i + 1]);
             continue;
         }
 
@@ -206,6 +215,19 @@ void init_config(int argc, char *argv[]) {
             continue;
         }
 
+        // Package update flag
+        if (strcmp(argv[i], "--config-package-update-enabled") == 0) {
+            int package_update_enabled = atoi(argv[i + 1]);
+            config.package_update_enabled = (package_update_enabled == 1) ? true : false;
+            continue;
+        }
+
+        // Package update interval
+        if (strcmp(argv[i], "--config-package-upgrade-interval") == 0) {
+            config.package_update_interval = atoi(argv[i + 1]);
+            continue;
+        }
+
         // Diagnostic interval
         if (strcmp(argv[i], "--config-diagnostic-interval") == 0) {
             config.diagnostic_interval = atoi(argv[i + 1]);
@@ -249,6 +271,7 @@ void init_config(int argc, char *argv[]) {
     print_debug(&csl, "config.enabled: %d", config.enabled);
     print_debug(&csl, "config.main_api: %s", config.main_api);
     print_debug(&csl, "config.accounting_api: %s", config.accounting_api);
+    print_debug(&csl, "config.updates_api: %s", config.updates_api);
     print_debug(&csl, "config.access_interval: %d", config.access_interval);
     print_debug(&csl, "config.device_status_interval: %d", config.device_status_interval);
     print_debug(&csl, "config.active_path: %s", config.active_path);
@@ -271,6 +294,8 @@ void init_config(int argc, char *argv[]) {
     print_debug(&csl, "config.firmware_update_enabled: %d", config.firmware_update_enabled);
     print_debug(&csl, "config.firmware_update_interval: %d", config.firmware_update_interval);
     print_debug(&csl, "config.use_n_sysupgrade: %d", config.use_n_sysupgrade);
+    print_debug(&csl, "config.package_update_enabled: %d", config.package_update_enabled);
+    print_debug(&csl, "config.package_update_interval: %d", config.package_update_interval);
     print_debug(&csl, "config.diagnostic_interval: %d", config.diagnostic_interval);
     print_debug(&csl, "config.nds_interval: %d", config.nds_interval);
     print_debug(&csl, "config.time_sync_server: %s", config.time_sync_server);

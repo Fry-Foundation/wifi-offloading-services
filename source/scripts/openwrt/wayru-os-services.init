@@ -14,6 +14,7 @@ start_service() {
 	local enabled
 	local main_api
 	local accounting_api
+	local updates_api
 	local access_interval
 	local device_status_interval
 	local console_log_level
@@ -35,6 +36,8 @@ start_service() {
 	local firmware_update_enabled
 	local firmware_update_interval
 	local use_n_sysupgrade
+	local package_update_interval
+	local package_update_enabled
 	local diagnostic_interval
 	local nds_interval
 	local time_sync_server
@@ -43,6 +46,7 @@ start_service() {
 	config_get enabled wayru_os_services1 enabled
 	config_get main_api wayru_os_services1 main_api
 	config_get accounting_api wayru_os_services1 accounting_api
+	config_get updates_api wayru_os_services1 updates_api
 	config_get access_interval wayru_os_services1 access_interval
 	config_get device_status_interval wayru_os_services1 device_status_interval
 	config_get console_log_level wayru_os_services1 console_log_level
@@ -64,6 +68,8 @@ start_service() {
 	config_get firmware_update_enabled wayru_os_services1 firmware_update_enabled
 	config_get firmware_update_interval wayru_os_services1 firmware_update_interval
 	config_get use_n_sysupgrade wayru_os_services1 use_n_sysupgrade
+	config_get package_update_enabled wayru_os_services1 package_update_enabled
+	config_get package_update_interval wayru_os_services1 package_update_interval
 	config_get diagnostic_interval wayru_os_services1 diagnostic_interval
 	config_get nds_interval wayru_os_services1 nds_interval
 	config_get time_sync_server wayru_os_services1 time_sync_server
@@ -72,6 +78,7 @@ start_service() {
 	logger -t "wayru-os-services" "Enabled: $enabled"
 	logger -t "wayru-os-services" "Main API: $main_api"
 	logger -t "wayru-os-services" "Accounting API: $accounting_api"
+	logger -t "wayru-os-services" "Updates Endpoint: $updates_api"
 	logger -t "wayru-os-services" "Access Interval: $access_interval"
 	logger -t "wayru-os-services" "Device Status Interval: $device_status_interval"
 	logger -t "wayru-os-services" "Console Log Level: $console_log_level"
@@ -93,6 +100,8 @@ start_service() {
 	logger -t "wayru-os-services" "Firmware Update Enabled: $firmware_update_enabled"
 	logger -t "wayru-os-services" "Firmware Update Interval: $firmware_update_interval"
 	logger -t "wayru-os-services" "Use -n in sysupgrade: $use_n_sysupgrade"
+	logger -t "wayru-os-services" "Package Update Enabled: $package_update_enabled"
+	logger -t "wayru-os-services" "Package Update Interval: $package_update_interval"
 	logger -t "wayru-os-services" "Diagnostic Interval: $diagnostic_interval"
 	logger -t "wayru-os-services" "NDS Interval: $nds_interval"
 	logger -t "wayru-os-services" "Time Sync Server: $time_sync_server"
@@ -104,6 +113,7 @@ start_service() {
 		--config-enabled "$enabled" \
 		--config-main-api "$main_api" \
 		--config-accounting-api "$accounting_api" \
+		--config-updates-endpoint "$updates_api" \
 		--config-access-interval "$access_interval" \
 		--config-device-status-interval "$device_status_interval" \
 		--config-console-log-level "$console_log_level" \
@@ -123,6 +133,8 @@ start_service() {
 		--config-firmware-update-enabled "$firmware_update_enabled" \
 		--config-firmware-update-interval "$firmware_update_interval" \
 		--config-use-n-sysupgrade "$use_n_sysupgrade" \
+		--config-package-update-enabled "$package_update_enabled" \
+		--config-package-update-interval "$package_update_interval" \
 		--config-diagnostic-interval "$diagnostic_interval" \
 		--config-nds-interval "$nds_interval" \
 		--config-time-sync-server "$time_sync_server" \

@@ -2,9 +2,10 @@
 CONFIG_ENABLED = 1
 CONFIG_MAIN_API = http://api.internal.wayru.tech
 CONFIG_ACCOUNTING_API = https://wifi.api.internal.wayru.tech
+CONFIG_UPDATES_API = http://localhost:4050
 CONFIG_ACCESS_INTERVAL = 10800
 CONFIG_DEVICE_STATUS_INTERVAL = 120
-CONFIG_LOG_LEVEL = 3
+CONFIG_LOG_LEVEL = 4
 CONFIG_MONITORING_ENABLED = 1
 CONFIG_MONITORING_INTERVAL = 900
 CONFIG_MONITORING_MINIMUM_INTERVAL = 300
@@ -23,6 +24,8 @@ CONFIG_REBOOT_INTERVAL = 88200
 CONFIG_FIRMWARE_UPDATE_ENABLED = 1
 CONFIG_FIRMWARE_UPDATE_INTERVAL = 86400
 CONFIG_USE_N_SYSUPGRADE = 0
+CONFIG_PACKAGE_UPDATE_ENABLED = 1
+CONFIG_PACKAGE_UPDATE_INTERVAL = 20000
 CONFIG_DIAGNOSTIC_INTERVAL = 120
 CONFIG_NDS_INTERVAL = 60
 CONFIG_TIME_SYNC_SERVER = ptbtime1.ptb.de
@@ -88,6 +91,7 @@ run:
 	--config-enabled "$(CONFIG_ENABLED)" \
 	--config-main-api "$(CONFIG_MAIN_API)" \
 	--config-accounting-api "$(CONFIG_ACCOUNTING_API)" \
+	--config-updates-endpoint "$(CONFIG_UPDATES_API)" \
 	--config-access-interval "$(CONFIG_ACCESS_INTERVAL)" \
 	--config-device-status-interval "$(CONFIG_DEVICE_STATUS_INTERVAL)" \
 	--config-console-log-level "$(CONFIG_LOG_LEVEL)" \
@@ -106,11 +110,13 @@ run:
 	--config-reboot-interval "$(CONFIG_REBOOT_INTERVAL)" \
 	--config-firmware-update-enabled "$(CONFIG_FIRMWARE_UPDATE_ENABLED)" \
 	--config-firmware-update-interval "$(CONFIG_FIRMWARE_UPDATE_INTERVAL)" \
-	--config-use-n-sysupgrade" $(CONFIG_USE_N_SYSUPGRADE)" \
-	--config-diagnostic-interval" $(CONFIG_DIAGNOSTIC_INTERVAL)" \
-	--config-nds-interval" $(CONFIG_NDS_INTERVAL)" \
-	--config-time-sync-server" $(CONFIG_TIME_SYNC_SERVER)" \
-	--config-time-sync-interval" $(CONFIG_TIME_SYNC_INTERVAL)"
+	--config-use-n-sysupgrade "$(CONFIG_USE_N_SYSUPGRADE)" \
+	--config-package-update-enabled "$(CONFIG_PACKAGE_UPDATE_ENABLED)" \
+	--config-package-update-interval "$(CONFIG_PACKAGE_UPDATE_INTERVAL)" \
+	--config-diagnostic-interval "$(CONFIG_DIAGNOSTIC_INTERVAL)" \
+	--config-nds-interval "$(CONFIG_NDS_INTERVAL)" \
+	--config-time-sync-server "$(CONFIG_TIME_SYNC_SERVER)" \
+	--config-time-sync-interval "$(CONFIG_TIME_SYNC_INTERVAL)"
 
 # Clean the build
 clean:

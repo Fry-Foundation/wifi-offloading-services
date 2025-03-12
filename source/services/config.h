@@ -15,6 +15,8 @@ typedef struct {
 
     char accounting_api[API_SIZE];
 
+    char updates_api[API_SIZE];
+
     int access_interval;
 
     int device_status_interval;
@@ -26,6 +28,9 @@ typedef struct {
 
     bool firmware_update_enabled;
     int firmware_update_interval;
+
+    bool package_update_enabled;
+    int package_update_interval;
 
     bool speed_test_enabled;
     int speed_test_interval;

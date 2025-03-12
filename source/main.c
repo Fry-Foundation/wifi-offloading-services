@@ -7,6 +7,7 @@
 #include "services/device_info.h"
 #include "services/device_status.h"
 #include "services/firmware_upgrade.h"
+#include "services/package_update.h"
 #include "services/monitoring.h"
 #include "services/mqtt-cert.h"
 #include "services/mqtt.h"
@@ -118,6 +119,7 @@ int main(int argc, char *argv[]) {
     nds_service(sch, mosq, device_context->site, nds_client, device_info);
     monitoring_service(sch, mosq, registration);
     firmware_upgrade_check(sch, device_info, registration, access_token);
+    package_update_service(sch, device_info, registration, access_token);
     start_diagnostic_service(sch, access_token);
     speedtest_service(sch, mosq, registration, access_token);
     commands_service(mosq, device_info, registration, access_token);

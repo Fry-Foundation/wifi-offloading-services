@@ -1,6 +1,8 @@
 #include "package_update.h"
 #include "lib/console.h"
 #include "lib/http-requests.h"
+#include "lib/result.h"
+#include "lib/script_runner.h"
 #include "services/access_token.h"
 #include "services/config.h"
 #include "services/device_info.h"
@@ -8,6 +10,7 @@
 #include <json-c/json.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 static Console csl = {
     .topic = "package-update",
@@ -20,6 +23,92 @@ typedef struct {
 } PackageUpdateTaskContext;
 
 #define PACKAGE_UPDATE_CHECK_ENDPOINT "packages/check"
+
+// @todo report back to log update attempt as "in_progress"
+void update_package(char* download_link) {
+}
+
+Result verify_package_checksum(const char *file_path, const char* checksum) {
+    if (file_path == NULL || checksum == NULL) {
+        return error(1, "Invalid parameters: file_path or checksum is NULL");
+    }
+
+    // Create command to calculate SHA256 checksum
+    char command[256];
+    snprintf(command, sizeof(command), "sha256sum '%s'", file_path);
+
+    // Run the sha256sum command
+    char *output = run_script(command);
+    if (output == NULL) {
+        return error(2, "Failed to run sha256sum command");
+    }
+
+    // Parse the output: sha256sum returns "<hash>  <filename>"
+    char calculated_checksum[65]; // SHA256 is 64 characters + null terminator
+    sscanf(output, "%64s", calculated_checksum);
+
+    // Free the output buffer
+    free(output);
+
+    // Compare the calculated checksum with the expected one
+    if (strcmp(calculated_checksum, checksum) == 0) {
+        print_debug(&csl, "Checksum verification successful");
+        return ok(true);
+    } else {
+        print_error(&csl, "Checksum mismatch: expected %s, got %s", checksum, calculated_checksum);
+        return error(3, "Checksum verification failed");
+    }
+}
+
+
+// @todo verify checksum
+// @todo report back to log update attempt as "requested"
+void download_package(PackageUpdateTaskContext* ctx, char* download_link, char* checksum) {
+    if (ctx == NULL || download_link == NULL || checksum == NULL) {
+        print_error(&csl, "Invalid parameters");
+        return;
+    }
+
+    // Report that the update process has started
+    // report_update_status(ctx, "started");
+
+    // Prepare download path
+    char download_path[256];
+    snprintf(download_path, sizeof(download_path), "%s/%s", config.temp_path, "package-update.ipk");
+    print_debug(&csl, "downloading package from: %s to %s", download_link, download_path);
+
+    // Set up download options
+    HttpDownloadOptions download_options = {
+        .url = download_link,
+        .download_path = download_path,
+        .bearer_token = ctx->access_token->token,
+    };
+
+    // Perform the download
+    HttpResult download_result = http_download(&download_options);
+
+    if (download_result.is_error) {
+        print_error(&csl, "package download failed: %s", download_result.error);
+        // report_update_status(ctx, "download_failed");
+        return;
+    }
+
+    print_debug(&csl, "package downloaded successfully");
+    // report_update_status(ctx, "download_completed");
+
+    // Verify checksum
+    Result verification_result = verify_package_checksum(download_path, checksum);
+    if (!verification_result.ok) {
+        print_error(&csl, "package checksum verification failed");
+        // report_update_status(ctx, "checksum_failed");
+        return;
+    }
+
+    print_debug(&csl, "package checksum verified successfully");
+
+    // Proceed with update
+    // update_package(download_path, ctx);
+}
 
 void send_package_check_request(PackageUpdateTaskContext *ctx) {
     // Url

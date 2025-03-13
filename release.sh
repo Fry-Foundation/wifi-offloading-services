@@ -2,8 +2,8 @@
 
 # Set these values appropriately
 package_name="wayru-os-services"
-package_arch="mips_24kc"
-version="2.2.0"
+package_arch="x86_64"
+version="2.2.2"
 file_path="build/2025-03-06-004813/wayru-os-services_2.2.0-1_mips_24kc.ipk"
 api_url="http://localhost:4050/packages/release"
 
@@ -14,7 +14,7 @@ if [ ! -f "$file_path" ]; then
 fi
 
 # Automatically calculate the SHA-256 checksum
-checksum="sha256:$(sha256sum "$file_path" | cut -d' ' -f1)"
+checksum="$(sha256sum "$file_path" | cut -d' ' -f1)"
 echo "Calculated checksum: $checksum"
 
 # Automatically determine the file size in bytes
@@ -34,6 +34,6 @@ curl -X POST \
   -H "Content-Type: multipart/form-data" \
   -F "metadata=$metadata" \
   -F "package=@$file_path" \
-  "$api_url"
+  "$api_url" | jq
 
 echo "Request completed."

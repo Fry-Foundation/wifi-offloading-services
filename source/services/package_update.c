@@ -77,6 +77,7 @@ void send_package_check_request(PackageUpdateTaskContext *ctx) {
 
     // Parse server response
     struct json_object *json_parsed_response;
+    struct json_object *json_data;
     struct json_object *json_update_available;
     struct json_object *json_download_link;
     struct json_object *json_checksum;
@@ -89,21 +90,29 @@ void send_package_check_request(PackageUpdateTaskContext *ctx) {
         return;
     }
 
-    // Extract fields
+    // Get the data object, which contains all other fields
+    if (!json_object_object_get_ex(json_parsed_response, "data", &json_data)) {
+        print_error(&csl, "missing 'data' field in package update response");
+        json_object_put(json_parsed_response);
+        free(result.response_buffer);
+        return;
+    }
+
+    // Extract fields from the data object
     bool error_extracting = false;
-    if (!json_object_object_get_ex(json_parsed_response, "update_available", &json_update_available)) {
+    if (!json_object_object_get_ex(json_data, "update_available", &json_update_available)) {
         print_error(&csl, "missing 'update_available' field in package update response");
         error_extracting = true;
     }
-    if (!json_object_object_get_ex(json_parsed_response, "download_link", &json_download_link)) {
+    if (!json_object_object_get_ex(json_data, "download_link", &json_download_link)) {
         print_error(&csl, "missing 'download_link' field in package update response");
         error_extracting = true;
     }
-    if (!json_object_object_get_ex(json_parsed_response, "checksum", &json_checksum)) {
+    if (!json_object_object_get_ex(json_data, "checksum", &json_checksum)) {
         print_error(&csl, "missing 'checksum' field in package update response");
         error_extracting = true;
     }
-    if (!json_object_object_get_ex(json_parsed_response, "size_bytes", &json_size_bytes)) {
+    if (!json_object_object_get_ex(json_data, "size_bytes", &json_size_bytes)) {
         print_error(&csl, "missing 'size_bytes' field in package update response");
         error_extracting = true;
     }

@@ -113,5 +113,8 @@ elapsed_time=$((end_time - start_time))
 
 echo "Done! Took $elapsed_time seconds"
 echo "---------------------------------------"
+echo "name: wayru-os-services"
+echo "arch: $COMPILE_TARGET"
+echo "---------------------------------------"
 
 exit 0

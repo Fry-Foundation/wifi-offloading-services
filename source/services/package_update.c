@@ -25,7 +25,14 @@ typedef struct {
 #define PACKAGE_UPDATE_CHECK_ENDPOINT "packages/check"
 
 // @todo report back to log update attempt as "in_progress"
-void update_package(char* download_link) {
+void update_package(char* file_path) {
+    char command[256];
+    snprintf(command, sizeof(command), "%s/%s %s", config.scripts_path, "run_opkg_upgrade.sh", file_path);
+    char *output = run_script(command);
+    if (output == NULL) {
+        print_error(&csl, "Failed to run package update script");
+    }
+    free(output);
 }
 
 Result verify_package_checksum(const char *file_path, const char* checksum) {
@@ -43,7 +50,7 @@ Result verify_package_checksum(const char *file_path, const char* checksum) {
         return error(2, "Failed to run sha256sum command");
     }
 
-    // Parse the output: sha256sum returns "<hash>  <filename>"
+    // Parse the output: sha256sum returns "<hash>  <filename>" (with 2 spaces)
     char calculated_checksum[65]; // SHA256 is 64 characters + null terminator
     sscanf(output, "%64s", calculated_checksum);
 
@@ -63,7 +70,7 @@ Result verify_package_checksum(const char *file_path, const char* checksum) {
 
 // @todo verify checksum
 // @todo report back to log update attempt as "requested"
-void download_package(PackageUpdateTaskContext* ctx, char* download_link, char* checksum) {
+void download_package(PackageUpdateTaskContext* ctx, const char* download_link, const char* checksum) {
     if (ctx == NULL || download_link == NULL || checksum == NULL) {
         print_error(&csl, "Invalid parameters");
         return;
@@ -107,7 +114,7 @@ void download_package(PackageUpdateTaskContext* ctx, char* download_link, char* 
     print_debug(&csl, "package checksum verified successfully");
 
     // Proceed with update
-    // update_package(download_path, ctx);
+    update_package(download_path);
 }
 
 void send_package_check_request(PackageUpdateTaskContext *ctx) {
@@ -223,7 +230,7 @@ void send_package_check_request(PackageUpdateTaskContext *ctx) {
     const char *checksum = json_object_get_string(json_checksum);
     const char *size_bytes = json_object_get_string(json_size_bytes);
 
-    // @TODO: Implement package download and update logic
+    download_package(ctx, download_link, checksum);
 
     print_debug(&csl, "download link: %s", download_link);
     print_debug(&csl, "checksum: %s", checksum);

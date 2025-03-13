@@ -222,6 +222,7 @@ HttpResult http_download(const HttpDownloadOptions *options) {
 
     curl = curl_easy_init();
     if (!curl) {
+        print_debug(&csl, "Failed to initialize curl");
         result.is_error = true;
         result.error = strdup("Failed to initialize curl");
         return result;
@@ -229,6 +230,7 @@ HttpResult http_download(const HttpDownloadOptions *options) {
 
     fp = fopen(options->download_path, "wb");
     if (!fp) {
+        print_debug(&csl, "Failed to open file for writing");
         result.is_error = true;
         result.error = strdup("Failed to open file for writing");
         curl_easy_cleanup(curl);
@@ -249,11 +251,13 @@ HttpResult http_download(const HttpDownloadOptions *options) {
 
     res = curl_easy_perform(curl);
     if (res != CURLE_OK) {
+        print_debug(&csl, "Failed to perform curl request: %s", curl_easy_strerror(res));
         result.is_error = true;
         result.error = strdup(curl_easy_strerror(res));
     } else {
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &result.http_status_code);
         if (result.http_status_code >= 400) {
+            print_debug(&csl, "HTTP error, check status code and response buffer");
             result.is_error = true;
             result.error = strdup("HTTP error, check status code and response buffer");
         }

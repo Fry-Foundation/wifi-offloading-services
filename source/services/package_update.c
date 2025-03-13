@@ -29,10 +29,9 @@ void update_package(char* file_path) {
     char command[256];
     snprintf(command, sizeof(command), "%s/%s %s", config.scripts_path, "run_opkg_upgrade.sh", file_path);
     char *output = run_script(command);
-    if (output == NULL) {
-        print_error(&csl, "Failed to run package update script");
+    if (output != NULL) {
+        free(output);
     }
-    free(output);
 }
 
 Result verify_package_checksum(const char *file_path, const char* checksum) {
@@ -88,7 +87,6 @@ void download_package(PackageUpdateTaskContext* ctx, const char* download_link, 
     HttpDownloadOptions download_options = {
         .url = download_link,
         .download_path = download_path,
-        .bearer_token = ctx->access_token->token,
     };
 
     // Perform the download
@@ -195,11 +193,22 @@ void send_package_check_request(PackageUpdateTaskContext *ctx) {
     }
 
     // Extract fields from the data object
-    bool error_extracting = false;
     if (!json_object_object_get_ex(json_data, "update_available", &json_update_available)) {
         print_error(&csl, "missing 'update_available' field in package update response");
-        error_extracting = true;
+        json_object_put(json_parsed_response);
+        free(result.response_buffer);
+        return;
     }
+
+    bool update_available = json_object_get_boolean(json_update_available);
+    if (!update_available) {
+        print_debug(&csl, "no update available");
+        json_object_put(json_parsed_response);
+        free(result.response_buffer);
+        return;
+    }
+
+    bool error_extracting = false;
     if (!json_object_object_get_ex(json_data, "download_link", &json_download_link)) {
         print_error(&csl, "missing 'download_link' field in package update response");
         error_extracting = true;
@@ -220,11 +229,6 @@ void send_package_check_request(PackageUpdateTaskContext *ctx) {
         return;
     }
 
-    bool update_available = json_object_get_boolean(json_update_available);
-    if (!update_available) {
-        print_debug(&csl, "no update available");
-        return;
-    }
 
     const char *download_link = json_object_get_string(json_download_link);
     const char *checksum = json_object_get_string(json_checksum);

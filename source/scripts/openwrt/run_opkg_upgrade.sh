@@ -7,14 +7,16 @@ if [ -z "$package_path" ]; then
     exit 1
 fi
 
-# Stop service
-/etc/init.d/wayru-os-services stop
+# Write a temporary upgrade script
+cat > /tmp/do_upgrade.sh << EOF
+#!/bin/sh
+sleep 5  # Give the parent process time to exit
+opkg remove wayru-os-services
+opkg install "$package_path"
+EOF
 
-# Upgrade
-output=$(opkg upgrade "$package_path" 2>&1)
+chmod +x /tmp/do_upgrade.sh
+/tmp/do_upgrade.sh > /tmp/upgrade.log 2>&1 &
 
-if echo "$output" | grep -q "upgrading package"; then
-    echo "1"
-else
-    echo "-1"
-fi
+echo "Upgrade initiated"
+exit 0

@@ -73,6 +73,9 @@ int main(int argc, char *argv[]) {
     }
     register_cleanup((cleanup_callback)clean_access_token, access_token);
 
+    // Package update complete signal
+    check_package_update_completion(registration, device_info, access_token);
+
     // Firmware upgrade complete signal
     firmware_upgrade_on_boot(registration, device_info, access_token);
 

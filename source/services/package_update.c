@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 static Console csl = {
     .topic = "package-update",
@@ -22,10 +23,100 @@ typedef struct {
     AccessToken *access_token;
 } PackageUpdateTaskContext;
 
-#define PACKAGE_UPDATE_CHECK_ENDPOINT "packages/check"
+typedef struct {
+    bool update_available;
+    const char *download_link;
+    const char *checksum;
+    const char *size_bytes;
+} PackageCheckResult;
 
-// @todo report back to log update attempt as "in_progress"
-void update_package(char* file_path) {
+#define PACKAGE_STATUS_ENDPOINT "packages/status"
+#define PACKAGE_CHECK_ENDPOINT "packages/check"
+#define UPDATE_MARKER_FILE "/tmp/wayru-os-services-update-marker"
+
+void send_package_status(PackageUpdateTaskContext *ctx, const char* status, const char* error_message) {
+    // Url
+    char package_status_url[256];
+    snprintf(package_status_url, sizeof(package_status_url), "%s/%s", config.updates_api, PACKAGE_STATUS_ENDPOINT);
+
+    // Request body (note that error_message is optional)
+    json_object *json_body = json_object_new_object();
+    json_object_object_add(json_body, "package_name", json_object_new_string("wayru-os-services"));
+    json_object_object_add(json_body, "package_architecture", json_object_new_string(ctx->device_info->arch));
+    json_object_object_add(json_body, "package_version", json_object_new_string(ctx->device_info->os_services_version));
+    json_object_object_add(json_body, "package_status", json_object_new_string(status));
+    json_object_object_add(json_body, "device_id", json_object_new_string(ctx->registration->wayru_device_id));
+    if (error_message != NULL) {
+        json_object_object_add(json_body, "error_message", json_object_new_string(error_message));
+    }
+
+    const char *body = json_object_to_json_string(json_body);
+
+    print_debug(&csl, "package status request body: %s", body);
+
+    // Send status to server
+    HttpPostOptions options = {
+        .url = package_status_url,
+        .body_json_str = body,
+        .bearer_token = ctx->access_token->token,
+    };
+
+    HttpResult result = http_post(&options);
+
+    json_object_put(json_body);
+
+    if (result.is_error) {
+        print_error(&csl, "package status request failed: %s", result.error);
+
+        // Try to parse response buffer to get error.message
+        if (result.response_buffer != NULL) {
+            struct json_object *json_parsed_error = json_tokener_parse(result.response_buffer);
+            if (json_parsed_error != NULL) {
+                struct json_object *json_error;
+                if (json_object_object_get_ex(json_parsed_error, "error", &json_error)) {
+                    struct json_object *json_message;
+                    if (json_object_object_get_ex(json_error, "message", &json_message)) {
+                        const char *error_message = json_object_get_string(json_message);
+                        print_error(&csl, "error message from server: %s", error_message);
+                    }
+                }
+                json_object_put(json_parsed_error);
+            }
+            free(result.response_buffer);
+        }
+
+        return;
+    }
+
+    if (result.response_buffer != NULL) {
+        free(result.response_buffer);
+    }
+}
+
+void check_package_update_completion(Registration *registration, DeviceInfo *device_info, AccessToken *access_token) {
+    if (access(UPDATE_MARKER_FILE, F_OK) == 0) {
+        print_info(&csl, "Package update completed successfully");
+        PackageUpdateTaskContext ctx = {
+            .device_info = device_info,
+            .registration = registration,
+            .access_token = access_token
+        };
+        send_package_status(&ctx, "completed", NULL);
+        remove(UPDATE_MARKER_FILE);
+    } else {
+        print_info(&csl, "No update marker found");
+    }
+}
+
+void write_update_marker(const char *checksum) {
+    FILE *marker_file = fopen(UPDATE_MARKER_FILE, "w");
+    if (marker_file != NULL) {
+        fprintf(marker_file, "%s", checksum);
+        fclose(marker_file);
+    }
+}
+
+void update_package(const char* file_path) {
     char command[256];
     snprintf(command, sizeof(command), "%s/%s %s", config.scripts_path, "run_opkg_upgrade.sh", file_path);
     char *output = run_script(command);
@@ -69,14 +160,11 @@ Result verify_package_checksum(const char *file_path, const char* checksum) {
 
 // @todo verify checksum
 // @todo report back to log update attempt as "requested"
-void download_package(PackageUpdateTaskContext* ctx, const char* download_link, const char* checksum) {
+Result download_package(PackageUpdateTaskContext* ctx, const char* download_link, const char* checksum) {
     if (ctx == NULL || download_link == NULL || checksum == NULL) {
         print_error(&csl, "Invalid parameters");
-        return;
+        return error(-1, "Invalid parameters");
     }
-
-    // Report that the update process has started
-    // report_update_status(ctx, "started");
 
     // Prepare download path
     char download_path[256];
@@ -94,31 +182,19 @@ void download_package(PackageUpdateTaskContext* ctx, const char* download_link, 
 
     if (download_result.is_error) {
         print_error(&csl, "package download failed: %s", download_result.error);
-        // report_update_status(ctx, "download_failed");
-        return;
+        send_package_status(ctx, "error", "package download failed");
+        return error(-1, "package download failed");
     }
 
     print_debug(&csl, "package downloaded successfully");
-    // report_update_status(ctx, "download_completed");
-
-    // Verify checksum
-    Result verification_result = verify_package_checksum(download_path, checksum);
-    if (!verification_result.ok) {
-        print_error(&csl, "package checksum verification failed");
-        // report_update_status(ctx, "checksum_failed");
-        return;
-    }
-
-    print_debug(&csl, "package checksum verified successfully");
-
-    // Proceed with update
-    update_package(download_path);
+    return ok(strdup(download_path));
 }
 
-void send_package_check_request(PackageUpdateTaskContext *ctx) {
+// Send package check request to the updates API.
+Result send_package_check_request(PackageUpdateTaskContext *ctx) {
     // Url
     char package_update_url[256];
-    snprintf(package_update_url, sizeof(package_update_url), "%s/%s", config.updates_api, PACKAGE_UPDATE_CHECK_ENDPOINT);
+    snprintf(package_update_url, sizeof(package_update_url), "%s/%s", config.updates_api, PACKAGE_CHECK_ENDPOINT);
     print_debug(&csl, "package update url: %s", package_update_url);
 
     // Request body
@@ -129,7 +205,7 @@ void send_package_check_request(PackageUpdateTaskContext *ctx) {
     json_object_object_add(json_body, "device_id", json_object_new_string(ctx->registration->wayru_device_id));
     const char *body = json_object_to_json_string(json_body);
 
-    print_debug(&csl, "package update request body: %s", body);
+    print_debug(&csl, "package check request body: %s", body);
 
     HttpPostOptions options = {
         .url = package_update_url,
@@ -161,12 +237,12 @@ void send_package_check_request(PackageUpdateTaskContext *ctx) {
             free(result.response_buffer);
         }
 
-        return;
+        return error(-1, "package update request failed");
     }
 
     if (result.response_buffer == NULL) {
         print_error(&csl, "package update request failed: response buffer is NULL");
-        return;
+        return error(-1, "response buffer is null");
     }
 
     // Parse server response
@@ -181,7 +257,7 @@ void send_package_check_request(PackageUpdateTaskContext *ctx) {
     if (json_parsed_response == NULL) {
         print_error(&csl, "failed to parse package update JSON response");
         free(result.response_buffer);
-        return;
+        return error(-1, "failed to parse package update JSON response");
     }
 
     // Get the data object, which contains all other fields
@@ -189,7 +265,7 @@ void send_package_check_request(PackageUpdateTaskContext *ctx) {
         print_error(&csl, "missing 'data' field in package update response");
         json_object_put(json_parsed_response);
         free(result.response_buffer);
-        return;
+        return error(-1, "missing 'data' field in package update response");
     }
 
     // Extract fields from the data object
@@ -197,7 +273,7 @@ void send_package_check_request(PackageUpdateTaskContext *ctx) {
         print_error(&csl, "missing 'update_available' field in package update response");
         json_object_put(json_parsed_response);
         free(result.response_buffer);
-        return;
+        return error(-1, "missing 'update_available' field in package update response");
     }
 
     bool update_available = json_object_get_boolean(json_update_available);
@@ -205,7 +281,8 @@ void send_package_check_request(PackageUpdateTaskContext *ctx) {
         print_debug(&csl, "no update available");
         json_object_put(json_parsed_response);
         free(result.response_buffer);
-        return;
+        PackageCheckResult check_result = {false, NULL, NULL, NULL};
+        return ok(&check_result);
     }
 
     bool error_extracting = false;
@@ -226,7 +303,7 @@ void send_package_check_request(PackageUpdateTaskContext *ctx) {
         print_error(&csl, "error extracting fields from package update response");
         json_object_put(json_parsed_response);
         free(result.response_buffer);
-        return;
+        return error(-1, "error extracting fields from package update response");
     }
 
 
@@ -234,14 +311,26 @@ void send_package_check_request(PackageUpdateTaskContext *ctx) {
     const char *checksum = json_object_get_string(json_checksum);
     const char *size_bytes = json_object_get_string(json_size_bytes);
 
-    download_package(ctx, download_link, checksum);
+    // download_package(ctx, download_link, checksum);
 
     print_debug(&csl, "download link: %s", download_link);
     print_debug(&csl, "checksum: %s", checksum);
     print_debug(&csl, "size bytes: %s", size_bytes);
 
+    PackageCheckResult* check_result = malloc(sizeof(PackageCheckResult));
+    if (!check_result) {
+        return error(-1, "failed to allocate memory for PackageCheckResult");
+    }
+
+    check_result->update_available = true;
+    check_result->download_link = strdup(download_link);
+    check_result->checksum = strdup(checksum);
+    check_result->size_bytes = strdup(size_bytes);
+
     json_object_put(json_parsed_response);
     free(result.response_buffer);
+
+    return ok(check_result);
 }
 
 void package_update_task(Scheduler *sch, void *task_context) {
@@ -253,8 +342,67 @@ void package_update_task(Scheduler *sch, void *task_context) {
     }
 
     print_debug(&csl, "package update task");
-    send_package_check_request(ctx);
-    schedule_task(sch, time(NULL) + config.package_update_interval, package_update_task, "package update task", ctx);
+
+    // Check if an update is available
+    Result result = send_package_check_request(ctx);
+    if (!result.ok) {
+        print_error(&csl, result.error.message);
+        schedule_task(sch, time(NULL) + config.package_update_interval, package_update_task, "package update task", ctx);
+        return;
+    }
+
+    // Make sure result is valid, and that an update is available
+    PackageCheckResult *package_check_result = (PackageCheckResult *)result.data;
+    if (!package_check_result) {
+        print_error(&csl, "failed to parse package check result");
+        schedule_task(sch, time(NULL) + config.package_update_interval, package_update_task, "package update task", ctx);
+        return;
+    }
+    if (!package_check_result->update_available) {
+        print_info(&csl, "no package update available");
+        schedule_task(sch, time(NULL) + config.package_update_interval, package_update_task, "package update task", ctx);
+        return;
+    }
+
+    send_package_status(ctx, "in_progress", NULL);
+
+    // Download the package
+    Result download_result = download_package(ctx, package_check_result->download_link, package_check_result->checksum);
+    if (!download_result.ok) {
+        send_package_status(ctx, "error", download_result.error.message);
+        schedule_task(sch, time(NULL) + config.package_update_interval, package_update_task, "package update task", ctx);
+        return;
+    }
+
+    // Verify the package's checksum
+    const char *download_path = download_result.data;
+    Result verify_result = verify_package_checksum(download_path, package_check_result->checksum);
+    if (!verify_result.ok) {
+        send_package_status(ctx, "error", verify_result.error.message);
+        schedule_task(sch, time(NULL) + config.package_update_interval, package_update_task, "package update task", ctx);
+        return;
+    }
+
+    // Write the update marker
+    write_update_marker(package_check_result->checksum);
+
+    // Proceed with update
+    update_package(download_path);
+
+    // Free allocated data
+    free((void *)download_path);
+    if (package_check_result != NULL) {
+        if (package_check_result->download_link != NULL) {
+            free((void *)package_check_result->download_link);
+        }
+        if (package_check_result->checksum != NULL) {
+            free((void *)package_check_result->checksum);
+        }
+        if (package_check_result->size_bytes != NULL) {
+            free((void *)package_check_result->size_bytes);
+        }
+        free((void *)package_check_result);
+    }
 }
 
 void package_update_service(Scheduler *sch, DeviceInfo *device_info, Registration *registration, AccessToken *access_token) {

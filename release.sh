@@ -6,6 +6,7 @@ package_arch="mips_24kc"
 version="2.2.9"
 file_path="build/2025-03-13-152222/wayru-os-services_2.2.9-1_mips_24kc.ipk"
 api_url="http://localhost:4050/packages/release"
+bearer_token="secret"
 
 # Verify the file exists
 if [ ! -f "$file_path" ]; then
@@ -30,10 +31,12 @@ echo "File: $file_path"
 echo "API URL: $api_url"
 
 # Execute the curl command
-curl -X POST \
+response=$(curl -X POST \
+  -H "Authorization: Bearer $bearer_token" \
   -H "Content-Type: multipart/form-data" \
   -F "metadata=$metadata" \
   -F "package=@$file_path" \
-  "$api_url" | jq
+  "$api_url")
 
-echo "Request completed."
+# Try to format with jq if it's valid JSON, otherwise print raw response
+echo "$response" | jq 2>/dev/null || echo "$response"

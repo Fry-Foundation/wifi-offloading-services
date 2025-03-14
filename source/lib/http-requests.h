@@ -4,9 +4,11 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#define ERROR_BUFFER_SIZE 256
+
 typedef struct {
     bool is_error;
-    char *error;
+    char error[ERROR_BUFFER_SIZE];
     long http_status_code;
     char *response_buffer;
     size_t response_size;

@@ -28,6 +28,7 @@ typedef struct {
     const char *download_link;
     const char *checksum;
     const char *size_bytes;
+    const char *new_version;
 } PackageCheckResult;
 
 #define PACKAGE_STATUS_ENDPOINT "packages/status"
@@ -95,23 +96,37 @@ void send_package_status(PackageUpdateTaskContext *ctx, const char* status, cons
 
 void check_package_update_completion(Registration *registration, DeviceInfo *device_info, AccessToken *access_token) {
     if (access(UPDATE_MARKER_FILE, F_OK) == 0) {
-        print_info(&csl, "Package update completed successfully");
-        PackageUpdateTaskContext ctx = {
-            .device_info = device_info,
-            .registration = registration,
-            .access_token = access_token
-        };
-        send_package_status(&ctx, "completed", NULL);
+        // Read the file's contents
+        char version[64];
+        FILE *marker_file = fopen(UPDATE_MARKER_FILE, "r");
+        if (marker_file != NULL) {
+            fgets(version, sizeof(version), marker_file);
+            fclose(marker_file);
+        }
+
+        // Compare the version with the current version
+        if (strcmp(version, device_info->os_services_version) == 0) {
+            print_info(&csl, "Package update completed successfully");
+            PackageUpdateTaskContext ctx = {
+                .device_info = device_info,
+                .registration = registration,
+                .access_token = access_token
+            };
+            send_package_status(&ctx, "completed", NULL);
+        } else {
+            print_error(&csl, "Package update failed");
+        }
+
         remove(UPDATE_MARKER_FILE);
     } else {
         print_info(&csl, "No update marker found");
     }
 }
 
-void write_update_marker(const char *checksum) {
+void write_update_marker(const char *new_version) {
     FILE *marker_file = fopen(UPDATE_MARKER_FILE, "w");
     if (marker_file != NULL) {
-        fprintf(marker_file, "%s", checksum);
+        fprintf(marker_file, "%s", new_version);
         fclose(marker_file);
     }
 }
@@ -252,6 +267,7 @@ Result send_package_check_request(PackageUpdateTaskContext *ctx) {
     struct json_object *json_download_link;
     struct json_object *json_checksum;
     struct json_object *json_size_bytes;
+    struct json_object *json_new_version;
 
     json_parsed_response = json_tokener_parse(result.response_buffer);
     if (json_parsed_response == NULL) {
@@ -298,6 +314,10 @@ Result send_package_check_request(PackageUpdateTaskContext *ctx) {
         print_error(&csl, "missing 'size_bytes' field in package update response");
         error_extracting = true;
     }
+    if (!json_object_object_get_ex(json_data, "new_version", &json_new_version)) {
+        print_error(&csl, "missing 'new_version' field in package update response");
+        error_extracting = true;
+    }
 
     if (error_extracting) {
         print_error(&csl, "error extracting fields from package update response");
@@ -310,12 +330,12 @@ Result send_package_check_request(PackageUpdateTaskContext *ctx) {
     const char *download_link = json_object_get_string(json_download_link);
     const char *checksum = json_object_get_string(json_checksum);
     const char *size_bytes = json_object_get_string(json_size_bytes);
-
-    // download_package(ctx, download_link, checksum);
+    const char *new_version = json_object_get_string(json_new_version);
 
     print_debug(&csl, "download link: %s", download_link);
     print_debug(&csl, "checksum: %s", checksum);
     print_debug(&csl, "size bytes: %s", size_bytes);
+    print_debug(&csl, "new version: %s", new_version);
 
     PackageCheckResult* check_result = malloc(sizeof(PackageCheckResult));
     if (!check_result) {
@@ -326,6 +346,7 @@ Result send_package_check_request(PackageUpdateTaskContext *ctx) {
     check_result->download_link = strdup(download_link);
     check_result->checksum = strdup(checksum);
     check_result->size_bytes = strdup(size_bytes);
+    check_result->new_version = strdup(new_version);
 
     json_object_put(json_parsed_response);
     free(result.response_buffer);
@@ -384,7 +405,7 @@ void package_update_task(Scheduler *sch, void *task_context) {
     }
 
     // Write the update marker
-    write_update_marker(package_check_result->checksum);
+    write_update_marker(package_check_result->new_version);
 
     // Proceed with update
     update_package(download_path);
@@ -401,21 +422,24 @@ void package_update_task(Scheduler *sch, void *task_context) {
         if (package_check_result->size_bytes != NULL) {
             free((void *)package_check_result->size_bytes);
         }
+        if (package_check_result->new_version != NULL) {
+            free((void *)package_check_result->new_version);
+        }
         free((void *)package_check_result);
     }
 }
 
 void package_update_service(Scheduler *sch, DeviceInfo *device_info, Registration *registration, AccessToken *access_token) {
-    PackageUpdateTaskContext *context = (PackageUpdateTaskContext *)malloc(sizeof(PackageUpdateTaskContext));
-    if (context == NULL) {
+    PackageUpdateTaskContext *ctx = (PackageUpdateTaskContext *)malloc(sizeof(PackageUpdateTaskContext));
+    if (ctx == NULL) {
         print_error(&csl, "failed to allocate memory for package update task context");
         return;
     }
 
-    context->device_info = device_info;
-    context->registration = registration;
-    context->access_token = access_token;
+    ctx->device_info = device_info;
+    ctx->registration = registration;
+    ctx->access_token = access_token;
 
     print_debug(&csl, "scheduling package update task");
-    package_update_task(sch, context);
+    package_update_task(sch, ctx);
 }

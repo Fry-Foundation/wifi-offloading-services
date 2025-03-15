@@ -35,7 +35,7 @@ typedef struct {
 #define PACKAGE_CHECK_ENDPOINT "packages/check"
 #define UPDATE_MARKER_FILE "/tmp/wayru-os-services-update-marker"
 
-void send_package_status(PackageUpdateTaskContext *ctx, const char* status, const char* error_message) {
+void send_package_status(PackageUpdateTaskContext *ctx, const char* status, const char* error_message, const char* new_version) {
     // Url
     char package_status_url[256];
     snprintf(package_status_url, sizeof(package_status_url), "%s/%s", config.updates_api, PACKAGE_STATUS_ENDPOINT);
@@ -44,7 +44,8 @@ void send_package_status(PackageUpdateTaskContext *ctx, const char* status, cons
     json_object *json_body = json_object_new_object();
     json_object_object_add(json_body, "package_name", json_object_new_string("wayru-os-services"));
     json_object_object_add(json_body, "package_architecture", json_object_new_string(ctx->device_info->arch));
-    json_object_object_add(json_body, "package_version", json_object_new_string(ctx->device_info->os_services_version));
+    json_object_object_add(json_body, "current_version", json_object_new_string(ctx->device_info->os_services_version));
+    json_object_object_add(json_body, "new_version", json_object_new_string(new_version));
     json_object_object_add(json_body, "package_status", json_object_new_string(status));
     json_object_object_add(json_body, "device_id", json_object_new_string(ctx->registration->wayru_device_id));
     if (error_message != NULL) {
@@ -112,7 +113,7 @@ void check_package_update_completion(Registration *registration, DeviceInfo *dev
                 .registration = registration,
                 .access_token = access_token
             };
-            send_package_status(&ctx, "completed", NULL);
+            send_package_status(&ctx, "completed", NULL, NULL);
         } else {
             print_error(&csl, "Package update failed");
         }
@@ -197,7 +198,7 @@ Result download_package(PackageUpdateTaskContext* ctx, const char* download_link
 
     if (download_result.is_error) {
         print_error(&csl, "package download failed: %s", download_result.error);
-        send_package_status(ctx, "error", "package download failed");
+        send_package_status(ctx, "error", "package download failed", NULL);
         return error(-1, "package download failed");
     }
 
@@ -297,7 +298,7 @@ Result send_package_check_request(PackageUpdateTaskContext *ctx) {
         print_debug(&csl, "no update available");
         json_object_put(json_parsed_response);
         free(result.response_buffer);
-        PackageCheckResult check_result = {false, NULL, NULL, NULL};
+        PackageCheckResult check_result = {false, NULL, NULL, NULL, NULL};
         return ok(&check_result);
     }
 
@@ -385,12 +386,12 @@ void package_update_task(Scheduler *sch, void *task_context) {
         return;
     }
 
-    send_package_status(ctx, "in_progress", NULL);
+    send_package_status(ctx, "in_progress", NULL, package_check_result->new_version);
 
     // Download the package
     Result download_result = download_package(ctx, package_check_result->download_link, package_check_result->checksum);
     if (!download_result.ok) {
-        send_package_status(ctx, "error", download_result.error.message);
+        send_package_status(ctx, "error", download_result.error.message, NULL);
         schedule_task(sch, time(NULL) + config.package_update_interval, package_update_task, "package update task", ctx);
         return;
     }
@@ -399,7 +400,7 @@ void package_update_task(Scheduler *sch, void *task_context) {
     const char *download_path = download_result.data;
     Result verify_result = verify_package_checksum(download_path, package_check_result->checksum);
     if (!verify_result.ok) {
-        send_package_status(ctx, "error", verify_result.error.message);
+        send_package_status(ctx, "error", verify_result.error.message, NULL);
         schedule_task(sch, time(NULL) + config.package_update_interval, package_update_task, "package update task", ctx);
         return;
     }

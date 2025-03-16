@@ -173,9 +173,18 @@ Result verify_package_checksum(const char *file_path, const char* checksum) {
     }
 }
 
-
-// @todo verify checksum
-// @todo report back to log update attempt as "requested"
+/**
+ * @brief Downloads a package from a given URL.
+ *
+ * @param ctx The context for the package update task.
+ * @param download_link The URL to download the package from.
+ * @param checksum The expected checksum of the package.
+ *
+ * @return Result struct containing:
+ *         - On success (ok=true): A pointer to the downloaded package file path.
+ *           The caller must free this pointer when done.
+ *         - On failure (ok=false): Error details.
+ */
 Result download_package(PackageUpdateTaskContext* ctx, const char* download_link, const char* checksum) {
     if (ctx == NULL || download_link == NULL || checksum == NULL) {
         print_error(&csl, "Invalid parameters");
@@ -206,7 +215,18 @@ Result download_package(PackageUpdateTaskContext* ctx, const char* download_link
     return ok(strdup(download_path));
 }
 
-// Send package check request to the updates API.
+/**
+ * @brief Sends a package check request to the backend to determine if an update is available.
+ * If an update is available, it returns the update details in a PackageCheckResult structure.
+ *
+ * @param ctx Pointer to the PackageUpdateTaskContext struct.
+ *
+ * @return Result struct containing:
+ *         - On success (ok=true): A pointer to a PackageCheckResult structure.
+ *           The caller must free this structure and its string fields
+ *           (download_link, checksum, size_bytes, new_version) when done.
+ *         - On failure (ok=false): Error details.
+ */
 Result send_package_check_request(PackageUpdateTaskContext *ctx) {
     // Url
     char package_update_url[256];
@@ -327,7 +347,6 @@ Result send_package_check_request(PackageUpdateTaskContext *ctx) {
         return error(-1, "error extracting fields from package update response");
     }
 
-
     const char *download_link = json_object_get_string(json_download_link);
     const char *checksum = json_object_get_string(json_checksum);
     const char *size_bytes = json_object_get_string(json_size_bytes);
@@ -355,6 +374,19 @@ Result send_package_check_request(PackageUpdateTaskContext *ctx) {
     return ok(check_result);
 }
 
+/**
+ * @brief Handles the entire package update process. It queries the server for available updates.
+ * If an update is found, it downloads the package, verifies it, and installs it.
+ *
+ * If errors occur during the update process, the function will:
+ * - Report these errors to the backend.
+ * - Reschedule itself for later execution.
+ *
+ * @param sch Pointer to the scheduler that manages this task.
+ * @param task_context Pointer to the PackageUpdateTaskContext struct.
+ *
+ * @return void. Function either completes the update process or reschedules itself after reporting any errors.
+ */
 void package_update_task(Scheduler *sch, void *task_context) {
     PackageUpdateTaskContext *ctx = (PackageUpdateTaskContext *)task_context;
 
@@ -430,6 +462,17 @@ void package_update_task(Scheduler *sch, void *task_context) {
     }
 }
 
+/**
+ * @brief Sets up the package update service by creating a scheduler-compatible task context.
+ * It then runs the first execution of the package update task.
+ *
+ * @param sch Pointer to the scheduler that will manage the update task.
+ * @param device_info Pointer to the device information structure.
+ * @param registration Pointer to the registration information structure.
+ * @param access_token Pointer to the access token structure for API authentication.
+ *
+ * @return void. If memory allocation for the context fails, an error is logged and the function returns without scheduling.
+ */
 void package_update_service(Scheduler *sch, DeviceInfo *device_info, Registration *registration, AccessToken *access_token) {
     PackageUpdateTaskContext *ctx = (PackageUpdateTaskContext *)malloc(sizeof(PackageUpdateTaskContext));
     if (ctx == NULL) {

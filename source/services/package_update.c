@@ -45,9 +45,11 @@ void send_package_status(PackageUpdateTaskContext *ctx, const char* status, cons
     json_object_object_add(json_body, "package_name", json_object_new_string("wayru-os-services"));
     json_object_object_add(json_body, "package_architecture", json_object_new_string(ctx->device_info->arch));
     json_object_object_add(json_body, "current_version", json_object_new_string(ctx->device_info->os_services_version));
-    json_object_object_add(json_body, "new_version", json_object_new_string(new_version));
     json_object_object_add(json_body, "package_status", json_object_new_string(status));
     json_object_object_add(json_body, "device_id", json_object_new_string(ctx->registration->wayru_device_id));
+    if (new_version != NULL) {
+        json_object_object_add(json_body, "new_version", json_object_new_string(new_version));
+    }
     if (error_message != NULL) {
         json_object_object_add(json_body, "error_message", json_object_new_string(error_message));
     }

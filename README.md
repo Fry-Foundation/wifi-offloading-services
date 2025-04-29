@@ -32,12 +32,24 @@ git clone https://github.com/Wayru-Network/wayru-os-services.git
 To run the project locally you can run the `dev` script found at the root of this project:
 
 ```bash
-bash dev
+just dev
 ```
 
 ## Compiling for OpenWrt
 
-Compilations are done using the OpenWrt SDK.
+Compilations are done using the OpenWrt SDK inside a Debian Docker container.
+
+```bash
+just compile arch=<value>
+```
+
+We map the architectures to known OpenWrt targets and subtargets for the devices we support.
+
+Mapped architectures are:
+- mips_24kc
+- mipsel_24kc
+- aarch64_cortex-a53
+- arm_cortex-a7_neon-vfpv4
 
 The script `compile` automates the process, **but there are some prerequisites**.
 

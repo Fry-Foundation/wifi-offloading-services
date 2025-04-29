@@ -5,8 +5,6 @@ import (
 	"log"
 	"os"
 
-	"slices"
-
 	"github.com/BurntSushi/toml"
 )
 
@@ -22,6 +20,12 @@ type Build struct {
 }
 
 func main() {
+	if len(os.Args) < 2 {
+		log.Fatal("Please provide an architecture as an argument")
+	}
+	arch := os.Args[1]
+	fmt.Printf("Searching for build configuration for architecture: %s\n", arch)
+
 	var config BuildsConfig
 
 	file, err := os.ReadFile("builds.toml")
@@ -34,22 +38,25 @@ func main() {
 		log.Fatalf("Failed to decode file: %v", err)
 	}
 
-	// Print all builds
-	fmt.Println("OpenWrt SDK builds:")
-	for i, build := range config.Builds {
-		fmt.Printf("\nBuild #%d:\n", i+1)
-		fmt.Printf("  Target: %s\n", build.Target)
-		fmt.Printf("  Subtarget: %s\n", build.Subtarget)
-		fmt.Printf("  Architecture: %s\n", build.Architecture)
-		fmt.Printf("  Codenames: %v\n", build.Codenames)
+	// Find and print the matching build configuration
+	found := false
+	for _, build := range config.Builds {
+		if build.Architecture == arch {
+			found = true
+			fmt.Printf("\nFound matching build configuration:\n")
+			fmt.Printf("  Target: %s\n", build.Target)
+			fmt.Printf("  Subtarget: %s\n", build.Subtarget)
+			fmt.Printf("  Architecture: %s\n", build.Architecture)
+			fmt.Printf("  Codenames: %v\n", build.Codenames)
+			break
+		}
 	}
 
-	// Example: Find builds for a specific codename
-	targetCodename := "prometheus"
-	fmt.Printf("\nBuilds supporting codename '%s':\n", targetCodename)
-	for _, build := range config.Builds {
-		if slices.Contains(build.Codenames, targetCodename) {
-			fmt.Printf("  %s/%s (%s)\n", build.Target, build.Subtarget, build.Architecture)
+	if !found {
+		fmt.Printf("\nNo build configuration found for architecture: %s\n", arch)
+		fmt.Println("\nAvailable architectures:")
+		for _, build := range config.Builds {
+			fmt.Printf("  - %s\n", build.Architecture)
 		}
 	}
 }

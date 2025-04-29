@@ -16,4 +16,4 @@ format:
 
 # Compile for specific architecture
 compile arch:
-    cd tools && ./build.sh {{arch}} 
+    cd tools/compile && go run compile.go {{arch}} 

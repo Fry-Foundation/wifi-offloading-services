@@ -196,7 +196,7 @@ else
 
     # Adds this event to Wayru's fifo (this gets processed by wayru-os-services and published to the MQTT broker)
     fifo_path="/tmp/wayru-os-services/nds-fifo"
-    echo "$loginfo" > "$fifo_path" &
+    echo "$loginfo" > "$fifo_path" 
 fi
 
 

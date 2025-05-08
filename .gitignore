@@ -3,6 +3,10 @@ dist
 build
 feed
 sdk
+sdk_mips_24kc
+sdk_mipsel_24kc
+sdk_arm_cortex-a7_neon_vfpv4
+sdk_aarch64_cortex-a53
 
 # C
 *.d

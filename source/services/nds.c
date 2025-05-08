@@ -156,7 +156,11 @@ void nds_task(Scheduler *sch, void *task_context) {
             const char *json_payload_str = json_object_to_json_string(events_array);
 
             // Publish accounting event (backend is subscribed to this)
-            publish_mqtt(ctx->mosq, "accounting/nds", json_payload_str, 0);
+            //publish_mqtt(ctx->mosq, "accounting/nds", json_payload_str, 0);
+            int publish_rc = mosquitto_publish(ctx->mosq, NULL, "accounting/nds", strlen(json_payload_str), json_payload_str, 0, false);
+            if (publish_rc != MOSQ_ERR_SUCCESS) {
+                print_error(&csl, "Failed to publish accounting/nds: %s", mosquitto_strerror(publish_rc));
+            }
 
             // Publish site events (other routers that are part of the same site are subscribed to this)
             if (ctx->site != NULL && ctx->site->id != NULL) {
@@ -167,6 +171,8 @@ void nds_task(Scheduler *sch, void *task_context) {
         }
 
         json_object_put(events_array);
+    } else if (bytesRead == 0) {
+        print_debug(&csl, "No data read from FIFO");
     } else if (bytesRead == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
         // Handle actual error
         print_error(&csl, "Failed to read from site clients fifo");

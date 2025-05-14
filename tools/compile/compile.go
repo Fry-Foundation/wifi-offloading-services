@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -12,6 +13,12 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/mount"
+	"github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/archive"
+	"github.com/docker/docker/pkg/jsonmessage"
 )
 
 type BuildsConfig struct {
@@ -41,7 +48,7 @@ func main() {
 		requestedSubtarget = parts[1]
 	}
 
-	fmt.Printf("Searching for build configuration for architecture: %s\n", requestedArch)
+	fmt.Printf("Searching for build configuration for architecture: %s, subtarget: %s\n", requestedArch, requestedSubtarget)
 
 	var config BuildsConfig
 	file, err := os.ReadFile("builds.toml")
@@ -66,9 +73,9 @@ func main() {
 
 	if selectedBuild == nil {
 		fmt.Printf("\nNo build configuration found for architecture: %s\n", requestedArch)
-		fmt.Println("\nAvailable architectures:")
+		fmt.Println("\nAvailable build configurations:")
 		for _, build := range config.Builds {
-			fmt.Printf("  - %s\n", build.Architecture)
+			fmt.Printf("  - %s:%s (target=%s)\n", build.Architecture, build.Subtarget, build.Target)
 		}
 		os.Exit(1)
 	}
@@ -79,7 +86,7 @@ func main() {
 	fmt.Printf("  Architecture: %s\n", selectedBuild.Architecture)
 	fmt.Printf("  Codenames: %v\n", selectedBuild.Codenames)
 
-	fmt.Printf("\nCompiling for architecture: %s\n", selectedBuild.Architecture)
+	fmt.Printf("\nCompiling for architecture: %s, subtarget: %s\n", selectedBuild.Architecture, selectedBuild.Subtarget)
 
 	currentDir, _ := os.Getwd()
 	projectRoot := filepath.Join(currentDir, "..", "..")
@@ -94,13 +101,14 @@ func main() {
 	)
 
 	timestamp := time.Now().Format("2006-01-02-150405")
-	versionedBuildDir := filepath.Join(buildDir, timestamp)
 
 	// Clean up and set up directories
 	fmt.Println("Cleaning and setting up directories")
 	os.RemoveAll(feedDir)
 	os.MkdirAll(filepath.Join(feedDir, "admin", "wayru-os-services"), 0755)
-	os.MkdirAll(versionedBuildDir, 0755)
+	archDir := fmt.Sprintf("%s_%s_%s", selectedBuild.Target, selectedBuild.Subtarget, selectedBuild.Architecture)
+	outputDir := filepath.Join(buildDir, archDir, timestamp)
+	os.MkdirAll(outputDir, 0755)
 
 	// Copy source files into feed
 	fmt.Println("Copying build source to feed directory")
@@ -109,11 +117,20 @@ func main() {
 	copyDir(filepath.Join(projectRoot, "source"), filepath.Join(feedDir, "admin", "wayru-os-services", "source"))
 
 	// Prepare SDK paths
+
+	var muslSuffix string
+	if selectedBuild.Target == "ipq40xx" && selectedBuild.Subtarget == "mikrotik" {
+		muslSuffix = "musl_eabi"
+	} else {
+		muslSuffix = "musl"
+	}
+
 	sdkFilename := fmt.Sprintf(
-		"openwrt-sdk-%s-%s-%s_gcc-12.3.0_musl.Linux-x86_64.tar.xz",
+		"openwrt-sdk-%s-%s-%s_gcc-12.3.0_%s.Linux-x86_64.tar.xz",
 		selectedBuild.Version,
 		selectedBuild.Target,
 		selectedBuild.Subtarget,
+		muslSuffix,
 	)
 	sdkURL := fmt.Sprintf(
 		"https://archive.openwrt.org/releases/%s/targets/%s/%s/%s",
@@ -148,11 +165,13 @@ func main() {
 
 		// Rename extracted SDK directory
 		sdkExtractedName := fmt.Sprintf(
-			"openwrt-sdk-%s-%s-%s_gcc-12.3.0_musl.Linux-x86_64",
+			"openwrt-sdk-%s-%s-%s_gcc-12.3.0_%s.Linux-x86_64",
 			selectedBuild.Version,
 			selectedBuild.Target,
 			selectedBuild.Subtarget,
+			muslSuffix,
 		)
+
 		err = os.Rename(filepath.Join(projectRoot, sdkExtractedName), sdkDir)
 		if err != nil {
 			log.Fatalf("Failed to rename SDK directory: %v", err)
@@ -171,21 +190,41 @@ func main() {
 		fmt.Println("SDK already extracted and ready to use.")
 	}
 
-	// Run Docker to compile
-	fmt.Println("Running Docker build...")
+	imageName := "wayru-package-builder:latest"
 
-	err = runDocker(
-		sdkDir,
-		feedDir,
-		selectedBuild.FeedsName,
-		versionedBuildDir,
-	)
+	exists, err := checkDockerImageExists(imageName)
 	if err != nil {
-		log.Fatalf("Docker run failed: %v", err)
+		log.Fatalf("Docker image check failed: %v", err)
 	}
 
-	fmt.Printf("\n Build completed for architecture: %s\n", selectedBuild.Architecture)
-	fmt.Printf("Package saved to: %s\n", versionedBuildDir)
+	if exists {
+		fmt.Printf("Docker image %s already exists.\n", imageName)
+	} else {
+		fmt.Printf("Docker image %s not found. Building it now...\n", imageName)
+		err = buildDockerImageFromDir(
+			"Dockerfile.build",
+			"wayru-package-builder:latest",
+			projectRoot,
+		)
+
+	}
+
+	os.MkdirAll(outputDir, 0755)
+
+	err = runDockerContainerFromImage(
+		imageName,
+		sdkDir,
+		outputDir,
+		selectedBuild.FeedsName,
+		feedDir,
+	)
+	if err != nil {
+		log.Fatalf("Container build failed: %v", err)
+	}
+
+	fmt.Printf("\nPackage built for architecture: %s\n", selectedBuild.Architecture)
+	fmt.Printf("Saved to: %s\n", outputDir)
+
 }
 
 func downloadFile(url string, filepath string) error {
@@ -216,44 +255,6 @@ func extractSDK(archive string, extractTo string) error {
 	return cmd.Run()
 }
 
-func runDocker(sdkPath string, feedsPath string, feedsName string, outputDir string) error {
-	cmd := exec.Command(
-		"docker", "run", "--rm",
-		"-v", fmt.Sprintf("%s:/sdk", sdkPath),
-		"-v", fmt.Sprintf("%s:/feeds", feedsPath),
-		"-v", fmt.Sprintf("%s:/output", outputDir),
-		"-w", "/sdk",
-		"openwrt-builder",
-		"/bin/bash", "-c",
-		fmt.Sprintf(`
-            echo "src-link %s /feeds" > feeds.conf
-            cat feeds.conf.default >> feeds.conf
-            sed -i '/luci/d' feeds.conf
-            sed -i '/telephony/d' feeds.conf
-            sed -i '/routing/d' feeds.conf
-            ./scripts/feeds update -a
-            ./scripts/feeds install wayru-os-services
-            rm -f .config
-            touch .config
-            echo "# CONFIG_ALL_NONSHARED is not set" >> .config
-            echo "# CONFIG_ALL_KMODS is not set" >> .config
-            echo "# CONFIG_ALL is not set" >> .config
-            echo "CONFIG_PACKAGE_wayru-os-services=y" >> .config
-            make defconfig
-            make package/wayru-os-services/download
-            make package/wayru-os-services/prepare
-            make package/wayru-os-services/compile
-            ARCH_DIR=$(grep 'CONFIG_TARGET_ARCH_PACKAGES=' .config | sed -E 's/CONFIG_TARGET_ARCH_PACKAGES=\"([^\"]+)\"/\\1/')
-            mkdir -p /output/$ARCH_DIR
-            cp -r bin/packages/$ARCH_DIR/%s/* /output/$ARCH_DIR/
-            make package/wayru-os-services/clean
-        `, feedsName, feedsName),
-	)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
-}
-
 func copyFile(src, dst string) {
 	input, err := os.ReadFile(src)
 	if err != nil {
@@ -271,4 +272,177 @@ func copyDir(src string, dst string) {
 	if err != nil {
 		log.Fatalf("Failed to copy directory %s to %s: %v", src, dst, err)
 	}
+}
+
+func checkDockerImageExists(imageName string) (bool, error) {
+	cli, err := client.NewClientWithOpts(
+		client.FromEnv,
+		client.WithAPIVersionNegotiation(),
+	)
+	if err != nil {
+		return false, fmt.Errorf("Failed to create Docker client: %w", err)
+	}
+	defer cli.Close()
+
+	ctx := context.Background()
+
+	_, err = cli.ImageInspect(ctx, imageName)
+	if err != nil {
+		if client.IsErrNotFound(err) || strings.Contains(err.Error(), "No such image") {
+			return false, nil
+		}
+		return false, fmt.Errorf("Error inspecting image: %w", err)
+	}
+
+	return true, nil
+}
+
+func buildDockerImageFromDir(dockerfilePath string, imageName string, contextDir string) error {
+	cli, err := client.NewClientWithOpts(
+		client.FromEnv,
+		client.WithAPIVersionNegotiation(),
+	)
+	if err != nil {
+		return fmt.Errorf("Failed to create Docker client: %w", err)
+	}
+	defer cli.Close()
+
+	contextTar, err := archive.TarWithOptions(contextDir, &archive.TarOptions{})
+	if err != nil {
+		return fmt.Errorf("Failed to create tar context: %w", err)
+	}
+
+	buildOptions := types.ImageBuildOptions{
+		Tags:       []string{imageName},
+		Dockerfile: dockerfilePath,
+		Remove:     true,
+	}
+
+	response, err := cli.ImageBuild(context.Background(), contextTar, buildOptions)
+	if err != nil {
+		return fmt.Errorf("Failed to build Docker image: %w", err)
+	}
+	defer response.Body.Close()
+
+	err = jsonmessage.DisplayJSONMessagesStream(response.Body, os.Stdout, os.Stdout.Fd(), true, nil)
+	if err != nil {
+		return fmt.Errorf("Error reading build output: %w", err)
+	}
+
+	return nil
+}
+
+func runDockerContainerFromImage(
+	imageName string,
+	sdkHostPath string,
+	outputHostPath string,
+	feedsName string,
+	feedDir string,
+) error {
+	ctx := context.Background()
+
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		return fmt.Errorf("Error creating Docker client: %w", err)
+	}
+	defer cli.Close()
+
+	containerConfig := &container.Config{
+		Image: imageName,
+		Cmd: []string{"/bin/bash", "-c", fmt.Sprintf(`
+			set -e
+			cd /sdk
+			echo "src-link %[1]s /feed" > feeds.conf
+			cat feeds.conf.default >> feeds.conf
+			sed -i '/luci/d' feeds.conf
+			sed -i '/telephony/d' feeds.conf
+			sed -i '/routing/d' feeds.conf
+			./scripts/feeds update -a
+			./scripts/feeds install wayru-os-services
+			rm -f .config
+			touch .config
+			echo "# CONFIG_ALL_NONSHARED is not set" >> .config
+			echo "# CONFIG_ALL_KMODS is not set" >> .config
+			echo "# CONFIG_ALL is not set" >> .config
+			echo "CONFIG_PACKAGE_wayru-os-services=y" >> .config
+			make defconfig
+			make package/wayru-os-services/download
+			make package/wayru-os-services/prepare
+			make package/wayru-os-services/compile
+
+			echo "Moving compiled package to /output"
+			mkdir -p /output
+			find bin/packages -type f -name 'wayru-os-services_*.ipk' -exec cp {} /output/ \;
+
+			make package/wayru-os-services/clean
+		`, feedsName)},
+		Tty: true,
+	}
+
+	hostConfig := &container.HostConfig{
+		Mounts: []mount.Mount{
+			{
+				Type:   mount.TypeBind,
+				Source: sdkHostPath,
+				Target: "/sdk",
+			},
+			{
+				Type:   mount.TypeBind,
+				Source: outputHostPath,
+				Target: "/output",
+			},
+			{
+				Type:   mount.TypeBind,
+				Source: feedDir,
+				Target: "/feed",
+			},
+		},
+	}
+
+	resp, err := cli.ContainerCreate(ctx, containerConfig, hostConfig, nil, nil, "")
+	if err != nil {
+		return fmt.Errorf("Error creating container: %w", err)
+	}
+
+	if err := cli.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
+		return fmt.Errorf("Error starting container: %w", err)
+	}
+
+	logReader, err := cli.ContainerLogs(ctx, resp.ID, container.LogsOptions{
+		ShowStdout: true,
+		ShowStderr: true,
+		Follow:     true,
+		Timestamps: false,
+	})
+	if err != nil {
+		return fmt.Errorf("Error getting container logs: %w", err)
+	}
+	defer logReader.Close()
+
+	go func() {
+		_, _ = io.Copy(os.Stdout, logReader)
+	}()
+
+	statusCh, errCh := cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
+	select {
+	case err := <-errCh:
+		if err != nil {
+			return fmt.Errorf("Error while waiting for container: %w", err)
+		}
+	case status := <-statusCh:
+		if status.StatusCode != 0 {
+			return fmt.Errorf("Container exited with status code: %d", status.StatusCode)
+		}
+	}
+
+	// Delete container
+	err = cli.ContainerRemove(ctx, resp.ID, container.RemoveOptions{
+		RemoveVolumes: true,
+		Force:         true,
+	})
+	if err != nil {
+		fmt.Printf("Warning: failed to remove container: %v\n", err)
+	}
+
+	return nil
 }

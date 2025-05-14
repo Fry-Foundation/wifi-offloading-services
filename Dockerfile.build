@@ -15,4 +15,4 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /build
 
 # The script and source files should be mounted when running the container
-ENTRYPOINT ["/bin/bash"]
+

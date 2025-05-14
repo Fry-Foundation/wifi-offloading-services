@@ -32,7 +32,7 @@ feedsName = "wayru_custom"
 [[builds]]
 target = "ipq40xx"
 subtarget = "mikrotik"
-architecture = "arm_cortex-a7_neon_vfpv4"
+architecture = "arm_cortex-a7_neon-vfpv4"
 codenames = ["loki", "gaia", "helios"]
 version = "23.05.4"
 feedsName = "wayru_custom"

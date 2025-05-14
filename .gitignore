@@ -5,7 +5,7 @@ feed
 sdk
 sdk_mips_24kc_generic
 sdk_mipsel_24kc_mt7621
-sdk_arm_cortex-a7_neon_vfpv4_mikrotik
+sdk_arm_cortex-a7_neon-vfpv4_mikrotik
 sdk_aarch64_cortex-a53_mt7622
 sdk_aarch64_cortex-a53_filogic
 

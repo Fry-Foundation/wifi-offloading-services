@@ -17,3 +17,7 @@ format:
 # Compile for specific architecture
 compile arch:
     cd tools/compile && go run compile.go {{arch}} 
+
+# Upload IPK release package
+release arch:
+    bash tools/compile/release.sh {{arch}}

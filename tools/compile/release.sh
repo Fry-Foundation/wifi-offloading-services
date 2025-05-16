@@ -1,7 +1,10 @@
 #!/bin/bash
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
+
 # --- LOAD .env CONFIGURATION ---
-ENV_FILE="./.env"
+ENV_FILE="$PROJECT_ROOT/.env"
 
 if [ ! -f "$ENV_FILE" ]; then
   echo "Error: .env file not found at $ENV_FILE"
@@ -44,6 +47,12 @@ if [ $# -ne 1 ]; then
 fi
 
 package_arch="$1"
+full_path="$PROJECT_ROOT/build/$package_arch"
+
+if [ ! -d "$full_path" ]; then
+  echo "Error: Directory '$full_path' does not exist."
+  exit 1
+fi
 
 # --- CHECK IF INPUT IS ALLOWED ---
 is_valid=false
@@ -63,20 +72,14 @@ if [ "$is_valid" != "true" ]; then
   exit 1
 fi
 
-full_path="build/$package_arch"
-
-if [ ! -d "$full_path" ]; then
-  echo "Error: Directory '$full_path' does not exist."
-  exit 1
-fi
-
 # --- READ VERSION FILE ---
-if [ ! -f "./VERSION" ]; then
-  echo "Error: VERSION file not found."
+VERSION_FILE="$PROJECT_ROOT/VERSION"
+if [ ! -f "$VERSION_FILE" ]; then
+  echo "Error: VERSION file not found at $VERSION_FILE"
   exit 1
 fi
 
-version=$(cat ./VERSION | tr -d '[:space:]')
+version=$(cat "$VERSION_FILE" | tr -d '[:space:]')
 
 if [[ -z "$version" ]]; then
   echo "Error: VERSION file is empty."

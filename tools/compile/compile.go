@@ -105,6 +105,7 @@ func main() {
 	os.MkdirAll(filepath.Join(feedDir, "admin", "wayru-os-services"), 0755)
 	archDir := fmt.Sprintf("%s_%s", selectedBuild.Architecture, selectedBuild.Subtarget)
 	outputDir := filepath.Join(buildDir, archDir)
+	os.RemoveAll(outputDir)
 	os.MkdirAll(outputDir, 0755)
 
 	// Copy source files into feed

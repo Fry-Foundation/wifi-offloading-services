@@ -15,7 +15,7 @@ typedef struct {
 
     char accounting_api[API_SIZE];
 
-    char updates_api[API_SIZE];
+    char devices_api[API_SIZE];
 
     int access_interval;
 

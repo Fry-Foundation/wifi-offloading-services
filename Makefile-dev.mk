@@ -2,7 +2,7 @@
 CONFIG_ENABLED = 1
 CONFIG_MAIN_API = http://api.internal.wayru.tech
 CONFIG_ACCOUNTING_API = https://wifi.api.internal.wayru.tech
-CONFIG_UPDATES_API = http://localhost:4050
+CONFIG_DEVICES_API = http://devices.internal.wayru.tech
 CONFIG_ACCESS_INTERVAL = 10800
 CONFIG_DEVICE_STATUS_INTERVAL = 120
 CONFIG_LOG_LEVEL = 4
@@ -91,7 +91,7 @@ run:
 	--config-enabled "$(CONFIG_ENABLED)" \
 	--config-main-api "$(CONFIG_MAIN_API)" \
 	--config-accounting-api "$(CONFIG_ACCOUNTING_API)" \
-	--config-updates-endpoint "$(CONFIG_UPDATES_API)" \
+	--config-devices-api "$(CONFIG_DEVICES_API)" \
 	--config-access-interval "$(CONFIG_ACCESS_INTERVAL)" \
 	--config-device-status-interval "$(CONFIG_DEVICE_STATUS_INTERVAL)" \
 	--config-console-log-level "$(CONFIG_LOG_LEVEL)" \

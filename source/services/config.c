@@ -16,7 +16,7 @@ void init_config(int argc, char *argv[]) {
     config.enabled = true;
     strcpy(config.main_api, "https://api.prod-2.wayru.tech");
     strcpy(config.accounting_api, "https://wifi.api.wayru.tech");
-    strcpy(config.updates_api, "https://updates.api.wayru.tech");
+    strcpy(config.devices_api, "https://devices.wayru.tech");
     config.access_interval = 10800;
     config.device_status_interval = 120;
     config.monitoring_enabled = true;
@@ -78,8 +78,8 @@ void init_config(int argc, char *argv[]) {
         }
 
         // Updates endpoint
-        if (strcmp(argv[i], "--config-updates-endpoint") == 0) {
-            snprintf(config.updates_api, sizeof(config.updates_api), "%s", argv[i + 1]);
+        if (strcmp(argv[i], "--config-devices-api") == 0) {
+            snprintf(config.devices_api, sizeof(config.devices_api), "%s", argv[i + 1]);
             continue;
         }
 
@@ -271,7 +271,7 @@ void init_config(int argc, char *argv[]) {
     print_debug(&csl, "config.enabled: %d", config.enabled);
     print_debug(&csl, "config.main_api: %s", config.main_api);
     print_debug(&csl, "config.accounting_api: %s", config.accounting_api);
-    print_debug(&csl, "config.updates_api: %s", config.updates_api);
+    print_debug(&csl, "config.devices_api: %s", config.devices_api);
     print_debug(&csl, "config.access_interval: %d", config.access_interval);
     print_debug(&csl, "config.device_status_interval: %d", config.device_status_interval);
     print_debug(&csl, "config.active_path: %s", config.active_path);

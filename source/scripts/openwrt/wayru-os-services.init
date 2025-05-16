@@ -14,7 +14,7 @@ start_service() {
 	local enabled
 	local main_api
 	local accounting_api
-	local updates_api
+	local devices_api
 	local access_interval
 	local device_status_interval
 	local console_log_level
@@ -46,7 +46,7 @@ start_service() {
 	config_get enabled wayru_os_services1 enabled
 	config_get main_api wayru_os_services1 main_api
 	config_get accounting_api wayru_os_services1 accounting_api
-	config_get updates_api wayru_os_services1 updates_api
+	config_get devices_api wayru_os_services1 devices_api
 	config_get access_interval wayru_os_services1 access_interval
 	config_get device_status_interval wayru_os_services1 device_status_interval
 	config_get console_log_level wayru_os_services1 console_log_level
@@ -78,7 +78,7 @@ start_service() {
 	logger -t "wayru-os-services" "Enabled: $enabled"
 	logger -t "wayru-os-services" "Main API: $main_api"
 	logger -t "wayru-os-services" "Accounting API: $accounting_api"
-	logger -t "wayru-os-services" "Updates Endpoint: $updates_api"
+	logger -t "wayru-os-services" "Devices API: $devices_api"
 	logger -t "wayru-os-services" "Access Interval: $access_interval"
 	logger -t "wayru-os-services" "Device Status Interval: $device_status_interval"
 	logger -t "wayru-os-services" "Console Log Level: $console_log_level"
@@ -113,7 +113,7 @@ start_service() {
 		--config-enabled "$enabled" \
 		--config-main-api "$main_api" \
 		--config-accounting-api "$accounting_api" \
-		--config-updates-endpoint "$updates_api" \
+		--config-devices-api "$devices_api" \
 		--config-access-interval "$access_interval" \
 		--config-device-status-interval "$device_status_interval" \
 		--config-console-log-level "$console_log_level" \

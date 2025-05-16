@@ -236,12 +236,16 @@ char *get_os_name() {
     return os_name;
 }
 
+// Function to get the architecture and subtarget of the device
 char *get_arch() {
     if (config.dev_env) {
         return strdup("x86_64");
     }
 
     static char arch[64] = {0};
+    char distrib_arch[32] = {0};
+    char distrib_target[64] = {0};
+
     FILE *f = fopen("/etc/openwrt_release", "r");
     if (f == NULL) {
         print_error(&csl, "error opening file");
@@ -249,26 +253,55 @@ char *get_arch() {
     }
 
     char line[256];
-    while(fgets(line, sizeof(line), f)) {
+    while (fgets(line, sizeof(line), f)) {
         if (strstr(line, "DISTRIB_ARCH=") == line) {
             char *start = strchr(line, '\'');
             if (start) {
-                start++; // Skip the opening quote
+                start++;
                 char *end = strchr(start, '\'');
                 if (end) {
                     size_t len = end - start;
-                    if (len < sizeof(arch)) {
-                        strncpy(arch, start, len);
-                        arch[len] = '\0';
+                    if (len < sizeof(distrib_arch)) {
+                        strncpy(distrib_arch, start, len);
+                        distrib_arch[len] = '\0';
                     }
                 }
             }
-            break;
+        }
+
+        if (strstr(line, "DISTRIB_TARGET=") == line) {
+            char *start = strchr(line, '\'');
+            if (start) {
+                start++;
+                char *end = strchr(start, '\'');
+                if (end) {
+                    size_t len = end - start;
+                    if (len < sizeof(distrib_target)) {
+                        strncpy(distrib_target, start, len);
+                        distrib_target[len] = '\0';
+                    }
+                }
+            }
         }
     }
 
     fclose(f);
-    return arch[0] ? arch : NULL;
+
+    if (distrib_arch[0] == '\0' || distrib_target[0] == '\0') {
+        print_error(&csl, "missing fields in /etc/openwrt_release");
+        return NULL;
+    }
+
+    char *subtarget = strchr(distrib_target, '/');
+    if (!subtarget || *(subtarget + 1) == '\0') {
+        print_error(&csl, "invalid DISTRIB_TARGET format");
+        return NULL;
+    }
+
+    subtarget++; 
+
+    snprintf(arch, sizeof(arch), "%s_%s", distrib_arch, subtarget);
+    return arch;
 }
 
 DeviceInfo *init_device_info() {

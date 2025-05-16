@@ -1,43 +1,143 @@
 #!/bin/bash
 
-# Set these values appropriately
-package_name="wayru-os-services"
-package_arch="mips_24kc"
-version="2.2.12"
-file_path="build/2025-03-18-175004/wayru-os-services_2.2.12-1_mips_24kc.ipk"
-# api_url="http://localhost:4050/packages/release"
-api_url="https://updates.api.internal.wayru.tech/packages/release"
-bearer_token="TqohHv9dqnetk3bM4cmGMztR97Qy3PgWesb3Xj72RBLBhAVAx2VCzXTfJ279JsYb"
+# --- LOAD .env CONFIGURATION ---
+ENV_FILE="./.env"
 
-# Verify the file exists
-if [ ! -f "$file_path" ]; then
-    echo "Error: File '$file_path' does not exist."
-    exit 1
+if [ ! -f "$ENV_FILE" ]; then
+  echo "Error: .env file not found at $ENV_FILE"
+  exit 1
 fi
 
-# Automatically calculate the SHA-256 checksum
-checksum="$(sha256sum "$file_path" | cut -d' ' -f1)"
-echo "Calculated checksum: $checksum"
+# Load environment variables from the file
+set -o allexport
+source "$ENV_FILE"
+set +o allexport
 
-# Automatically determine the file size in bytes
+# Check required variables
+if [[ -z "$API_URL" || -z "$BEARER_TOKEN" ]]; then
+  echo "Error: API_URL or BEARER_TOKEN not defined in .env"
+  exit 1
+fi
+
+# --- CONFIGURATION ---
+package_name="wayru-os-services"
+api_url="$API_URL"
+bearer_token="$BEARER_TOKEN"
+
+# --- VALID ARCHITECTURES ---
+valid_architectures=(
+  "aarch64_cortex-a53_filogic"
+  "aarch64_cortex-a53_mt7622"
+  "arm_cortex-a7_neon-vfpv4_mikrotik"
+  "mips_24kc_generic"
+  "mipsel_24kc_mt7621"
+)
+
+# --- INPUT VALIDATION ---
+if [ $# -ne 1 ]; then
+  echo "Usage: $0 <package_architecture_name>"
+  echo "Valid options are:"
+  for arch in "${valid_architectures[@]}"; do
+    echo "  - $arch"
+  done
+  exit 1
+fi
+
+package_arch="$1"
+
+# --- CHECK IF INPUT IS ALLOWED ---
+is_valid=false
+for arch in "${valid_architectures[@]}"; do
+  if [[ "$package_arch" == "$arch" ]]; then
+    is_valid=true
+    break
+  fi
+done
+
+if [ "$is_valid" != "true" ]; then
+  echo "Error: '$package_arch' is not a valid architecture."
+  echo "Allowed values:"
+  for arch in "${valid_architectures[@]}"; do
+    echo "  - $arch"
+  done
+  exit 1
+fi
+
+full_path="build/$package_arch"
+
+if [ ! -d "$full_path" ]; then
+  echo "Error: Directory '$full_path' does not exist."
+  exit 1
+fi
+
+# --- READ VERSION FILE ---
+if [ ! -f "./VERSION" ]; then
+  echo "Error: VERSION file not found."
+  exit 1
+fi
+
+version=$(cat ./VERSION | tr -d '[:space:]')
+
+if [[ -z "$version" ]]; then
+  echo "Error: VERSION file is empty."
+  exit 1
+fi
+
+echo "Package name: $package_name"
+echo "Architecture: $package_arch"
+echo "Version: $version"
+
+# --- EXTRACT ARCH AND SUBTARGET FROM package_arch ---
+subtarget=$(echo "$package_arch" | awk -F'_' '{print $NF}')
+arch=$(echo "$package_arch" | sed "s/_${subtarget}$//")
+
+# --- FIND THE .ipk FILE IN THE FOLDER ---
+file_path=$(find "$full_path" -maxdepth 1 -type f -name "${package_name}_${version}-*_*.ipk" | grep "_${arch}.ipk" | sort | tail -n 1)
+
+if [[ ! -f "$file_path" ]]; then
+  echo "Error: No .ipk file found for version $version in $full_path"
+  exit 1
+fi
+
+echo "Found .ipk file: $file_path"
+
+# --- CALCULATE CHECKSUM AND SIZE ---
+checksum=$(sha256sum "$file_path" | cut -d' ' -f1)
 size_bytes=$(stat -c%s "$file_path")
+
+echo "SHA256 checksum: $checksum"
 echo "File size: $size_bytes bytes"
 
-# Create JSON metadata
-metadata="{\"package_name\":\"$package_name\",\"package_architecture_name\":\"$package_arch\",\"version\":\"$version\",\"storage_path\":\"$file_path\",\"checksum\":\"$checksum\",\"size_bytes\":$size_bytes}"
+# --- CREATE JSON METADATA USING jq ---
+metadata=$(jq -n \
+  --arg name "$package_name" \
+  --arg arch_name "$package_arch" \
+  --arg version "$version" \
+  --arg path "$file_path" \
+  --arg checksum "$checksum" \
+  --argjson size "$size_bytes" \
+  '{
+    package_name: $name,
+    package_architecture_name: $arch_name,
+    version: $version,
+    storage_path: $path,
+    checksum: $checksum,
+    size_bytes: $size
+  }')
 
-echo "Sending package release request..."
-echo "Metadata: $metadata"
-echo "File: $file_path"
-echo "API URL: $api_url"
+echo "Prepared JSON metadata:"
+echo "$metadata" | jq
 
-# Execute the curl command
-response=$(curl -X POST \
+# --- SEND PACKAGE TO BACKEND ---
+echo "Sending package release request to $api_url..."
+
+response=$(curl -s -X POST \
   -H "Authorization: Bearer $bearer_token" \
   -H "Content-Type: multipart/form-data" \
   -F "metadata=$metadata" \
   -F "package=@$file_path" \
   "$api_url")
 
-# Try to format with jq if it's valid JSON, otherwise print raw response
+# --- DISPLAY SERVER RESPONSE ---
+echo "Server response:"
 echo "$response" | jq 2>/dev/null || echo "$response"

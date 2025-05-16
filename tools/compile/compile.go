@@ -10,7 +10,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/docker/docker/api/types"
@@ -100,14 +99,12 @@ func main() {
 		fmt.Sprintf("sdk_%s_%s", selectedBuild.Architecture, selectedBuild.Subtarget),
 	)
 
-	timestamp := time.Now().Format("2006-01-02-150405")
-
 	// Clean up and set up directories
 	fmt.Println("Cleaning and setting up directories")
 	os.RemoveAll(feedDir)
 	os.MkdirAll(filepath.Join(feedDir, "admin", "wayru-os-services"), 0755)
-	archDir := fmt.Sprintf("%s_%s_%s", selectedBuild.Target, selectedBuild.Subtarget, selectedBuild.Architecture)
-	outputDir := filepath.Join(buildDir, archDir, timestamp)
+	archDir := fmt.Sprintf("%s_%s", selectedBuild.Architecture, selectedBuild.Subtarget)
+	outputDir := filepath.Join(buildDir, archDir)
 	os.MkdirAll(outputDir, 0755)
 
 	// Copy source files into feed
@@ -208,8 +205,6 @@ func main() {
 		)
 
 	}
-
-	os.MkdirAll(outputDir, 0755)
 
 	err = runDockerContainerFromImage(
 		imageName,

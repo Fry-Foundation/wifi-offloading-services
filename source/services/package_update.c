@@ -38,7 +38,7 @@ typedef struct {
 void send_package_status(PackageUpdateTaskContext *ctx, const char* status, const char* error_message, const char* new_version) {
     // Url
     char package_status_url[256];
-    snprintf(package_status_url, sizeof(package_status_url), "%s/%s", config.updates_api, PACKAGE_STATUS_ENDPOINT);
+    snprintf(package_status_url, sizeof(package_status_url), "%s/%s", config.devices_api, PACKAGE_STATUS_ENDPOINT);
 
     // Request body (note that error_message is optional)
     json_object *json_body = json_object_new_object();
@@ -232,7 +232,7 @@ Result download_package(PackageUpdateTaskContext* ctx, const char* download_link
 Result send_package_check_request(PackageUpdateTaskContext *ctx) {
     // Url
     char package_update_url[256];
-    snprintf(package_update_url, sizeof(package_update_url), "%s/%s", config.updates_api, PACKAGE_CHECK_ENDPOINT);
+    snprintf(package_update_url, sizeof(package_update_url), "%s/%s", config.devices_api, PACKAGE_CHECK_ENDPOINT);
     print_debug(&csl, "package update url: %s", package_update_url);
 
     // Request body

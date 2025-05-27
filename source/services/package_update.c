@@ -168,7 +168,7 @@ Result verify_package_checksum(const char *file_path, const char* checksum) {
     // Compare the calculated checksum with the expected one
     if (strcmp(calculated_checksum, checksum) == 0) {
         print_debug(&csl, "Checksum verification successful");
-        return ok(true);
+        return ok(NULL);
     } else {
         print_error(&csl, "Checksum mismatch: expected %s, got %s", checksum, calculated_checksum);
         return error(3, "Checksum verification failed");

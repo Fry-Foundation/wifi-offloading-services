@@ -9,6 +9,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define DEVICE_STATUS_ENDPOINT "/api/nfnode/device-status"
 

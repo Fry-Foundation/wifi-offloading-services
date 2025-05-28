@@ -125,11 +125,10 @@ Install the clang-format util:
 sudo apt install clang-format
 ```
 
-
-Run the `format-c` script from the `wayru-os-services` repo:
+Run the `format` script from the `wayru-os-services` repo:
 
 ```bash
-bash format-c
+just format
 ```
 
 ### LSP

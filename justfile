@@ -12,7 +12,7 @@ beargen:
 
 # Format code
 format:
-    cd tools && ./format.sh
+    cd tools/format && ./format.sh
 
 # Compile for specific architecture
 compile arch:

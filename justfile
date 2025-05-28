@@ -6,7 +6,7 @@ default:
 dev:
     @make -f Makefile-dev.mk
 
-# Generate compilation database
+# Generate compilation database (compile_commands.json)
 beargen:
     cd tools && ./beargen.sh
 

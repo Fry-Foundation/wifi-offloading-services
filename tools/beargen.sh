@@ -6,4 +6,7 @@ then
     exit
 fi
 
+# Change to project root directory to find Makefile-dev.mk
+cd "$(dirname "$0")/.."
+
 bear -- make -f Makefile-dev.mk compile-only

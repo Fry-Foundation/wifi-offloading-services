@@ -134,6 +134,6 @@ just format
 ### LSP
 The langauge server protocol (LSP) for C should work out of the box with VSCode.
 
-On other editors you can use clangd. But make sure to run `generate_compile_commands.sh` so that clangd correctly recognizes the include paths.
+On other editors you can use clangd. But make sure to run `just beargen` so that clangd correctly recognizes the include paths.
 
 You will need to have the `bear` tool installed to run this script: [https://github.com/rizsotto/Bear](https://github.com/rizsotto/Bear)

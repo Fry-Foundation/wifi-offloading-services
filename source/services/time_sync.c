@@ -2,9 +2,9 @@
 #include "lib/console.h"
 #include "lib/script_runner.h"
 #include "services/config.h"
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <unistd.h>
 
 static Console csl = {
@@ -16,7 +16,7 @@ void time_sync_task(Scheduler *sch, void *task_context) {
 
     char command[256];
     snprintf(command, sizeof(command), "ntpdate %s", config.time_sync_server);
-    char* result = run_script(command);
+    char *result = run_script(command);
     print_debug(&csl, "time sync result: %s", result);
     free(result);
 

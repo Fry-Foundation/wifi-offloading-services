@@ -1,11 +1,11 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include "lib/console.h"
 #include "lib/http-requests.h"
 #include "lib/retry.h"
-#include "lib/console.h"
 #include "services/config.h"
 #include "services/diagnostic.h"
 #include "stdbool.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 static Console csl = {
@@ -75,11 +75,9 @@ bool wayru_health() {
     } else {
         return true;
     }
-
-
 }
 
-bool wayru_check(){
+bool wayru_check() {
     RetryConfig config;
     config.retry_func = wayru_health;
     config.retry_params = NULL;

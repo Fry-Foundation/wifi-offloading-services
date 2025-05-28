@@ -1,9 +1,9 @@
 #ifndef CSR_H
 #define CSR_H
 
+#include <lib/result.h>
 #include <openssl/evp.h>
 #include <stdbool.h>
-# include <lib/result.h>
 
 typedef struct {
     const unsigned char *country;

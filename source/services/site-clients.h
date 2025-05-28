@@ -5,10 +5,7 @@
 #include "services/mqtt.h"
 #include "services/nds.h"
 
-typedef enum {
-    Connect,
-    Disconnect
-} SiteEventType;
+typedef enum { Connect, Disconnect } SiteEventType;
 
 typedef struct {
     SiteEventType type;

@@ -350,7 +350,7 @@ bool is_token_valid(AccessToken *access_token) {
         return false;
     }
 
-        print_debug(&csl, "Current time: %ld, Expires at: %ld", current_time, access_token->expires_at_seconds);
+    print_debug(&csl, "Current time: %ld, Expires at: %ld", current_time, access_token->expires_at_seconds);
 
     if (current_time >= access_token->expires_at_seconds) {
         print_debug(&csl, "Access token has expired");

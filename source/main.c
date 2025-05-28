@@ -1,4 +1,5 @@
 #include "lib/console.h"
+#include "lib/network_check.h"
 #include "lib/scheduler.h"
 #include "services/access_token.h"
 #include "services/commands.h"
@@ -6,25 +7,24 @@
 #include "services/device-context.h"
 #include "services/device_info.h"
 #include "services/device_status.h"
+#include "services/diagnostic.h"
+#include "services/exit_handler.h"
 #include "services/firmware_upgrade.h"
-#include "services/package_update.h"
 #include "services/monitoring.h"
 #include "services/mqtt-cert.h"
 #include "services/mqtt.h"
+#include "services/nds.h"
+#include "services/package_update.h"
 #include "services/radsec_cert.h"
 #include "services/reboot.h"
 #include "services/registration.h"
 #include "services/site-clients.h"
 #include "services/speedtest.h"
-#include "services/diagnostic.h"
-#include "services/exit_handler.h"
-#include "services/nds.h"
-#include "lib/network_check.h"
 #include "services/time_sync.h"
+#include <lib/retry.h>
 #include <mosquitto.h>
 #include <stdbool.h>
 #include <unistd.h>
-#include <lib/retry.h>
 
 static Console csl = {
     .topic = "main",

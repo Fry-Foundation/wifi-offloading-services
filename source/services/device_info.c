@@ -298,7 +298,7 @@ char *get_arch() {
         return NULL;
     }
 
-    subtarget++; 
+    subtarget++;
 
     snprintf(arch, sizeof(arch), "%s_%s", distrib_arch, subtarget);
     return arch;

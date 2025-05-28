@@ -5,9 +5,9 @@
 #include "services/exit_handler.h"
 #include "services/registration.h"
 #include <lib/console.h>
-#include <services/mqtt-cert.h>
 #include <mosquitto.h>
 #include <services/config.h>
+#include <services/mqtt-cert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -51,7 +51,7 @@ void on_connect(struct mosquitto *mosq, void *obj, int reason_code) {
     }
 }
 
-void on_disconnect(struct mosquitto *mosq, void *obj, int reason_code){
+void on_disconnect(struct mosquitto *mosq, void *obj, int reason_code) {
     print_debug(&csl, "MQTT client on_disconnect callback, reason_code: %d", reason_code);
     print_debug(&csl, "disconnecting from the broker");
 }
@@ -234,7 +234,8 @@ void resubscribe_mqtt(Mosq *mosq) {
     for (int i = 0; i < topic_callbacks_count; i++) {
         int rc = mosquitto_subscribe(mosq, NULL, topic_callbacks[i].topic, topic_callbacks[i].qos);
         if (rc != MOSQ_ERR_SUCCESS) {
-            print_error(&csl, "unable to resubscribe to the topic '%s'. %s", topic_callbacks[i].topic, mosquitto_strerror(rc));
+            print_error(&csl, "unable to resubscribe to the topic '%s'. %s", topic_callbacks[i].topic,
+                        mosquitto_strerror(rc));
         } else {
             print_info(&csl, "resubscribed to the topic %s successfully", topic_callbacks[i].topic);
         }
@@ -242,18 +243,18 @@ void resubscribe_mqtt(Mosq *mosq) {
 }
 
 struct mosquitto *reinit_mosquitto(Mosq *mosq, Registration *registration, AccessToken *access_token) {
-    
+
     const char *mqtt_user = access_token->token;
     const char *mqtt_password = "any";
-    //Reinitialize the Mosquitto client instance
+    // Reinitialize the Mosquitto client instance
     int rc = mosquitto_reinitialise(mosq, registration->wayru_device_id, CLEAN_SESSION, NULL);
-    if (rc != MOSQ_ERR_SUCCESS){
+    if (rc != MOSQ_ERR_SUCCESS) {
         print_error(&csl, "unable to reinitialise Mosquitto client instance. %s\n", mosquitto_strerror(rc));
         cleanup_mqtt(&mosq);
         mosquitto_lib_cleanup();
         return NULL;
     }
-    
+
     if (!mosq) {
         print_error(&csl, "unable to reinitialise Mosquitto client instance.\n");
         cleanup_mqtt(&mosq);
@@ -311,7 +312,6 @@ struct mosquitto *reinit_mosquitto(Mosq *mosq, Registration *registration, Acces
     return mosq;
 }
 
-
 // @todo should probably exit the program if refresh fails
 void refresh_mosquitto_access_token(struct mosquitto *mosq, AccessToken *access_token) {
     int pw_set = mosquitto_username_pw_set(mosq, access_token->token, "any");
@@ -328,59 +328,59 @@ void mqtt_task(Scheduler *sch, void *task_context) {
     print_info(&csl, "running mqtt task");
     int res = mosquitto_loop(context->mosq, -1, 1);
     switch (res) {
-        case MOSQ_ERR_SUCCESS:
-            print_info(&csl, "mosquitto loop success");
-            if(context-> default_attempt_count > 0) {
-                context->default_attempt_count = 0;
-            }
-            break;
-        case MOSQ_ERR_INVAL:
-            print_error(&csl, "mosquitto loop invalid parameters");
-            break;
-        case MOSQ_ERR_NOMEM:
-            print_error(&csl, "mosquitto loop out of memory");
-            break;
-        case MOSQ_ERR_NO_CONN:
-            print_error(&csl, "mosquitto loop no connection");
-            reconnect(context->mosq, context, res);
-            break;
-        case MOSQ_ERR_CONN_LOST:
-            print_error(&csl, "mosquitto loop connection lost");
-            reconnect(context->mosq, context, res);
-            break;
-        case MOSQ_ERR_PROTOCOL:
-            print_error(&csl, "mosquitto loop protocol error");
-            break;
-        case MOSQ_ERR_ERRNO:
-            print_error(&csl, "mosquitto loop error");
-            reconnect(context->mosq, context, res);
-            break;
-        default:
-            // Renitialize the mosquitto client when the result is unknown 
-            // (usually due to a session timeout or any unkown response code)
-            print_error(&csl, "mosquitto loop unknown result");
-            print_info(&csl, "reinitializing mosquitto client");
-            // Reinitialize the mosquitto client
-            context->mosq = reinit_mosquitto(context->mosq, context->registration, context->access_token);
-            if(context->mosq == NULL) {
-                // If mosq is NULL then initialize the mosquitto client again
-                print_error(&csl, "failed to reinitialize mosquitto client");
-                context->mosq = init_mosquitto(context->registration, context->access_token);
-            }
-            // Increment the default attempt count
-            context->default_attempt_count++;
-            if (context->default_attempt_count > 3) {
-                print_error(&csl, "exceeded maximum retries for unknown result");
-                cleanup_and_exit(1);
-            }
-            print_info(&csl, "mosquitto client reinitialized successfully");
-            // Refresh the mosquitto client access token
-            refresh_mosquitto_access_token(context->mosq, context->access_token);
-            // Resubscribe to the topics
-            resubscribe_mqtt(context->mosq);
-            //Re-run the mqtt task
-            mqtt_task(sch, context);
-            return;
+    case MOSQ_ERR_SUCCESS:
+        print_info(&csl, "mosquitto loop success");
+        if (context->default_attempt_count > 0) {
+            context->default_attempt_count = 0;
+        }
+        break;
+    case MOSQ_ERR_INVAL:
+        print_error(&csl, "mosquitto loop invalid parameters");
+        break;
+    case MOSQ_ERR_NOMEM:
+        print_error(&csl, "mosquitto loop out of memory");
+        break;
+    case MOSQ_ERR_NO_CONN:
+        print_error(&csl, "mosquitto loop no connection");
+        reconnect(context->mosq, context, res);
+        break;
+    case MOSQ_ERR_CONN_LOST:
+        print_error(&csl, "mosquitto loop connection lost");
+        reconnect(context->mosq, context, res);
+        break;
+    case MOSQ_ERR_PROTOCOL:
+        print_error(&csl, "mosquitto loop protocol error");
+        break;
+    case MOSQ_ERR_ERRNO:
+        print_error(&csl, "mosquitto loop error");
+        reconnect(context->mosq, context, res);
+        break;
+    default:
+        // Renitialize the mosquitto client when the result is unknown
+        // (usually due to a session timeout or any unkown response code)
+        print_error(&csl, "mosquitto loop unknown result");
+        print_info(&csl, "reinitializing mosquitto client");
+        // Reinitialize the mosquitto client
+        context->mosq = reinit_mosquitto(context->mosq, context->registration, context->access_token);
+        if (context->mosq == NULL) {
+            // If mosq is NULL then initialize the mosquitto client again
+            print_error(&csl, "failed to reinitialize mosquitto client");
+            context->mosq = init_mosquitto(context->registration, context->access_token);
+        }
+        // Increment the default attempt count
+        context->default_attempt_count++;
+        if (context->default_attempt_count > 3) {
+            print_error(&csl, "exceeded maximum retries for unknown result");
+            cleanup_and_exit(1);
+        }
+        print_info(&csl, "mosquitto client reinitialized successfully");
+        // Refresh the mosquitto client access token
+        refresh_mosquitto_access_token(context->mosq, context->access_token);
+        // Resubscribe to the topics
+        resubscribe_mqtt(context->mosq);
+        // Re-run the mqtt task
+        mqtt_task(sch, context);
+        return;
     }
     schedule_task(sch, time(NULL) + TASK_INTERVAL, mqtt_task, "mqtt task", context);
 }
@@ -397,7 +397,7 @@ void mqtt_service(Scheduler *sch, Mosq *mosq, Registration *registration, Access
     context->registration = registration;
     context->access_token = access_token;
     context->default_attempt_count = 0;
-        
+
     schedule_task(sch, time(NULL), mqtt_task, "mqtt task", context);
 }
 

@@ -1,11 +1,11 @@
 #include "key_pair.h"
 #include "lib/console.h"
+#include <json-c/json.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/pem.h>
 #include <openssl/x509v3.h>
 #include <stdbool.h>
-#include <json-c/json.h>
 
 #define KEY_PATH_SIZE 512
 

@@ -1,14 +1,14 @@
 #include "result.h"
 #include <string.h>
 
-Result ok(void* data) {
+Result ok(void *data) {
     Result result;
     result.ok = true;
     result.data = data;
     return result;
 }
 
-Result error(int code, const char* message) {
+Result error(int code, const char *message) {
     Result result;
     result.ok = false;
     result.error.code = code;

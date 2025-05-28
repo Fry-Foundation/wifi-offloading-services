@@ -11,8 +11,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #define FIRMWARE_ENDPOINT "/firmware-updates/check-updates"
 #define START_UPGRADE_ENDPOINT "/firmware-updates/start"
@@ -64,7 +64,7 @@ int run_sysupgrade() {
 void report_upgrade_status(AccessToken *access_token, int upgrade_attempt_id, const char *upgrade_status) {
     char report_status_url[256];
     snprintf(report_status_url, sizeof(report_status_url), "%s%s", config.accounting_api, REPORT_STATUS_ENDPOINT);
-    //snprintf(report_status_url, sizeof(report_status_url), "%s%s", "http://localhost:4050", REPORT_STATUS_ENDPOINT);
+    // snprintf(report_status_url, sizeof(report_status_url), "%s%s", "http://localhost:4050", REPORT_STATUS_ENDPOINT);
 
     json_object *json_body = json_object_new_object();
     json_object_object_add(json_body, "upgrade_attempt_id", json_object_new_int(upgrade_attempt_id));
@@ -151,10 +151,10 @@ bool check_memory_and_proceed() {
     // Run Lua script to get free memory
     char script_file[256];
     snprintf(script_file, sizeof(script_file), "%s%s", config.scripts_path, "/retrieve-data.lua");
-    char* output = run_script(script_file);
+    char *output = run_script(script_file);
     if (output == NULL) {
         print_error(&csl, "failed to run script %s", script_file);
-        //report_upgrade_status(access_token, upgrade_attempt_id, "memory_check_failed");
+        // report_upgrade_status(access_token, upgrade_attempt_id, "memory_check_failed");
         return false;
     }
 
@@ -217,45 +217,42 @@ void handle_download_result(AccessToken *access_token, int upgrade_attempt_id, b
 
             bool check_memory = check_memory_and_proceed();
 
-                if (check_memory){
-                    report_upgrade_status(access_token, upgrade_attempt_id, "sufficient_memory");
+            if (check_memory) {
+                report_upgrade_status(access_token, upgrade_attempt_id, "sufficient_memory");
 
-                    int firmware_test = run_firmware_test();
+                int firmware_test = run_firmware_test();
 
-                    if (firmware_test == 1){
+                if (firmware_test == 1) {
 
-                        print_info(&csl, "firmware test successful, proceeding with upgrade");
+                    print_info(&csl, "firmware test successful, proceeding with upgrade");
 
-                        report_upgrade_status(access_token, upgrade_attempt_id, "test_successfull");
+                    report_upgrade_status(access_token, upgrade_attempt_id, "test_successfull");
 
-                        int upgrade_result = run_sysupgrade();
+                    int upgrade_result = run_sysupgrade();
 
-                        if (upgrade_result == -1) {
-                            report_upgrade_status(access_token, upgrade_attempt_id, "sysupgrade_failed");
-                            // schedule_task(NULL, time(NULL) + 3600, firmware_upgrade_task, "sysupgrade_retry");
+                    if (upgrade_result == -1) {
+                        report_upgrade_status(access_token, upgrade_attempt_id, "sysupgrade_failed");
+                        // schedule_task(NULL, time(NULL) + 3600, firmware_upgrade_task, "sysupgrade_retry");
+                        // Reschedule task
+
+                        /*if (upgrade_result == 1) {
+                            report_upgrade_status(upgrade_attempt_id, "upgrading");
+                        } else {
+                            report_upgrade_status(upgrade_attempt_id, "sysupgrade_failed");
                             // Reschedule task
-
-
-                            /*if (upgrade_result == 1) {
-                                report_upgrade_status(upgrade_attempt_id, "upgrading");
-                            } else {
-                                report_upgrade_status(upgrade_attempt_id, "sysupgrade_failed");
-                                // Reschedule task
-                                // schedule_task(NULL, time(NULL) + 3600, firmware_upgrade_task, "sysupgrade_retry");
-                            }*/
-                        }
+                            // schedule_task(NULL, time(NULL) + 3600, firmware_upgrade_task, "sysupgrade_retry");
+                        }*/
                     }
-                    else{
-                        print_info(&csl, "firmware test failed, upgrade does not continue");
+                } else {
+                    print_info(&csl, "firmware test failed, upgrade does not continue");
 
-                        report_upgrade_status(access_token, upgrade_attempt_id, "test_failed");
-                   }
-
+                    report_upgrade_status(access_token, upgrade_attempt_id, "test_failed");
                 }
-                else {
 
-                    report_upgrade_status(access_token, upgrade_attempt_id, "insufficient_memory");
-                }
+            } else {
+
+                report_upgrade_status(access_token, upgrade_attempt_id, "insufficient_memory");
+            }
 
         } else {
             // Verification failed
@@ -285,7 +282,7 @@ void send_firmware_check_request(const char *codename,
     // Url
     char firmware_upgrade_url[256];
     snprintf(firmware_upgrade_url, sizeof(firmware_upgrade_url), "%s%s", config.accounting_api, FIRMWARE_ENDPOINT);
-    //snprintf(firmware_upgrade_url, sizeof(firmware_upgrade_url), "%s%s", "http://localhost:4050", FIRMWARE_ENDPOINT);
+    // snprintf(firmware_upgrade_url, sizeof(firmware_upgrade_url), "%s%s", "http://localhost:4050", FIRMWARE_ENDPOINT);
 
     print_debug(&csl, "firmware endpoint: %s", firmware_upgrade_url);
 
@@ -386,7 +383,6 @@ void send_firmware_check_request(const char *codename,
             .download_path = download_path,
         };
 
-
         HttpResult download_result = http_download(&download_options);
         handle_download_result(access_token, upgrade_attempt_id, !download_result.is_error);
 
@@ -450,7 +446,7 @@ void firmware_upgrade_on_boot(Registration *registration, DeviceInfo *device_inf
     print_debug(&csl, "starting firmware_upgrade_on_boot");
     char verify_status_url[256];
     snprintf(verify_status_url, sizeof(verify_status_url), "%s%s", config.accounting_api, VERIFY_STATUS_ENDPOINT);
-    //snprintf(verify_status_url, sizeof(verify_status_url), "%s%s", "http://localhost:4050", VERIFY_STATUS_ENDPOINT);
+    // snprintf(verify_status_url, sizeof(verify_status_url), "%s%s", "http://localhost:4050", VERIFY_STATUS_ENDPOINT);
 
     if (registration == NULL || registration->wayru_device_id == NULL) {
         print_error(&csl, "registration or wayru_device_id is NULL");

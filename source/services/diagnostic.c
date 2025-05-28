@@ -1,10 +1,10 @@
 #include "diagnostic.h"
 #include "lib/console.h"
-#include "lib/scheduler.h"
 #include "lib/network_check.h"
-#include "services/device_info.h"
-#include "services/config.h"
+#include "lib/scheduler.h"
 #include "services/access_token.h"
+#include "services/config.h"
+#include "services/device_info.h"
 #include "services/exit_handler.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,14 +46,18 @@ void init_diagnostic_service(DeviceInfo *device_info) {
     diagnostic_device_info = device_info;
 }
 
+// Run init diagnostics
+void run_init_diagnostics() { print_debug(&csl, "Running init diagnostics"); }
+
 // Update LED status based on internet connectivity
 void update_led_status(bool ok, const char *context) {
     if (strcmp(diagnostic_device_info->name, "Genesis") == 0 || strcmp(diagnostic_device_info->name, "Odyssey") == 0) {
         print_info(&csl, "Updating LEDs for device: %s", diagnostic_device_info->name, context);
 
-        const char *blue_led = strcmp(diagnostic_device_info->name, "Odyssey") == 0 ? BLUE_LED_TRIGGER_ODYSSEY : BLUE_LED_TRIGGER;
+        const char *blue_led =
+            strcmp(diagnostic_device_info->name, "Odyssey") == 0 ? BLUE_LED_TRIGGER_ODYSSEY : BLUE_LED_TRIGGER;
 
-        //print_info(&csl, "Device is Genesis. Updating LEDs. Context: %s", context);
+        // print_info(&csl, "Device is Genesis. Updating LEDs. Context: %s", context);
         if (ok) {
             print_info(&csl, "Setting LED to indicate connectivity. Context: %s", context);
             set_led_trigger(GREEN_LED_TRIGGER, "default-on"); // Solid green
@@ -74,7 +78,7 @@ void diagnostic_task(Scheduler *sch, void *task_context) {
 
     // Check internet status
     bool internet_status = internet_check();
-    //update_led_status(internet_status, "Internet check - Diagnostic task");
+    // update_led_status(internet_status, "Internet check - Diagnostic task");
     print_info(&csl, "Diagnostic internet status: %s", internet_status ? "connected" : "disconnected");
     if (!internet_status) {
         print_error(&csl, "No internet connection. Requesting exit.");

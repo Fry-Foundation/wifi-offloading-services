@@ -1,9 +1,9 @@
 #include "exit_handler.h"
 #include "lib/console.h"
 #include <pthread.h>
-#include <stdlib.h>
 #include <signal.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 static Console csl = {
     .topic = "exit handler",

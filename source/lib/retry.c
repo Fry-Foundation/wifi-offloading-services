@@ -1,5 +1,5 @@
-#include <lib/retry.h>
 #include <lib/result.h>
+#include <lib/retry.h>
 #include <unistd.h>
 
 bool retry(RetryConfig *config) {
@@ -13,4 +13,3 @@ bool retry(RetryConfig *config) {
 
     return result;
 }
-

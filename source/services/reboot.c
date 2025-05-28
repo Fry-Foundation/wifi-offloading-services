@@ -9,7 +9,7 @@
 #include <unistd.h>
 
 static Console csl = {
-   .topic = "reboot",
+    .topic = "reboot",
 };
 void execute_reboot() {
     if (config.dev_env)

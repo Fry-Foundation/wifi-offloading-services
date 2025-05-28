@@ -35,7 +35,10 @@ typedef struct {
 #define PACKAGE_CHECK_ENDPOINT "packages/check"
 #define UPDATE_MARKER_FILE "/tmp/wayru-os-services-update-marker"
 
-void send_package_status(PackageUpdateTaskContext *ctx, const char* status, const char* error_message, const char* new_version) {
+void send_package_status(PackageUpdateTaskContext *ctx,
+                         const char *status,
+                         const char *error_message,
+                         const char *new_version) {
     // Url
     char package_status_url[256];
     snprintf(package_status_url, sizeof(package_status_url), "%s/%s", config.devices_api, PACKAGE_STATUS_ENDPOINT);
@@ -111,10 +114,7 @@ void check_package_update_completion(Registration *registration, DeviceInfo *dev
         if (strcmp(version, device_info->os_services_version) == 0) {
             print_info(&csl, "Package update completed successfully");
             PackageUpdateTaskContext ctx = {
-                .device_info = device_info,
-                .registration = registration,
-                .access_token = access_token
-            };
+                .device_info = device_info, .registration = registration, .access_token = access_token};
             send_package_status(&ctx, "completed", NULL, NULL);
         } else {
             print_error(&csl, "Package update failed");
@@ -134,7 +134,7 @@ void write_update_marker(const char *new_version) {
     }
 }
 
-void update_package(const char* file_path) {
+void update_package(const char *file_path) {
     char command[256];
     snprintf(command, sizeof(command), "%s/%s %s", config.scripts_path, "run_opkg_upgrade.sh", file_path);
     char *output = run_script(command);
@@ -143,7 +143,7 @@ void update_package(const char* file_path) {
     }
 }
 
-Result verify_package_checksum(const char *file_path, const char* checksum) {
+Result verify_package_checksum(const char *file_path, const char *checksum) {
     if (file_path == NULL || checksum == NULL) {
         return error(1, "Invalid parameters: file_path or checksum is NULL");
     }
@@ -187,7 +187,7 @@ Result verify_package_checksum(const char *file_path, const char* checksum) {
  *           The caller must free this pointer when done.
  *         - On failure (ok=false): Error details.
  */
-Result download_package(PackageUpdateTaskContext* ctx, const char* download_link, const char* checksum) {
+Result download_package(PackageUpdateTaskContext *ctx, const char *download_link, const char *checksum) {
     if (ctx == NULL || download_link == NULL || checksum == NULL) {
         print_error(&csl, "Invalid parameters");
         return error(-1, "Invalid parameters");
@@ -359,7 +359,7 @@ Result send_package_check_request(PackageUpdateTaskContext *ctx) {
     print_debug(&csl, "size bytes: %s", size_bytes);
     print_debug(&csl, "new version: %s", new_version);
 
-    PackageCheckResult* check_result = malloc(sizeof(PackageCheckResult));
+    PackageCheckResult *check_result = malloc(sizeof(PackageCheckResult));
     if (!check_result) {
         return error(-1, "failed to allocate memory for PackageCheckResult");
     }
@@ -403,7 +403,8 @@ void package_update_task(Scheduler *sch, void *task_context) {
     Result result = send_package_check_request(ctx);
     if (!result.ok) {
         print_error(&csl, result.error.message);
-        schedule_task(sch, time(NULL) + config.package_update_interval, package_update_task, "package update task", ctx);
+        schedule_task(sch, time(NULL) + config.package_update_interval, package_update_task, "package update task",
+                      ctx);
         return;
     }
 
@@ -411,12 +412,14 @@ void package_update_task(Scheduler *sch, void *task_context) {
     PackageCheckResult *package_check_result = (PackageCheckResult *)result.data;
     if (!package_check_result) {
         print_error(&csl, "failed to parse package check result");
-        schedule_task(sch, time(NULL) + config.package_update_interval, package_update_task, "package update task", ctx);
+        schedule_task(sch, time(NULL) + config.package_update_interval, package_update_task, "package update task",
+                      ctx);
         return;
     }
     if (!package_check_result->update_available) {
         print_info(&csl, "no package update available");
-        schedule_task(sch, time(NULL) + config.package_update_interval, package_update_task, "package update task", ctx);
+        schedule_task(sch, time(NULL) + config.package_update_interval, package_update_task, "package update task",
+                      ctx);
         return;
     }
 
@@ -426,7 +429,8 @@ void package_update_task(Scheduler *sch, void *task_context) {
     Result download_result = download_package(ctx, package_check_result->download_link, package_check_result->checksum);
     if (!download_result.ok) {
         send_package_status(ctx, "error", download_result.error.message, NULL);
-        schedule_task(sch, time(NULL) + config.package_update_interval, package_update_task, "package update task", ctx);
+        schedule_task(sch, time(NULL) + config.package_update_interval, package_update_task, "package update task",
+                      ctx);
         return;
     }
 
@@ -435,7 +439,8 @@ void package_update_task(Scheduler *sch, void *task_context) {
     Result verify_result = verify_package_checksum(download_path, package_check_result->checksum);
     if (!verify_result.ok) {
         send_package_status(ctx, "error", verify_result.error.message, NULL);
-        schedule_task(sch, time(NULL) + config.package_update_interval, package_update_task, "package update task", ctx);
+        schedule_task(sch, time(NULL) + config.package_update_interval, package_update_task, "package update task",
+                      ctx);
         return;
     }
 
@@ -473,9 +478,13 @@ void package_update_task(Scheduler *sch, void *task_context) {
  * @param registration Pointer to the registration information structure.
  * @param access_token Pointer to the access token structure for API authentication.
  *
- * @return void. If memory allocation for the context fails, an error is logged and the function returns without scheduling.
+ * @return void. If memory allocation for the context fails, an error is logged and the function returns without
+ * scheduling.
  */
-void package_update_service(Scheduler *sch, DeviceInfo *device_info, Registration *registration, AccessToken *access_token) {
+void package_update_service(Scheduler *sch,
+                            DeviceInfo *device_info,
+                            Registration *registration,
+                            AccessToken *access_token) {
     PackageUpdateTaskContext *ctx = (PackageUpdateTaskContext *)malloc(sizeof(PackageUpdateTaskContext));
     if (ctx == NULL) {
         print_error(&csl, "failed to allocate memory for package update task context");

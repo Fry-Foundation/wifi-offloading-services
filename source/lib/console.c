@@ -6,11 +6,9 @@
 // Global variable to store the current log level
 ConsoleLevel console_level = CONSOLE_INFO;
 
-void set_console_level(ConsoleLevel level) {
-    console_level = level;
-}
+void set_console_level(ConsoleLevel level) { console_level = level; }
 
-void print_log(const char *topic, const char* label, const char *format, va_list args) {
+void print_log(const char *topic, const char *label, const char *format, va_list args) {
     printf("[%s] ", topic);
     printf("%s: ", label);
     vprintf(format, args);

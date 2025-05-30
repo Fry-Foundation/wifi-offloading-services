@@ -93,7 +93,6 @@ func main() {
 	// Directories
 	buildDir := filepath.Join(projectRoot, "build")
 	feedDir := filepath.Join(projectRoot, "feed")
-	//sdkDir := filepath.Join(projectRoot, fmt.Sprintf("sdk_%s", selectedBuild.Architecture))
 	sdkDir := filepath.Join(
 		projectRoot,
 		fmt.Sprintf("sdk_%s_%s", selectedBuild.Architecture, selectedBuild.Subtarget),
@@ -111,11 +110,11 @@ func main() {
 	// Copy source files into feed
 	fmt.Println("Copying build source to feed directory")
 	copyFile(filepath.Join(projectRoot, "Makefile"), filepath.Join(feedDir, "admin", "wayru-os-services", "Makefile"))
+	copyFile(filepath.Join(projectRoot, "CMakeLists.txt"), filepath.Join(feedDir, "admin", "wayru-os-services", "CMakeLists.txt"))
 	copyFile(filepath.Join(projectRoot, "VERSION"), filepath.Join(feedDir, "admin", "wayru-os-services", "VERSION"))
 	copyDir(filepath.Join(projectRoot, "source"), filepath.Join(feedDir, "admin", "wayru-os-services", "source"))
 
 	// Prepare SDK paths
-
 	var muslSuffix string
 	if selectedBuild.Target == "ipq40xx" && selectedBuild.Subtarget == "mikrotik" {
 		muslSuffix = "musl_eabi"
@@ -204,7 +203,9 @@ func main() {
 			"wayru-package-builder:latest",
 			projectRoot,
 		)
-
+		if err != nil {
+			log.Fatalf("Docker image build failed: %v", err)
+		}
 	}
 
 	err = runDockerContainerFromImage(

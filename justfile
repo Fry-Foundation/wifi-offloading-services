@@ -4,11 +4,12 @@ default:
 
 # Development environment setup
 dev:
-    @make -f Makefile-dev.mk
+    just cmake
+    bash tools/dev.sh
 
 # Generate compilation database (compile_commands.json)
-beargen:
-    cd tools && ./beargen.sh
+compdb:
+    bash tools/compdb.sh
 
 # Format code
 format:
@@ -21,3 +22,8 @@ compile arch:
 # Upload IPK release package
 release arch:
     bash tools/compile/release.sh {{arch}}
+
+# Build with CMake
+cmake:
+    mkdir -p output
+    cd output && cmake .. && make

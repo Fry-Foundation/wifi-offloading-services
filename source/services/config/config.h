@@ -67,7 +67,7 @@ extern Config config;
  * Initialize the configuration system
  * This function applies defaults, processes command line arguments,
  * parses configuration files, and validates the final configuration.
- * 
+ *
  * @param argc Number of command line arguments
  * @param argv Array of command line arguments
  */
@@ -78,4 +78,4 @@ void init_config(int argc, char *argv[]);
  */
 void print_config_debug(void);
 
-#endif // CONFIG_H 
+#endif // CONFIG_H

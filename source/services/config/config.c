@@ -1,7 +1,7 @@
 #include "config.h"
+#include "lib/console.h"
 #include "defaults.h"
 #include "uci_parser.h"
-#include "../../lib/console.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,12 +20,12 @@ Config config = {0};
  * @param buffer_size Size of the buffer
  * @return true if a valid config file path was determined, false otherwise
  */
-static bool determine_config_file_path(bool dev_env, char* config_file_path, size_t buffer_size) {
+static bool determine_config_file_path(bool dev_env, char *config_file_path, size_t buffer_size) {
     if (dev_env) {
         // In dev mode, try multiple possible paths for the config file
         // First try relative to output directory (when run via dev.sh)
         snprintf(config_file_path, buffer_size, "%s", DEV_CONFIG_PATH_1);
-        FILE* test_file = fopen(config_file_path, "r");
+        FILE *test_file = fopen(config_file_path, "r");
         if (test_file == NULL) {
             // If that fails, try relative to project root (when run directly)
             snprintf(config_file_path, buffer_size, "%s", DEV_CONFIG_PATH_2);
@@ -47,9 +47,9 @@ static bool determine_config_file_path(bool dev_env, char* config_file_path, siz
  * @param dev_env Pointer to store whether dev environment was requested
  * @return true if processing was successful, false if program should exit
  */
-static bool process_command_line_args(int argc, char *argv[], bool* dev_env) {
+static bool process_command_line_args(int argc, char *argv[], bool *dev_env) {
     *dev_env = false;
-    
+
     // Check for --dev flag first
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--dev") == 0) {
@@ -57,7 +57,7 @@ static bool process_command_line_args(int argc, char *argv[], bool* dev_env) {
             break;
         }
     }
-    
+
     return true;
 }
 
@@ -79,39 +79,39 @@ static void apply_command_line_overrides(int argc, char *argv[]) {
 
 void init_config(int argc, char *argv[]) {
     bool dev_env = false;
-    
+
     // Process command line arguments
     if (!process_command_line_args(argc, argv, &dev_env)) {
         exit(1);
     }
-    
+
     // Apply default configuration values
     apply_config_defaults(&config);
-    
+
     // Set paths based on environment
     set_config_paths(&config, dev_env);
-    
+
     // Determine config file path
     char config_file_path[PATH_SIZE];
     if (!determine_config_file_path(dev_env, config_file_path, sizeof(config_file_path))) {
         print_error(&csl, "Failed to determine config file path");
         exit(1);
     }
-    
+
     // Parse the UCI config file
     if (!parse_uci_config(config_file_path, &config)) {
         print_error(&csl, "Failed to parse config file, using defaults");
     }
-    
+
     // Apply command line overrides
     apply_command_line_overrides(argc, argv);
-    
+
     // Exit if disabled
     if (!config.enabled) {
         print_info(&csl, "Service is disabled via configuration");
         exit(0);
     }
-    
+
     // Print configuration for debugging
     print_config_debug();
 }
@@ -151,4 +151,4 @@ void print_config_debug(void) {
     print_debug(&csl, "config.nds_interval: %d", config.nds_interval);
     print_debug(&csl, "config.time_sync_server: %s", config.time_sync_server);
     print_debug(&csl, "config.time_sync_interval: %d", config.time_sync_interval);
-} 
+}

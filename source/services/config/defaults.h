@@ -1,8 +1,8 @@
 #ifndef CONFIG_DEFAULTS_H
 #define CONFIG_DEFAULTS_H
 
-#include <stdbool.h>
 #include "config.h"
+#include <stdbool.h>
 
 // Default configuration values
 #define DEFAULT_ENABLED true
@@ -68,13 +68,13 @@
  * Apply default values to the config structure
  * @param config Pointer to the config structure to initialize
  */
-void apply_config_defaults(Config* config);
+void apply_config_defaults(Config *config);
 
 /**
  * Set development or production paths in the config structure
  * @param config Pointer to the config structure
  * @param dev_env Whether to use development environment paths
  */
-void set_config_paths(Config* config, bool dev_env);
+void set_config_paths(Config *config, bool dev_env);
 
-#endif // CONFIG_DEFAULTS_H 
+#endif // CONFIG_DEFAULTS_H

@@ -1,7 +1,7 @@
 #include "device_info.h"
-#include "services/config/config.h"
 #include "lib/console.h"
 #include "lib/script_runner.h"
+#include "services/config/config.h"
 #include "services/did-key.h"
 #include "services/exit_handler.h"
 #include <json-c/json.h>

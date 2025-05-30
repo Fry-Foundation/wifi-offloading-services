@@ -1,6 +1,6 @@
 #include "uci_parser.h"
+#include "lib/console.h"
 #include "config.h"
-#include "../../lib/console.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,22 +14,24 @@ static Console csl = {
  * @param str String to trim (modified in place)
  * @return Pointer to the trimmed string
  */
-static char* trim_whitespace(char* str) {
-    char* end;
-    
+static char *trim_whitespace(char *str) {
+    char *end;
+
     // Trim leading space
-    while(*str == ' ' || *str == '\t') str++;
-    
-    if(*str == 0)  // All spaces?
+    while (*str == ' ' || *str == '\t')
+        str++;
+
+    if (*str == 0) // All spaces?
         return str;
-    
+
     // Trim trailing space
     end = str + strlen(str) - 1;
-    while(end > str && (*end == ' ' || *end == '\t' || *end == '\n' || *end == '\r')) end--;
-    
+    while (end > str && (*end == ' ' || *end == '\t' || *end == '\n' || *end == '\r'))
+        end--;
+
     // Write new null terminator
-    *(end+1) = 0;
-    
+    *(end + 1) = 0;
+
     return str;
 }
 
@@ -38,22 +40,22 @@ static char* trim_whitespace(char* str) {
  * @param str String to process (modified in place)
  * @return Pointer to the string without quotes
  */
-static char* remove_quotes(char* str) {
+static char *remove_quotes(char *str) {
     if (str == NULL) return NULL;
-    
+
     str = trim_whitespace(str);
     int len = strlen(str);
-    
-    if (len >= 2 && str[0] == '\'' && str[len-1] == '\'') {
-        str[len-1] = '\0';
+
+    if (len >= 2 && str[0] == '\'' && str[len - 1] == '\'') {
+        str[len - 1] = '\0';
         return str + 1;
     }
-    
-    if (len >= 2 && str[0] == '"' && str[len-1] == '"') {
-        str[len-1] = '\0';
+
+    if (len >= 2 && str[0] == '"' && str[len - 1] == '"') {
+        str[len - 1] = '\0';
         return str + 1;
     }
-    
+
     return str;
 }
 
@@ -63,7 +65,7 @@ static char* remove_quotes(char* str) {
  * @param option_name Name of the configuration option
  * @param option_value Value of the configuration option
  */
-static void parse_config_option(Config* config, const char* option_name, const char* option_value) {
+static void parse_config_option(Config *config, const char *option_name, const char *option_value) {
     if (strcmp(option_name, "enabled") == 0) {
         int enabled = atoi(option_value);
         config->enabled = (enabled != 0);
@@ -133,51 +135,51 @@ static void parse_config_option(Config* config, const char* option_name, const c
     }
 }
 
-bool parse_uci_config(const char* config_path, Config* config) {
-    FILE* file = fopen(config_path, "r");
+bool parse_uci_config(const char *config_path, Config *config) {
+    FILE *file = fopen(config_path, "r");
     if (file == NULL) {
         print_error(&csl, "Failed to open config file: %s", config_path);
         return false;
     }
-    
+
     char line[512];
     bool in_wayru_section = false;
-    
+
     while (fgets(line, sizeof(line), file)) {
-        char* trimmed_line = trim_whitespace(line);
-        
+        char *trimmed_line = trim_whitespace(line);
+
         // Skip empty lines and comments
         if (strlen(trimmed_line) == 0 || trimmed_line[0] == '#') {
             continue;
         }
-        
+
         // Check for section start
         if (strstr(trimmed_line, "config wayru_os_services") != NULL) {
             in_wayru_section = true;
             continue;
         }
-        
+
         // Check for new section (exit wayru section)
         if (strncmp(trimmed_line, "config ", 7) == 0 && strstr(trimmed_line, "wayru_os_services") == NULL) {
             in_wayru_section = false;
             continue;
         }
-        
+
         // Parse options only if we're in the wayru section
         if (in_wayru_section && strncmp(trimmed_line, "option ", 7) == 0) {
-            char* option_line = trimmed_line + 7; // Skip "option "
-            char* space_pos = strchr(option_line, ' ');
-            
+            char *option_line = trimmed_line + 7; // Skip "option "
+            char *space_pos = strchr(option_line, ' ');
+
             if (space_pos != NULL) {
                 *space_pos = '\0';
-                char* option_name = option_line;
-                char* option_value = remove_quotes(space_pos + 1);
-                
+                char *option_name = option_line;
+                char *option_value = remove_quotes(space_pos + 1);
+
                 parse_config_option(config, option_name, option_value);
             }
         }
     }
-    
+
     fclose(file);
     return true;
-} 
+}

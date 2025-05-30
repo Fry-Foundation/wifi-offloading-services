@@ -2,23 +2,23 @@
 
 /*
  * Diagnostic Service - Network and API Health Monitoring
- * 
+ *
  * This service implements a two-tier diagnostic strategy:
- * 
+ *
  * 1. INITIALIZATION DIAGNOSTICS (comprehensive):
  *    - DNS resolution for ALL critical domains (APIs, MQTT, time sync, external)
  *    - Basic internet connectivity test
  *    - Health checks for ALL Wayru APIs (main, accounting, devices)
- *    
+ *
  * 2. PERIODIC DIAGNOSTICS (selective for performance):
  *    - DNS check for accounting API (most critical domain)
  *    - Internet connectivity test
  *    - Accounting API health check (core functionality)
  *    - Access token validation
- *    
+ *
  * This approach ensures comprehensive validation at startup while maintaining
  * efficient periodic monitoring suitable for resource-constrained router/AP environments.
- * 
+ *
  * Critical domains checked:
  * - Main API: Device status reporting
  * - Accounting API: Registration, tokens, device context, firmware updates
@@ -37,14 +37,14 @@
 #include "services/config/config.h"
 #include "services/device_info.h"
 #include "services/exit_handler.h"
+#include <arpa/inet.h>
+#include <netdb.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
 #include <sys/socket.h>
-#include <netdb.h>
-#include <arpa/inet.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 // Paths to LED triggers
 #define GREEN_LED_TRIGGER "/sys/devices/platform/leds/leds/green:lan/trigger"
@@ -63,9 +63,9 @@ typedef struct {
 static DeviceInfo *diagnostic_device_info;
 
 // Utility function to extract domain from URL
-static char* extract_domain_from_url(const char *url) {
+static char *extract_domain_from_url(const char *url) {
     if (url == NULL) return NULL;
-    
+
     // Skip protocol (http:// or https://)
     const char *start = url;
     if (strncmp(url, "http://", 7) == 0) {
@@ -73,13 +73,13 @@ static char* extract_domain_from_url(const char *url) {
     } else if (strncmp(url, "https://", 8) == 0) {
         start = url + 8;
     }
-    
+
     // Find the end of the domain (first '/' or ':' or end of string)
     const char *end = start;
     while (*end && *end != '/' && *end != ':') {
         end++;
     }
-    
+
     // Allocate and copy domain
     size_t domain_len = end - start;
     char *domain = malloc(domain_len + 1);
@@ -87,7 +87,7 @@ static char* extract_domain_from_url(const char *url) {
         strncpy(domain, start, domain_len);
         domain[domain_len] = '\0';
     }
-    
+
     return domain;
 }
 
@@ -189,28 +189,28 @@ static void set_led_trigger(const char *led_path, const char *mode) {
 static bool dns_resolve_single_attempt(void *params) {
     if (params == NULL) return false;
     char *host = (char *)params;
-    
+
     struct addrinfo hints, *result;
     int dns_status;
-    
+
     // Clear hints structure
     memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;    // Allow IPv4 or IPv6
+    hints.ai_family = AF_UNSPEC;     // Allow IPv4 or IPv6
     hints.ai_socktype = SOCK_STREAM; // TCP socket
-    
+
     print_info(&csl, "Resolving hostname: %s", host);
-    
+
     dns_status = getaddrinfo(host, NULL, &hints, &result);
-    
+
     if (dns_status == 0) {
         print_info(&csl, "DNS resolution successful for %s", host);
-        
+
         // Print first resolved address for debugging
         if (result != NULL) {
             char ip_str[INET6_ADDRSTRLEN];
             void *addr;
             const char *ip_version;
-            
+
             if (result->ai_family == AF_INET) {
                 struct sockaddr_in *ipv4 = (struct sockaddr_in *)result->ai_addr;
                 addr = &(ipv4->sin_addr);
@@ -220,12 +220,12 @@ static bool dns_resolve_single_attempt(void *params) {
                 addr = &(ipv6->sin6_addr);
                 ip_version = "IPv6";
             }
-            
+
             if (inet_ntop(result->ai_family, addr, ip_str, sizeof(ip_str)) != NULL) {
                 print_info(&csl, "Resolved %s to %s: %s", host, ip_version, ip_str);
             }
         }
-        
+
         freeaddrinfo(result);
         return true;
     } else {
@@ -253,22 +253,22 @@ bool dns_resolve_check(const char *host) {
 // Comprehensive DNS resolution check for all critical domains
 bool comprehensive_dns_check() {
     print_info(&csl, "Starting comprehensive DNS resolution checks");
-    
+
     // List of critical domains to check
-    const char* critical_hosts[] = {
-        config.mqtt_broker_url,  // MQTT broker
-        config.time_sync_server, // Time sync server
+    const char *critical_hosts[] = {
+        config.mqtt_broker_url,            // MQTT broker
+        config.time_sync_server,           // Time sync server
         config.external_connectivity_host, // External internet connectivity test
-        NULL  // Sentinel
+        NULL                               // Sentinel
     };
-    
+
     // Extract and check domains from API URLs
     char *main_domain = extract_domain_from_url(config.main_api);
     char *accounting_domain = extract_domain_from_url(config.accounting_api);
     char *devices_domain = extract_domain_from_url(config.devices_api);
-    
+
     bool all_passed = true;
-    
+
     // Check API domains
     if (main_domain) {
         print_info(&csl, "Checking main API domain: %s", main_domain);
@@ -277,7 +277,7 @@ bool comprehensive_dns_check() {
         }
         free(main_domain);
     }
-    
+
     if (accounting_domain) {
         print_info(&csl, "Checking accounting API domain: %s", accounting_domain);
         if (!dns_resolve_check(accounting_domain)) {
@@ -285,7 +285,7 @@ bool comprehensive_dns_check() {
         }
         free(accounting_domain);
     }
-    
+
     if (devices_domain) {
         print_info(&csl, "Checking devices API domain: %s", devices_domain);
         if (!dns_resolve_check(devices_domain)) {
@@ -293,7 +293,7 @@ bool comprehensive_dns_check() {
         }
         free(devices_domain);
     }
-    
+
     // Check other critical hosts
     for (int i = 0; critical_hosts[i] != NULL; i++) {
         print_info(&csl, "Checking critical host: %s", critical_hosts[i]);
@@ -301,77 +301,77 @@ bool comprehensive_dns_check() {
             all_passed = false;
         }
     }
-    
+
     if (all_passed) {
         print_info(&csl, "All DNS resolution checks passed");
     } else {
         print_error(&csl, "One or more DNS resolution checks failed");
     }
-    
+
     return all_passed;
 }
 
 // Comprehensive API health check for all Wayru APIs
 bool comprehensive_api_health_check() {
     print_info(&csl, "Starting comprehensive API health checks");
-    
+
     bool all_passed = true;
-    
+
     // Check accounting API (existing implementation)
     if (!wayru_check()) {
         all_passed = false;
     }
-    
+
     // Check main API health endpoint
     char main_health_url[256];
     snprintf(main_health_url, sizeof(main_health_url), "%s", config.main_api);
     print_info(&csl, "Main API health url: %s", main_health_url);
-    
+
     HttpGetOptions main_options = {
         .url = main_health_url,
         .bearer_token = NULL,
     };
     HttpResult main_result = http_get(&main_options);
-    
+
     if (main_result.is_error) {
         print_error(&csl, "Main API health check failed: %s", main_result.error);
         all_passed = false;
     } else {
         print_info(&csl, "Main API is reachable");
     }
-    
+
     if (main_result.response_buffer) {
         free(main_result.response_buffer);
     }
-    
+
     // Check devices API health endpoint
     char devices_health_url[256];
     snprintf(devices_health_url, sizeof(devices_health_url), "%s/health", config.devices_api);
     print_info(&csl, "Devices API health url: %s", devices_health_url);
-    
+
     HttpGetOptions devices_options = {
         .url = devices_health_url,
         .bearer_token = NULL,
     };
     HttpResult devices_result = http_get(&devices_options);
-    
+
     if (devices_result.is_error) {
         print_error(&csl, "Devices API health check failed: %s", devices_result.error);
         all_passed = false;
     } else {
         print_info(&csl, "Devices API is reachable");
     }
-    
+
     if (devices_result.response_buffer) {
         free(devices_result.response_buffer);
     }
-    
+
     if (all_passed) {
         print_info(&csl, "All API health checks passed");
     } else {
         print_error(&csl, "One or more API health checks failed");
     }
-    
+
     return all_passed;
 }
 

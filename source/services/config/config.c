@@ -22,16 +22,8 @@ Config config = {0};
  */
 static bool determine_config_file_path(bool dev_env, char *config_file_path, size_t buffer_size) {
     if (dev_env) {
-        // In dev mode, try multiple possible paths for the config file
-        // First try relative to output directory (when run via dev.sh)
-        snprintf(config_file_path, buffer_size, "%s", DEV_CONFIG_PATH_1);
-        FILE *test_file = fopen(config_file_path, "r");
-        if (test_file == NULL) {
-            // If that fails, try relative to project root (when run directly)
-            snprintf(config_file_path, buffer_size, "%s", DEV_CONFIG_PATH_2);
-        } else {
-            fclose(test_file);
-        }
+        // In dev mode, use the dev config file
+        snprintf(config_file_path, buffer_size, "%s", DEV_CONFIG_PATH);
         return true;
     } else {
         // In production mode, use the standard OpenWrt config path

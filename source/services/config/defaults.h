@@ -60,8 +60,7 @@
 #define PROD_TEMP_PATH "/tmp"
 
 // Config file paths
-#define DEV_CONFIG_PATH_1 "../source/scripts/openwrt/wayru-os-services-dev.config"
-#define DEV_CONFIG_PATH_2 "source/scripts/openwrt/wayru-os-services-dev.config"
+#define DEV_CONFIG_PATH "../source/scripts/dev/wayru-os-services.config"
 #define PROD_CONFIG_PATH "/etc/config/wayru-os-services"
 
 /**

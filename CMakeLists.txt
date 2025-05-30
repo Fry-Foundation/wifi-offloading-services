@@ -22,7 +22,6 @@ SET(SERVICES_SOURCES
     source/services/mqtt-cert.c
     source/services/mqtt.c
     source/services/monitoring.c
-    source/services/env.c
     source/services/speedtest.c
     source/services/registration.c
     source/services/access_token.c

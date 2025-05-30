@@ -11,7 +11,6 @@ chmod +x output/scripts/*
 mkdir -p output/data
 mkdir -p output/data/did-key
 
-cp .env output/data/.env 2>/dev/null || true
 cp VERSION output/VERSION
 
 # Run the program

@@ -1,7 +1,6 @@
 #include "mqtt.h"
 #include "services/access_token.h"
 #include "services/diagnostic/diagnostic.h"
-#include "services/env.h"
 #include "services/exit_handler.h"
 #include "services/registration.h"
 #include <lib/console.h>
@@ -140,15 +139,8 @@ void publish_mqtt(struct mosquitto *mosq, char *topic, const char *message, int 
 }
 
 struct mosquitto *init_mosquitto(Registration *registration, AccessToken *access_token) {
-    // Load user and password from env file
-    // If present, these override the access token
-    char env_file[270];
-    snprintf(env_file, sizeof(env_file), "%s%s", config.data_path, "/.env");
-    load_env(env_file);
-    const char *env_mqtt_user = env("MQTT_USER");
-    const char *env_mqtt_password = env("MQTT_PASS");
-    const char *mqtt_user = (env_mqtt_user && strlen(env_mqtt_user) > 0) ? env_mqtt_user : access_token->token;
-    const char *mqtt_password = (env_mqtt_password && strlen(env_mqtt_password) > 0) ? env_mqtt_password : "any";
+    const char *mqtt_user = access_token->token;
+    const char *mqtt_password = "any";
     print_debug(&csl, "user is %s", mqtt_user);
     print_debug(&csl, "password is %s", mqtt_password);
 

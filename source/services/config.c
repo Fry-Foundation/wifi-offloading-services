@@ -40,6 +40,7 @@ void init_config(int argc, char *argv[]) {
     config.package_update_enabled = true;
     config.package_update_interval = 20000;
     config.diagnostic_interval = 120;
+    strcpy(config.external_connectivity_host, "google.com");
     config.nds_interval = 60;
     strcpy(config.time_sync_server, "ptbtime1.ptb.de");
     config.time_sync_interval = 3600;
@@ -234,6 +235,12 @@ void init_config(int argc, char *argv[]) {
             continue;
         }
 
+        // External connectivity host
+        if (strcmp(argv[i], "--config-external-connectivity-host") == 0) {
+            snprintf(config.external_connectivity_host, sizeof(config.external_connectivity_host), "%s", argv[i + 1]);
+            continue;
+        }
+
         // NDS interval
         if (strcmp(argv[i], "--config-nds-interval") == 0) {
             config.nds_interval = atoi(argv[i + 1]);
@@ -297,6 +304,7 @@ void init_config(int argc, char *argv[]) {
     print_debug(&csl, "config.package_update_enabled: %d", config.package_update_enabled);
     print_debug(&csl, "config.package_update_interval: %d", config.package_update_interval);
     print_debug(&csl, "config.diagnostic_interval: %d", config.diagnostic_interval);
+    print_debug(&csl, "config.external_connectivity_host: %s", config.external_connectivity_host);
     print_debug(&csl, "config.nds_interval: %d", config.nds_interval);
     print_debug(&csl, "config.time_sync_server: %s", config.time_sync_server);
     print_debug(&csl, "config.time_sync_interval: %d", config.time_sync_interval);

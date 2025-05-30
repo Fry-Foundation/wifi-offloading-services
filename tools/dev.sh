@@ -45,6 +45,7 @@ cd output && ./wayru-os-services --dev \
     --config-package-update-enabled "1" \
     --config-package-update-interval "20000" \
     --config-diagnostic-interval "120" \
+    --config-external-connectivity-host "google.com" \
     --config-nds-interval "60" \
     --config-time-sync-server "ptbtime1.ptb.de" \
     --config-time-sync-interval "3600" 

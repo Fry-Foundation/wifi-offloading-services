@@ -33,7 +33,7 @@ SET(SERVICES_SOURCES
     source/services/gen_id.c
     source/services/reboot.c
     source/services/radsec_cert.c
-    source/services/diagnostic.c
+    source/services/diagnostic/diagnostic.c
     source/services/exit_handler.c
     source/services/time_sync.c
 )
@@ -45,7 +45,6 @@ SET(LIB_SOURCES
     source/lib/http-requests.c
     source/lib/scheduler.c
     source/lib/script_runner.c
-    source/lib/network_check.c
     source/lib/cert_audit.c
     source/lib/retry.c
     source/lib/result.c

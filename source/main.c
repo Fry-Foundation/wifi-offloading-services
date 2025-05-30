@@ -1,5 +1,4 @@
 #include "lib/console.h"
-#include "lib/network_check.h"
 #include "lib/scheduler.h"
 #include "services/access_token.h"
 #include "services/commands.h"
@@ -7,7 +6,7 @@
 #include "services/device-context.h"
 #include "services/device_info.h"
 #include "services/device_status.h"
-#include "services/diagnostic.h"
+#include "services/diagnostic/diagnostic.h"
 #include "services/exit_handler.h"
 #include "services/firmware_upgrade.h"
 #include "services/monitoring.h"
@@ -43,20 +42,10 @@ int main(int argc, char *argv[]) {
     DeviceInfo *device_info = init_device_info();
     register_cleanup((cleanup_callback)clean_device_info, device_info);
 
-    // Diagnostic Init
-    init_diagnostic_service(device_info);
-
-    // Internet check
-    bool internet_status = internet_check();
-    if (!internet_status) {
-        update_led_status(false, "Internet check");
-        cleanup_and_exit(1);
-    }
-
-    // Wayru check
-    bool wayru_status = wayru_check();
-    if (!wayru_status) {
-        update_led_status(false, "Wayru check");
+    // Diagnostic Init - runs DNS, internet, and Wayru reachability tests
+    bool diagnostic_status = init_diagnostic_service(device_info);
+    if (!diagnostic_status) {
+        update_led_status(false, "Diagnostic tests failed");
         cleanup_and_exit(1);
     }
 

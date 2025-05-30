@@ -39,6 +39,7 @@ start_service() {
 	local package_update_interval
 	local package_update_enabled
 	local diagnostic_interval
+	local external_connectivity_host
 	local nds_interval
 	local time_sync_server
 	local time_sync_interval
@@ -71,6 +72,7 @@ start_service() {
 	config_get package_update_enabled wayru_os_services1 package_update_enabled
 	config_get package_update_interval wayru_os_services1 package_update_interval
 	config_get diagnostic_interval wayru_os_services1 diagnostic_interval
+	config_get external_connectivity_host wayru_os_services1 external_connectivity_host
 	config_get nds_interval wayru_os_services1 nds_interval
 	config_get time_sync_server wayru_os_services1 time_sync_server
 	config_get time_sync_interval wayru_os_services1 time_sync_interval
@@ -103,6 +105,7 @@ start_service() {
 	logger -t "wayru-os-services" "Package Update Enabled: $package_update_enabled"
 	logger -t "wayru-os-services" "Package Update Interval: $package_update_interval"
 	logger -t "wayru-os-services" "Diagnostic Interval: $diagnostic_interval"
+	logger -t "wayru-os-services" "External Connectivity Host: $external_connectivity_host"
 	logger -t "wayru-os-services" "NDS Interval: $nds_interval"
 	logger -t "wayru-os-services" "Time Sync Server: $time_sync_server"
 	logger -t "wayru-os-services" "Time Sync Interval: $time_sync_interval"
@@ -136,6 +139,7 @@ start_service() {
 		--config-package-update-enabled "$package_update_enabled" \
 		--config-package-update-interval "$package_update_interval" \
 		--config-diagnostic-interval "$diagnostic_interval" \
+		--config-external-connectivity-host "$external_connectivity_host" \
 		--config-nds-interval "$nds_interval" \
 		--config-time-sync-server "$time_sync_server" \
 		--config-time-sync-interval "$time_sync_interval"

@@ -1,6 +1,6 @@
 #include "mqtt.h"
 #include "services/access_token.h"
-#include "services/diagnostic.h"
+#include "services/diagnostic/diagnostic.h"
 #include "services/env.h"
 #include "services/exit_handler.h"
 #include "services/registration.h"

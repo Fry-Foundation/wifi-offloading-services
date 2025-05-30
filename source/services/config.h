@@ -50,6 +50,7 @@ typedef struct {
     bool use_n_sysupgrade;
 
     int diagnostic_interval;
+    char external_connectivity_host[API_SIZE];
 
     int nds_interval;
 

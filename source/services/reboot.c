@@ -2,7 +2,7 @@
 #include "lib/console.h"
 #include "lib/scheduler.h"
 #include "lib/script_runner.h"
-#include "services/config.h"
+#include "services/config/config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

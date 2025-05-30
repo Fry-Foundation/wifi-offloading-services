@@ -1,7 +1,7 @@
 #include "lib/console.h"
 #include "lib/scheduler.h"
 #include "lib/script_runner.h"
-#include "services/config.h"
+#include "services/config/config.h"
 #include "services/device_info.h"
 #include "services/gen_id.h"
 #include "services/mqtt.h"

@@ -4,7 +4,7 @@
 #include "lib/result.h"
 #include "lib/script_runner.h"
 #include "services/access_token.h"
-#include "services/config.h"
+#include "services/config/config.h"
 #include "services/device_info.h"
 #include "services/registration.h"
 #include <json-c/json.h>

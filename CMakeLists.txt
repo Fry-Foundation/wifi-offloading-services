@@ -12,7 +12,9 @@ SET(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "")
 
 # Source files
 SET(SERVICES_SOURCES
-    source/services/config.c
+    source/services/config/config.c
+    source/services/config/uci_parser.c
+    source/services/config/defaults.c
     source/services/device_info.c
     source/services/device_status.c
     source/services/did-key.c

@@ -12,13 +12,10 @@ typedef struct {
     bool enabled;
 
     char main_api[API_SIZE];
-
     char accounting_api[API_SIZE];
-
     char devices_api[API_SIZE];
 
     int access_interval;
-
     int device_status_interval;
 
     bool monitoring_enabled;
@@ -63,8 +60,22 @@ typedef struct {
     char temp_path[PATH_SIZE];
 } Config;
 
+// Global config instance
 extern Config config;
 
+/**
+ * Initialize the configuration system
+ * This function applies defaults, processes command line arguments,
+ * parses configuration files, and validates the final configuration.
+ * 
+ * @param argc Number of command line arguments
+ * @param argv Array of command line arguments
+ */
 void init_config(int argc, char *argv[]);
 
-#endif // CONFIG_H
+/**
+ * Print current configuration values for debugging
+ */
+void print_config_debug(void);
+
+#endif // CONFIG_H 

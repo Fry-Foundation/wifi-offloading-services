@@ -34,7 +34,7 @@
 #include "lib/retry.h"
 #include "lib/scheduler.h"
 #include "services/access_token.h"
-#include "services/config.h"
+#include "services/config/config.h"
 #include "services/device_info.h"
 #include "services/exit_handler.h"
 #include <stdio.h>
@@ -324,7 +324,7 @@ bool comprehensive_api_health_check() {
     
     // Check main API health endpoint
     char main_health_url[256];
-    snprintf(main_health_url, sizeof(main_health_url), "%s/health", config.main_api);
+    snprintf(main_health_url, sizeof(main_health_url), "%s", config.main_api);
     print_info(&csl, "Main API health url: %s", main_health_url);
     
     HttpGetOptions main_options = {

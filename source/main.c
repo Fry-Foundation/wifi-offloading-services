@@ -2,7 +2,7 @@
 #include "lib/scheduler.h"
 #include "services/access_token.h"
 #include "services/commands.h"
-#include "services/config.h"
+#include "services/config/config.h"
 #include "services/device-context.h"
 #include "services/device_info.h"
 #include "services/device_status.h"

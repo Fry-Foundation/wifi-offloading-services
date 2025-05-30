@@ -6,7 +6,7 @@
 #include "services/registration.h"
 #include <lib/console.h>
 #include <mosquitto.h>
-#include <services/config.h>
+#include <services/config/config.h>
 #include <services/mqtt-cert.h>
 #include <stdio.h>
 #include <stdlib.h>

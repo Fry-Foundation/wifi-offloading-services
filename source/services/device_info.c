@@ -1,5 +1,5 @@
 #include "device_info.h"
-#include "config.h"
+#include "services/config/config.h"
 #include "lib/console.h"
 #include "lib/script_runner.h"
 #include "services/did-key.h"

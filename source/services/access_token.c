@@ -2,7 +2,7 @@
 #include "lib/console.h"
 #include "lib/scheduler.h"
 #include "mosquitto.h"
-#include "services/config.h"
+#include "services/config/config.h"
 #include <json-c/json.h>
 #include <lib/http-requests.h>
 #include <services/mqtt.h>

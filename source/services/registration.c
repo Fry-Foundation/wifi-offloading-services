@@ -1,7 +1,7 @@
 #include "registration.h"
 #include "lib/console.h"
 #include "lib/http-requests.h"
-#include "services/config.h"
+#include "services/config/config.h"
 #include <json-c/json.h>
 #include <stdbool.h>
 #include <stdio.h>

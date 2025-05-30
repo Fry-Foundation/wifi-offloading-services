@@ -1,7 +1,7 @@
 #include "site-clients.h"
 #include "lib/console.h"
 #include "lib/script_runner.h"
-#include "services/config.h"
+#include "services/config/config.h"
 #include "services/device-context.h"
 #include "services/mqtt.h"
 #include "services/nds.h"

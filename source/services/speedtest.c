@@ -1,6 +1,6 @@
 #include "lib/console.h"
 #include "lib/scheduler.h"
-#include "services/config.h"
+#include "services/config/config.h"
 #include "services/gen_id.h"
 #include "services/mqtt.h"
 #include "services/registration.h"

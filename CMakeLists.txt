@@ -19,8 +19,8 @@ SET(SERVICES_SOURCES
     source/services/device_status.c
     source/services/did-key.c
     source/services/end_report.c
-    source/services/mqtt-cert.c
-    source/services/mqtt.c
+    source/services/mqtt/cert.c
+    source/services/mqtt/mqtt.c
     source/services/monitoring.c
     source/services/speedtest.c
     source/services/registration.c

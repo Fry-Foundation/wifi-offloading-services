@@ -1,11 +1,10 @@
 #include "access_token.h"
 #include "lib/console.h"
+#include "lib/http-requests.h"
 #include "lib/scheduler.h"
-#include "mosquitto.h"
 #include "services/config/config.h"
+#include "services/mqtt/mqtt.h"
 #include <json-c/json.h>
-#include <lib/http-requests.h>
-#include <services/mqtt.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,7 +22,7 @@ static Console csl = {
 typedef struct {
     AccessToken *access_token;
     Registration *registration;
-    struct mosquitto *mosq;
+    AccessTokenCallbacks *callbacks;
 } AccessTokenTaskContext;
 
 bool save_access_token(char *access_token_json) {
@@ -301,8 +300,10 @@ void access_token_task(Scheduler *sch, void *task_context) {
 
     free(access_token_json_str);
 
-    // Refresh mosquitto client
-    refresh_mosquitto_access_token(context->mosq, context->access_token);
+    // Notify callback about token refresh
+    if (context->callbacks && context->callbacks->on_token_refresh) {
+        context->callbacks->on_token_refresh(context->access_token->token, context->callbacks->context);
+    }
 
     // Schedule the task
     time_t next_run = calculate_next_run(context->access_token->expires_at_seconds, config.access_interval);
@@ -312,7 +313,7 @@ void access_token_task(Scheduler *sch, void *task_context) {
 void access_token_service(Scheduler *sch,
                           AccessToken *access_token,
                           Registration *registration,
-                          struct mosquitto *mosq) {
+                          AccessTokenCallbacks *callbacks) {
     AccessTokenTaskContext *context = (AccessTokenTaskContext *)malloc(sizeof(AccessTokenTaskContext));
     if (context == NULL) {
         print_error(&csl, "failed to allocate memory for access token task context");
@@ -321,7 +322,7 @@ void access_token_service(Scheduler *sch,
 
     context->access_token = access_token;
     context->registration = registration;
-    context->mosq = mosq;
+    context->callbacks = callbacks;
 
     // Schedule the task
     time_t next_run = calculate_next_run(access_token->expires_at_seconds, config.access_interval);

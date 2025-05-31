@@ -2,7 +2,7 @@
 #define SITE_CLIENTS_H
 
 #include "services/device-context.h"
-#include "services/mqtt.h"
+#include "services/mqtt/mqtt.h"
 #include "services/nds.h"
 
 typedef enum { Connect, Disconnect } SiteEventType;

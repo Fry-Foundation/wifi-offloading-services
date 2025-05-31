@@ -1,5 +1,5 @@
-#ifndef CERT_H
-#define CERT_H
+#ifndef MQTT_CERT_H
+#define MQTT_CERT_H
 
 #include "services/access_token.h"
 #include <stdbool.h>

@@ -2,7 +2,7 @@
 #include "lib/scheduler.h"
 #include "services/config/config.h"
 #include "services/gen_id.h"
-#include "services/mqtt.h"
+#include "services/mqtt/mqtt.h"
 #include "services/registration.h"
 #include <curl/curl.h>
 #include <json-c/json.h>

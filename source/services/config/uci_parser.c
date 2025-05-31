@@ -1,6 +1,6 @@
 #include "uci_parser.h"
-#include "lib/console.h"
 #include "config.h"
+#include "lib/console.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

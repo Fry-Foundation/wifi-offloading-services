@@ -4,7 +4,7 @@
 #include "lib/script_runner.h"
 #include "services/config/config.h"
 #include "services/device-context.h"
-#include "services/mqtt.h"
+#include "services/mqtt/mqtt.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <json-c/json_object.h>

@@ -1,14 +1,14 @@
 #include "radsec_cert.h"
-#include "lib/console.h"
-#include "lib/http-requests.h"
-#include "lib/retry.h"
 #include "lib/cert_audit.h"
+#include "lib/console.h"
+#include "lib/csr.h"
+#include "lib/http-requests.h"
 #include "lib/key_pair.h"
 #include "lib/result.h"
-#include "lib/csr.h"
+#include "lib/retry.h"
 #include "lib/script_runner.h"
-#include "services/config.h"
 #include "services/access_token.h"
+#include "services/config/config.h"
 #include "services/registration.h"
 #include <stdbool.h>
 #include <stdlib.h>
@@ -73,7 +73,7 @@ typedef struct {
     Registration *registration;
 } RadSecSignParams;
 
-bool generate_and_sign_radsec_cert(void *params) { 
+bool generate_and_sign_radsec_cert(void *params) {
     if (params == NULL) return false;
     RadSecSignParams *radsec_params = (RadSecSignParams *)params;
 
@@ -177,7 +177,7 @@ bool generate_and_sign_radsec_cert(void *params) {
 }
 
 bool attempt_generate_and_sign_radsec(AccessToken *access_token, Registration *registration) {
-    RadSecSignParams* radsec_params = (RadSecSignParams *)malloc(sizeof(RadSecSignParams));
+    RadSecSignParams *radsec_params = (RadSecSignParams *)malloc(sizeof(RadSecSignParams));
     if (radsec_params == NULL) {
         print_error(&csl, "Failed to allocate memory for RadSec certificate generation");
         return false;
@@ -199,7 +199,8 @@ bool attempt_generate_and_sign_radsec(AccessToken *access_token, Registration *r
         print_info(&csl, "RadSec certificate is ready");
         return true;
     } else {
-        print_error(&csl, "Failed to generate and sign RadSec certificate after %d attempts ... exiting", config.attempts);
+        print_error(&csl, "Failed to generate and sign RadSec certificate after %d attempts ... exiting",
+                    config.attempts);
         return false;
     }
 }
@@ -213,7 +214,7 @@ void install_radsec_cert() {
         return;
     }
 
-    const char * is_installed = run_script("opkg list-installed | grep radsecproxy");
+    const char *is_installed = run_script("opkg list-installed | grep radsecproxy");
     print_debug(&csl, "Is radsecproxy installed?: %s", is_installed);
 
     run_script("service radsecproxy stop");

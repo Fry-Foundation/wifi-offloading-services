@@ -1,6 +1,7 @@
 # Project
 dist
 build
+output
 feed
 sdk
 sdk_mips_24kc_generic

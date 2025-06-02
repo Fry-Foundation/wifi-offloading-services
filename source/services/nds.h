@@ -7,9 +7,9 @@
 #include "lib/scheduler.h"
 #include "services/device-context.h"
 #include "services/device_info.h"
-#include "services/mqtt.h"
+#include "services/mqtt/mqtt.h"
 
-#define MAC_ADDR_LEN 18  // Standard MAC address length (17 chars + null terminator)
+#define MAC_ADDR_LEN 18 // Standard MAC address length (17 chars + null terminator)
 
 typedef struct {
     bool opennds_installed;

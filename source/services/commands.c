@@ -3,7 +3,7 @@
 #include "services/access_token.h"
 #include "services/device_info.h"
 #include "services/firmware_upgrade.h"
-#include "services/mqtt.h"
+#include "services/mqtt/mqtt.h"
 #include "services/registration.h"
 #include <json-c/json.h>
 #include <stdio.h>

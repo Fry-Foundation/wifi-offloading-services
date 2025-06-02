@@ -1,15 +1,14 @@
 #ifndef KEY_PAIR_H
 #define KEY_PAIR_H
 
+#include <json-c/json.h>
 #include <openssl/evp.h>
 #include <stdbool.h>
-#include <json-c/json.h>
 
 typedef enum {
     Rsa = EVP_PKEY_RSA,
     Ed25519 = EVP_PKEY_ED25519,
 } GenerateKeyPairType;
-
 
 EVP_PKEY *generate_key_pair(GenerateKeyPairType type);
 bool save_private_key_in_pem(EVP_PKEY *pkey, char *private_key_filepath);

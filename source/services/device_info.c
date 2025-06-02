@@ -1,7 +1,7 @@
 #include "device_info.h"
-#include "config.h"
 #include "lib/console.h"
 #include "lib/script_runner.h"
+#include "services/config/config.h"
 #include "services/did-key.h"
 #include "services/exit_handler.h"
 #include <json-c/json.h>
@@ -298,7 +298,7 @@ char *get_arch() {
         return NULL;
     }
 
-    subtarget++; 
+    subtarget++;
 
     snprintf(arch, sizeof(arch), "%s_%s", distrib_arch, subtarget);
     return arch;

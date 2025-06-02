@@ -2,29 +2,28 @@
 #include "lib/scheduler.h"
 #include "services/access_token.h"
 #include "services/commands.h"
-#include "services/config.h"
+#include "services/config/config.h"
 #include "services/device-context.h"
 #include "services/device_info.h"
 #include "services/device_status.h"
+#include "services/diagnostic/diagnostic.h"
+#include "services/exit_handler.h"
 #include "services/firmware_upgrade.h"
-#include "services/package_update.h"
 #include "services/monitoring.h"
-#include "services/mqtt-cert.h"
-#include "services/mqtt.h"
+#include "services/mqtt/cert.h"
+#include "services/mqtt/mqtt.h"
+#include "services/nds.h"
+#include "services/package_update.h"
 #include "services/radsec_cert.h"
 #include "services/reboot.h"
 #include "services/registration.h"
 #include "services/site-clients.h"
 #include "services/speedtest.h"
-#include "services/diagnostic.h"
-#include "services/exit_handler.h"
-#include "services/nds.h"
-#include "lib/network_check.h"
 #include "services/time_sync.h"
+#include <lib/retry.h>
 #include <mosquitto.h>
 #include <stdbool.h>
 #include <unistd.h>
-#include <lib/retry.h>
 
 static Console csl = {
     .topic = "main",
@@ -43,20 +42,10 @@ int main(int argc, char *argv[]) {
     DeviceInfo *device_info = init_device_info();
     register_cleanup((cleanup_callback)clean_device_info, device_info);
 
-    // Diagnostic Init
-    init_diagnostic_service(device_info);
-
-    // Internet check
-    bool internet_status = internet_check();
-    if (!internet_status) {
-        update_led_status(false, "Internet check");
-        cleanup_and_exit(1);
-    }
-
-    // Wayru check
-    bool wayru_status = wayru_check();
-    if (!wayru_status) {
-        update_led_status(false, "Wayru check");
+    // Diagnostic Init - runs DNS, internet, and Wayru reachability tests
+    bool diagnostic_status = init_diagnostic_service(device_info);
+    if (!diagnostic_status) {
+        update_led_status(false, "Diagnostic tests failed");
         cleanup_and_exit(1);
     }
 
@@ -99,33 +88,48 @@ int main(int argc, char *argv[]) {
     register_cleanup((cleanup_callback)clean_device_context, device_context);
 
     // MQTT
-    Mosq *mosq = init_mqtt(registration, access_token);
-    register_cleanup((cleanup_callback)cleanup_mqtt, &mosq);
+    MqttConfig mqtt_config = {
+        .client_id = registration->wayru_device_id,
+        .username = access_token->token,
+        .password = "any",
+        .broker_url = config.mqtt_broker_url,
+        .data_path = config.data_path,
+        .keepalive = config.mqtt_keepalive,
+        .task_interval = config.mqtt_task_interval,
+    };
+    MqttClient mqtt_client = {
+        .mosq = init_mqtt(&mqtt_config),
+        .config = mqtt_config,
+    };
+    register_cleanup((cleanup_callback)cleanup_mqtt, &mqtt_client.mosq);
 
     // NDS
     NdsClient *nds_client = init_nds_client();
     register_cleanup((cleanup_callback)clean_nds_fifo, &nds_client->fifo_fd);
 
     // Site clients
-    init_site_clients(mosq, device_context->site, nds_client);
+    init_site_clients(mqtt_client.mosq, device_context->site, nds_client);
 
     // Scheduler
     Scheduler *sch = init_scheduler();
     register_cleanup((cleanup_callback)clean_scheduler, sch);
 
+    // Create MQTT access token refresh callback
+    AccessTokenCallbacks token_callbacks = create_mqtt_token_callbacks(&mqtt_client);
+
     // Schedule service tasks
     time_sync_service(sch);
-    access_token_service(sch, access_token, registration, mosq);
-    mqtt_service(sch, mosq, registration, access_token);
+    access_token_service(sch, access_token, registration, &token_callbacks);
+    mqtt_service(sch, mqtt_client.mosq, &mqtt_client.config);
     device_context_service(sch, device_context, registration, access_token);
     device_status_service(sch, device_info, registration->wayru_device_id, access_token);
-    nds_service(sch, mosq, device_context->site, nds_client, device_info);
-    monitoring_service(sch, mosq, registration);
+    nds_service(sch, mqtt_client.mosq, device_context->site, nds_client, device_info);
+    monitoring_service(sch, mqtt_client.mosq, registration);
     firmware_upgrade_check(sch, device_info, registration, access_token);
     package_update_service(sch, device_info, registration, access_token);
     start_diagnostic_service(sch, access_token);
-    speedtest_service(sch, mosq, registration, access_token);
-    commands_service(mosq, device_info, registration, access_token);
+    speedtest_service(sch, mqtt_client.mosq, registration, access_token);
+    commands_service(mqtt_client.mosq, device_info, registration, access_token);
     reboot_service(sch);
 
     run_tasks(sch);

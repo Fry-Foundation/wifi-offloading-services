@@ -3,7 +3,7 @@
 #include "lib/http-requests.h"
 #include "lib/scheduler.h"
 #include "services/access_token.h"
-#include "services/config.h"
+#include "services/config/config.h"
 #include "services/registration.h"
 #include <json-c/json.h>
 #include <stdio.h>

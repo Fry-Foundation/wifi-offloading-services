@@ -1,9 +1,9 @@
-#include <stdio.h>
+#include "lib/console.h"
+#include <openssl/err.h>
+#include <openssl/pem.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
-#include <openssl/pem.h>
-#include <openssl/err.h>
-#include "lib/console.h"
+#include <stdio.h>
 
 static Console cons = {
     .topic = "certificate audit",
@@ -77,11 +77,11 @@ int validate_key_cert_match(const char *keyFile, const char *certFile) {
 
     int result = EVP_PKEY_cmp(pkey, pubkey);
     if (result == 1) {
-        result = 1;  // Match
+        result = 1; // Match
     } else if (result == 0) {
-        result = 0;  // No match
+        result = 0; // No match
     } else {
-        result = -1;  // Error comparing
+        result = -1; // Error comparing
     }
 
     EVP_PKEY_free(pkey);

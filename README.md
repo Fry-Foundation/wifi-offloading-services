@@ -4,11 +4,13 @@ Services for wayru-os:
 - Accounting
 
 ## Dependencies
-> Work in progress. Dependencies should be version controlled for testing and production builds.
+Install `cmake`. Also install the dependencies below (check your distro packages).
 
-> OpenSSL / libssl is also needed. Check Makefile. @todo document that dependency here too.
+> Check `CMakeLists.txt` for updated dependencies. @todo document that dependency here too.
 
-### Install the `libcurl`, `json-c`, `mosquitto` dependencies
+- libcurl
+- json-c
+- mosquitto
 
 **Debian-based linux**
 
@@ -29,8 +31,6 @@ git clone https://github.com/Wayru-Network/wayru-os-services.git
 ```
 
 ## Developing
-To run the project locally you can run the `dev` script found at the root of this project:
-
 ```bash
 just dev
 ```
@@ -51,20 +51,7 @@ Mapped architectures are:
 - aarch64_cortex-a53
 - arm_cortex-a7_neon-vfpv4
 
-The script `compile` automates the process, **but there are some prerequisites**.
-
-### Requirements
-- Meet the [OpenWrt build system requirements](https://openwrt.org/docs/guide-developer/toolchain/install-buildsystem) on your local machine or VM
-```
-
-### Build the package
-Run the `compile` script:
-
-```bash
-bash compile
-```
-
-The compiled package will be available in a new folder called `./build/{date}`
+The compiled package will be available in a new folder called `./build/<arch>`
 
 You can then transfer the compiled package to a router for testing.
 
@@ -125,16 +112,13 @@ Install the clang-format util:
 sudo apt install clang-format
 ```
 
-
-Run the `format-c` script from the `wayru-os-services` repo:
+Run the `format` script from the `wayru-os-services` repo:
 
 ```bash
-bash format-c
+just format
 ```
 
 ### LSP
 The langauge server protocol (LSP) for C should work out of the box with VSCode.
 
-On other editors you can use clangd. But make sure to run `generate_compile_commands.sh` so that clangd correctly recognizes the include paths.
-
-You will need to have the `bear` tool installed to run this script: [https://github.com/rizsotto/Bear](https://github.com/rizsotto/Bear)
+On other editors you can use clangd. But make sure to run `just compdb` so that clangd correctly recognizes the include paths.

@@ -14,11 +14,11 @@ typedef struct {
     bool ok;
     union {
         Error error;
-        void* data;
+        void *data;
     };
 } Result;
 
-Result ok(void* value);
-Result error(int code, const char* message);
+Result ok(void *value);
+Result error(int code, const char *message);
 
 #endif /* RESULT_H  */

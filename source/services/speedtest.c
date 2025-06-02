@@ -1,8 +1,8 @@
 #include "lib/console.h"
 #include "lib/scheduler.h"
-#include "services/config.h"
+#include "services/config/config.h"
 #include "services/gen_id.h"
-#include "services/mqtt.h"
+#include "services/mqtt/mqtt.h"
 #include "services/registration.h"
 #include <curl/curl.h>
 #include <json-c/json.h>
@@ -107,7 +107,9 @@ void speedtest_task(Scheduler *sch, void *task_context) {
 
     // Schedule monitoring_task to rerun later
     unsigned int seed = time(0);
-    const int random_speed_test_interval = rand_r(&seed) % (config.speed_test_maximum_interval - config.speed_test_minimum_interval + 1) + config.speed_test_minimum_interval;
+    const int random_speed_test_interval =
+        rand_r(&seed) % (config.speed_test_maximum_interval - config.speed_test_minimum_interval + 1) +
+        config.speed_test_minimum_interval;
     schedule_task(sch, time(NULL) + random_speed_test_interval, speedtest_task, "speedtest", context);
 }
 
@@ -128,7 +130,9 @@ void speedtest_service(Scheduler *sch, struct mosquitto *mosq, Registration *reg
     context->access_token = access_token;
 
     unsigned int seed = time(0);
-    const int random_speed_test_interval = rand_r(&seed) % (config.speed_test_maximum_interval - config.speed_test_minimum_interval + 1) + config.speed_test_minimum_interval;
+    const int random_speed_test_interval =
+        rand_r(&seed) % (config.speed_test_maximum_interval - config.speed_test_minimum_interval + 1) +
+        config.speed_test_minimum_interval;
 
     schedule_task(sch, time(NULL) + random_speed_test_interval, speedtest_task, "speedtest", context);
 }

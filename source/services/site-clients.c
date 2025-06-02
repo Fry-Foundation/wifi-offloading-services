@@ -1,9 +1,9 @@
 #include "site-clients.h"
 #include "lib/console.h"
 #include "lib/script_runner.h"
-#include "services/config.h"
+#include "services/config/config.h"
 #include "services/device-context.h"
-#include "services/mqtt.h"
+#include "services/mqtt/mqtt.h"
 #include "services/nds.h"
 #include <fcntl.h>
 #include <json-c/json.h>
@@ -28,8 +28,7 @@ void handle_connect(const char *mac) {
     // Build the command
     char command[512];
     snprintf(command, sizeof(command), "%s/%s add %s %s %s %s %s %s %s", config.scripts_path,
-             "nds-set-preemptive-list.lua", mac, SESSION_TIMEOUT,
-             UPLOAD_RATE, DOWNLOAD_RATE, UPLOAD_QUOTA,
+             "nds-set-preemptive-list.lua", mac, SESSION_TIMEOUT, UPLOAD_RATE, DOWNLOAD_RATE, UPLOAD_QUOTA,
              DOWNLOAD_QUOTA, CUSTOM);
 
     print_debug(&csl, "Command: %s", command);
@@ -45,8 +44,7 @@ void handle_connect(const char *mac) {
 void handle_disconnect(const char *mac) {
     // Build the command
     char command[512];
-    snprintf(command, sizeof(command), "%s/%s remove %s", config.scripts_path,
-             "nds-set-preemptive-list.lua", mac);
+    snprintf(command, sizeof(command), "%s/%s remove %s", config.scripts_path, "nds-set-preemptive-list.lua", mac);
 
     // Run the script
     char *output = run_script(command);
@@ -65,7 +63,7 @@ void site_clients_callback(Mosq *_, const struct mosquitto_message *message) {
         return;
     }
 
-    if(json_object_get_type(events_array) != json_type_array) {
+    if (json_object_get_type(events_array) != json_type_array) {
         print_error(&csl, "Expected JSON array in site clients topic payload");
         json_object_put(events_array);
         return;
@@ -105,7 +103,7 @@ void site_clients_callback(Mosq *_, const struct mosquitto_message *message) {
         method_ptr += strlen(method_key);
         char method[64] = {0};
         int j = 0;
-        while(method_ptr[j] != '\0' && method_ptr[j] != ',' && j < (int)(sizeof(method) - 1)) {
+        while (method_ptr[j] != '\0' && method_ptr[j] != ',' && j < (int)(sizeof(method) - 1)) {
             method[j] = method_ptr[j];
             j++;
         }
@@ -121,7 +119,7 @@ void site_clients_callback(Mosq *_, const struct mosquitto_message *message) {
         mac_ptr += strlen(mac_key);
         char mac[18] = {0};
         j = 0;
-        while(mac_ptr[j] != '\0' && mac_ptr[j] != ',' && j < (int)(sizeof(mac) - 1)) {
+        while (mac_ptr[j] != '\0' && mac_ptr[j] != ',' && j < (int)(sizeof(mac) - 1)) {
             mac[j] = mac_ptr[j];
             j++;
         }

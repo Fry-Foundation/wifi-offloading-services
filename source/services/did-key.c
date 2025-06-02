@@ -1,7 +1,7 @@
 #include "did-key.h"
 #include "lib/console.h"
 #include "lib/key_pair.h"
-#include "services/config.h"
+#include "services/config/config.h"
 #include "services/exit_handler.h"
 #include <ctype.h>
 #include <openssl/evp.h>

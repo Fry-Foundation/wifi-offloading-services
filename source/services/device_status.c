@@ -3,12 +3,13 @@
 #include "lib/http-requests.h"
 #include "lib/scheduler.h"
 #include "services/access_token.h"
-#include "services/config.h"
+#include "services/config/config.h"
 #include "services/device_info.h"
 #include <json-c/json.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define DEVICE_STATUS_ENDPOINT "/api/nfnode/device-status"
 
@@ -35,9 +36,9 @@ DeviceStatus request_device_status(void *task_context) {
     // Request body
     json_object *json_body = json_object_new_object();
     json_object_object_add(json_body, "on_boot", json_object_new_boolean(on_boot));
-    //json_object_object_add(json_body, "device_id", json_object_new_string(context->device_info->device_id));
+    // json_object_object_add(json_body, "device_id", json_object_new_string(context->device_info->device_id));
     if (strcmp(context->device_info->model, "Odyssey") != 0) {
-    json_object_object_add(json_body, "device_id", json_object_new_string(context->device_info->device_id));
+        json_object_object_add(json_body, "device_id", json_object_new_string(context->device_info->device_id));
     }
     json_object_object_add(json_body, "mac", json_object_new_string(context->device_info->mac));
     json_object_object_add(json_body, "name", json_object_new_string(context->device_info->name));

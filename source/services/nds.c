@@ -2,18 +2,18 @@
 #include "lib/console.h"
 #include "lib/scheduler.h"
 #include "lib/script_runner.h"
-#include "services/config.h"
+#include "services/config/config.h"
 #include "services/device-context.h"
-#include "services/mqtt.h"
+#include "services/mqtt/mqtt.h"
+#include <errno.h>
 #include <fcntl.h>
+#include <json-c/json_object.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <errno.h>
-#include <stdbool.h>
-#include <json-c/json_object.h>
 
 #define NDS_FIFO "nds-fifo"
 #define NDS_FIFO_BUFFER_SIZE 512
@@ -139,7 +139,7 @@ void nds_task(Scheduler *sch, void *task_context) {
 
         char *line = strtok(buffer, "\n");
         while (line != NULL) {
-            // Add gateway_mac to the event string: 
+            // Add gateway_mac to the event string:
             char event_with_mac[1024];
             snprintf(event_with_mac, sizeof(event_with_mac), "%s, gatewaymac=%s", line, ctx->device_info->mac);
 
@@ -156,8 +156,9 @@ void nds_task(Scheduler *sch, void *task_context) {
             const char *json_payload_str = json_object_to_json_string(events_array);
 
             // Publish accounting event (backend is subscribed to this)
-            //publish_mqtt(ctx->mosq, "accounting/nds", json_payload_str, 0);
-            int publish_rc = mosquitto_publish(ctx->mosq, NULL, "accounting/nds", strlen(json_payload_str), json_payload_str, 0, false);
+            // publish_mqtt(ctx->mosq, "accounting/nds", json_payload_str, 0);
+            int publish_rc = mosquitto_publish(ctx->mosq, NULL, "accounting/nds", strlen(json_payload_str),
+                                               json_payload_str, 0, false);
             if (publish_rc != MOSQ_ERR_SUCCESS) {
                 print_error(&csl, "Failed to publish accounting/nds: %s", mosquitto_strerror(publish_rc));
             }

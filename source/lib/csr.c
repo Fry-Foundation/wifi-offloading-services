@@ -1,8 +1,8 @@
-# include "csr.h"
-# include <openssl/evp.h>
-# include <openssl/x509.h>
-# include <openssl/pem.h>
-# include <lib/result.h>
+#include "csr.h"
+#include <lib/result.h>
+#include <openssl/evp.h>
+#include <openssl/pem.h>
+#include <openssl/x509.h>
 
 static const unsigned char DEFAULT_COUNTRY[] = "US";
 static const unsigned char DEFAULT_STATE[] = "Florida";
@@ -44,47 +44,42 @@ Result generate_csr(EVP_PKEY *pkey, const char *csr_filepath, CSRInfo *info) {
     const unsigned char *state = (info && info->state) ? info->state : DEFAULT_STATE;
     const unsigned char *locality = (info && info->locality) ? info->locality : DEFAULT_LOCALITY;
     const unsigned char *organization = (info && info->organization) ? info->organization : DEFAULT_ORGANIZATION;
-    const unsigned char *organizational_unit = (info && info->organizational_unit) ? info->organizational_unit : DEFAULT_ORGANIZATIONAL_UNIT;
+    const unsigned char *organizational_unit =
+        (info && info->organizational_unit) ? info->organizational_unit : DEFAULT_ORGANIZATIONAL_UNIT;
     const unsigned char *common_name = (info && info->common_name) ? info->common_name : DEFAULT_COMMON_NAME;
 
     // Add entries to the subject name
-    if (X509_NAME_add_entry_by_txt(name, "C", MBSTRING_ASC,
-        country, -1, -1, 0) != 1) {
+    if (X509_NAME_add_entry_by_txt(name, "C", MBSTRING_ASC, country, -1, -1, 0) != 1) {
         X509_NAME_free(name);
         X509_REQ_free(req);
         return error(5, "Failed to add country to X509_NAME");
     }
 
-    if (X509_NAME_add_entry_by_txt(name, "ST", MBSTRING_ASC,
-        state, -1, -1, 0) != 1) {
+    if (X509_NAME_add_entry_by_txt(name, "ST", MBSTRING_ASC, state, -1, -1, 0) != 1) {
         X509_NAME_free(name);
         X509_REQ_free(req);
         return error(6, "Failed to add state to X509_NAME");
     }
 
-    if (X509_NAME_add_entry_by_txt(name, "L", MBSTRING_ASC,
-        locality, -1, -1, 0) != 1) {
+    if (X509_NAME_add_entry_by_txt(name, "L", MBSTRING_ASC, locality, -1, -1, 0) != 1) {
         X509_NAME_free(name);
         X509_REQ_free(req);
         return error(7, "Failed to add locality to X509_NAME");
     }
 
-    if (X509_NAME_add_entry_by_txt(name, "O", MBSTRING_ASC,
-        organization, -1, -1, 0) != 1) {
+    if (X509_NAME_add_entry_by_txt(name, "O", MBSTRING_ASC, organization, -1, -1, 0) != 1) {
         X509_NAME_free(name);
         X509_REQ_free(req);
         return error(8, "Failed to add organization to X509_NAME");
     }
 
-    if (X509_NAME_add_entry_by_txt(name, "OU", MBSTRING_ASC,
-        organizational_unit, -1, -1, 0) != 1) {
+    if (X509_NAME_add_entry_by_txt(name, "OU", MBSTRING_ASC, organizational_unit, -1, -1, 0) != 1) {
         X509_NAME_free(name);
         X509_REQ_free(req);
         return error(9, "Failed to add organizational unit to X509_NAME");
     }
 
-    if (X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC,
-        common_name, -1, -1, 0) != 1) {
+    if (X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_ASC, common_name, -1, -1, 0) != 1) {
         X509_NAME_free(name);
         X509_REQ_free(req);
         return error(10, "Failed to add common name to X509_NAME");

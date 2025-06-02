@@ -1,16 +1,16 @@
-#include "mqtt-cert.h"
-#include "lib/console.h"
-#include "lib/key_pair.h"
+#include "cert.h"
 #include "lib/cert_audit.h"
+#include "lib/console.h"
+#include "lib/csr.h"
+#include "lib/http-requests.h"
+#include "lib/key_pair.h"
+#include "lib/result.h"
+#include "lib/retry.h"
 #include "services/access_token.h"
-#include "services/config.h"
-#include <lib/http-requests.h>
+#include "services/config/config.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
-#include "lib/retry.h"
-#include <lib/csr.h>
-#include <lib/result.h>
 
 #define MQTT_CA_ENDPOINT "certificate-signing/ca"
 #define MQTT_SIGN_ENDPOINT "certificate-signing/sign"
@@ -49,7 +49,7 @@ bool get_mqtt_ca_cert(void *params) {
     return verify_result == 1 ? true : false;
 }
 
-bool attempt_ca_cert(AccessToken *access_token){
+bool attempt_ca_cert(AccessToken *access_token) {
     RetryConfig config;
     config.retry_func = get_mqtt_ca_cert;
     config.retry_params = access_token;
@@ -57,7 +57,7 @@ bool attempt_ca_cert(AccessToken *access_token){
     config.delay_seconds = 30;
     bool result = retry(&config);
     if (result == true) {
-        print_info(&csl,"MQTT CA certificate is ready");
+        print_info(&csl, "MQTT CA certificate is ready");
         return true;
     } else {
         print_error(&csl, "No CA certificate after %d attempts ... exiting", config.attempts);
@@ -94,7 +94,7 @@ bool generate_and_sign_cert(void *params) {
     print_debug(&csl, "Checking if existing certificate matches key ...");
     int initial_key_cert_match_result = validate_key_cert_match(key_path, cert_path);
 
-    if (initial_verify_result == 1 && initial_key_cert_match_result == 1 ) {
+    if (initial_verify_result == 1 && initial_key_cert_match_result == 1) {
         print_debug(&csl, "MQTT certificate exists is valid. No further action required.");
         return true;
     } else {
@@ -159,16 +159,16 @@ bool generate_and_sign_cert(void *params) {
 
     print_debug(&csl, "Verifying if new key matches certificate...");
     int key_cert_match_result = validate_key_cert_match(key_path, cert_path);
-    if(key_cert_match_result == 1){
+    if (key_cert_match_result == 1) {
         print_debug(&csl, "Key matches certificate");
         return true;
-    }else{
+    } else {
         print_error(&csl, "Key does not match certificate");
         return false;
     }
 }
 
-bool attempt_generate_and_sign(AccessToken *access_token){
+bool attempt_generate_and_sign(AccessToken *access_token) {
     RetryConfig config;
     config.retry_func = generate_and_sign_cert;
     config.retry_params = access_token;

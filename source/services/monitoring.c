@@ -1,10 +1,10 @@
 #include "lib/console.h"
 #include "lib/scheduler.h"
 #include "lib/script_runner.h"
-#include "services/config.h"
+#include "services/config/config.h"
 #include "services/device_info.h"
 #include "services/gen_id.h"
-#include "services/mqtt.h"
+#include "services/mqtt/mqtt.h"
 #include "services/registration.h"
 #include <json-c/json.h>
 #include <lib/console.h>
@@ -155,7 +155,9 @@ void monitoring_task(Scheduler *sch, void *task_context) {
     free(context->public_ip);
 
     unsigned int seed = time(0);
-    const int random_monitoring_interval = rand_r(&seed) % (config.monitoring_maximum_interval - config.monitoring_minimum_interval + 1) + config.monitoring_minimum_interval;
+    const int random_monitoring_interval =
+        rand_r(&seed) % (config.monitoring_maximum_interval - config.monitoring_minimum_interval + 1) +
+        config.monitoring_minimum_interval;
 
     // Schedule monitoring_task to rerun later
     schedule_task(sch, time(NULL) + random_monitoring_interval, monitoring_task, "monitoring", context);

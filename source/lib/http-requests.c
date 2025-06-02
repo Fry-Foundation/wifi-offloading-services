@@ -14,6 +14,7 @@ static Console csl = {
 HttpResult http_get(const HttpGetOptions *options) {
     HttpResult result = {
         .is_error = false,
+        .error = "",
         .http_status_code = 0,
         .response_buffer = NULL,
         .response_size = 0,
@@ -95,6 +96,7 @@ HttpResult http_get(const HttpGetOptions *options) {
 HttpResult http_post(const HttpPostOptions *options) {
     HttpResult result = {
         .is_error = false,
+        .error = "",
         .http_status_code = 0,
         .response_buffer = NULL,
         .response_size = 0,
@@ -210,7 +212,7 @@ HttpResult http_download(const HttpDownloadOptions *options) {
     FILE *fp;
     HttpResult result = {
         .is_error = false,
-        .error = NULL,
+        .error = "",
         .http_status_code = 0,
         .response_buffer = NULL,
         .response_size = 0,

@@ -20,6 +20,7 @@
 #include "services/site-clients.h"
 #include "services/speedtest.h"
 #include "services/time_sync.h"
+#include "services/collector.h"
 #include <lib/retry.h>
 #include <mosquitto.h>
 #include <stdbool.h>
@@ -30,13 +31,16 @@ static Console csl = {
 };
 
 int main(int argc, char *argv[]) {
-    print_info(&csl, "starting wayru-os-services");
+    console_info(&csl, "starting wayru-os-services");
 
     // Signal handlers
     setup_signal_handlers();
 
     // Config
     init_config(argc, argv);
+
+    // Collector
+    collector_init();
 
     // DeviceInfo
     DeviceInfo *device_info = init_device_info();
@@ -57,7 +61,7 @@ int main(int argc, char *argv[]) {
     // Access token
     AccessToken *access_token = init_access_token(registration);
     if (access_token == NULL) {
-        print_error(&csl, "Failed to start access token ... exiting");
+        console_error(&csl, "Failed to start access token ... exiting");
         cleanup_and_exit(1);
     }
     register_cleanup((cleanup_callback)clean_access_token, access_token);
@@ -131,6 +135,7 @@ int main(int argc, char *argv[]) {
     speedtest_service(sch, mqtt_client.mosq, registration, access_token);
     commands_service(mqtt_client.mosq, device_info, registration, access_token);
     reboot_service(sch);
+    collector_service(sch, registration->wayru_device_id, access_token->token, config.collector_interval, config.devices_api);
 
     run_tasks(sch);
 

@@ -17,7 +17,7 @@ void time_sync_task(Scheduler *sch, void *task_context) {
     char command[256];
     snprintf(command, sizeof(command), "ntpdate %s", config.time_sync_server);
     char *result = run_script(command);
-    print_debug(&csl, "time sync result: %s", result);
+    console_debug(&csl, "time sync result: %s", result);
     free(result);
 
     // Schedule the next time sync task
@@ -27,7 +27,7 @@ void time_sync_task(Scheduler *sch, void *task_context) {
 void time_sync_service(Scheduler *sch) {
     // Check if dev mode
     if (config.dev_env) {
-        print_warn(&csl, "dev mode is enabled, skipping time sync service");
+        console_warn(&csl, "dev mode is enabled, skipping time sync service");
         return;
     }
 
@@ -36,7 +36,7 @@ void time_sync_service(Scheduler *sch) {
     snprintf(opennds_check_command, sizeof(opennds_check_command), "opkg list-installed | grep ntpdate");
     bool ntpdate_installed = system(opennds_check_command) == 0;
     if (!ntpdate_installed) {
-        print_warn(&csl, "ntpdate is not installed, skipping time sync service");
+        console_warn(&csl, "ntpdate is not installed, skipping time sync service");
         return;
     }
 
@@ -45,7 +45,7 @@ void time_sync_service(Scheduler *sch) {
     snprintf(check_enabled_command, sizeof(check_enabled_command), "service ntpdate status | grep enabled");
     bool ntpdate_enabled = system(check_enabled_command) == 0;
     if (!ntpdate_enabled) {
-        print_warn(&csl, "ntpdate is not enabled, skipping time sync service");
+        console_warn(&csl, "ntpdate is not enabled, skipping time sync service");
         return;
     }
 

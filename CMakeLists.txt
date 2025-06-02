@@ -37,6 +37,7 @@ SET(SERVICES_SOURCES
     source/services/diagnostic/diagnostic.c
     source/services/exit_handler.c
     source/services/time_sync.c
+    source/services/collector.c
 )
 
 SET(LIB_SOURCES

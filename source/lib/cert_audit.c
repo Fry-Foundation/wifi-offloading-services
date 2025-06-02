@@ -12,22 +12,22 @@ static Console cons = {
 int validate_ca_cert(const char *ca_cert_path) {
     FILE *ca_file = fopen(ca_cert_path, "r");
     if (!ca_file) {
-        print_debug(&cons, "Error opening CA certificate: %s", ca_cert_path);
+        console_debug(&cons, "Error opening CA certificate: %s", ca_cert_path);
         return 0;
     }
 
     X509 *ca_cert = PEM_read_X509(ca_file, NULL, NULL, NULL);
     fclose(ca_file);
     if (!ca_cert) {
-        print_error(&cons, "Error reading CA certificate: %s", ca_cert_path);
+        console_error(&cons, "Error reading CA certificate: %s", ca_cert_path);
         return 0;
     }
 
     int is_ca = X509_check_ca(ca_cert);
     if (is_ca) {
-        print_debug(&cons, "The certificate %s is valid and is a CA.", ca_cert_path);
+        console_debug(&cons, "The certificate %s is valid and is a CA.", ca_cert_path);
     } else {
-        print_error(&cons, "The certificate %s is not a CA.", ca_cert_path);
+        console_error(&cons, "The certificate %s is not a CA.", ca_cert_path);
     }
 
     X509_free(ca_cert);
@@ -37,7 +37,7 @@ int validate_ca_cert(const char *ca_cert_path) {
 int validate_key_cert_match(const char *keyFile, const char *certFile) {
     FILE *key_fp = fopen(keyFile, "r");
     if (!key_fp) {
-        print_debug(&cons, "Error could not open the .key file");
+        console_debug(&cons, "Error could not open the .key file");
         return -1;
     }
 
@@ -45,14 +45,14 @@ int validate_key_cert_match(const char *keyFile, const char *certFile) {
     fclose(key_fp);
 
     if (!pkey) {
-        print_error(&cons, "Error reading the private key.");
+        console_error(&cons, "Error reading the private key.");
         ERR_print_errors_fp(stderr);
         return -1;
     }
 
     FILE *cert_fp = fopen(certFile, "r");
     if (!cert_fp) {
-        print_error(&cons, "Error could not open the .crt file");
+        console_error(&cons, "Error could not open the .crt file");
         EVP_PKEY_free(pkey);
         return -1;
     }
@@ -61,7 +61,7 @@ int validate_key_cert_match(const char *keyFile, const char *certFile) {
     fclose(cert_fp);
 
     if (!cert) {
-        print_error(&cons, "Error reading the certificate.");
+        console_error(&cons, "Error reading the certificate.");
         EVP_PKEY_free(pkey);
         ERR_print_errors_fp(stderr);
         return -1;
@@ -69,7 +69,7 @@ int validate_key_cert_match(const char *keyFile, const char *certFile) {
 
     EVP_PKEY *pubkey = X509_get_pubkey(cert);
     if (!pubkey) {
-        print_error(&cons, "Error getting the public key from the certificate.");
+        console_error(&cons, "Error getting the public key from the certificate.");
         EVP_PKEY_free(pkey);
         X509_free(cert);
         return -1;

@@ -59,7 +59,7 @@ void send_package_status(PackageUpdateTaskContext *ctx,
 
     const char *body = json_object_to_json_string(json_body);
 
-    print_debug(&csl, "package status request body: %s", body);
+    console_debug(&csl, "package status request body: %s", body);
 
     // Send status to server
     HttpPostOptions options = {
@@ -73,7 +73,7 @@ void send_package_status(PackageUpdateTaskContext *ctx,
     json_object_put(json_body);
 
     if (result.is_error) {
-        print_error(&csl, "package status request failed: %s", result.error);
+        console_error(&csl, "package status request failed: %s", result.error);
 
         // Try to parse response buffer to get error.message
         if (result.response_buffer != NULL) {
@@ -84,7 +84,7 @@ void send_package_status(PackageUpdateTaskContext *ctx,
                     struct json_object *json_message;
                     if (json_object_object_get_ex(json_error, "message", &json_message)) {
                         const char *error_message = json_object_get_string(json_message);
-                        print_error(&csl, "error message from server: %s", error_message);
+                        console_error(&csl, "error message from server: %s", error_message);
                     }
                 }
                 json_object_put(json_parsed_error);
@@ -112,17 +112,17 @@ void check_package_update_completion(Registration *registration, DeviceInfo *dev
 
         // Compare the version with the current version
         if (strcmp(version, device_info->os_services_version) == 0) {
-            print_info(&csl, "Package update completed successfully");
+            console_info(&csl, "Package update completed successfully");
             PackageUpdateTaskContext ctx = {
                 .device_info = device_info, .registration = registration, .access_token = access_token};
             send_package_status(&ctx, "completed", NULL, NULL);
         } else {
-            print_error(&csl, "Package update failed");
+            console_error(&csl, "Package update failed");
         }
 
         remove(UPDATE_MARKER_FILE);
     } else {
-        print_info(&csl, "No update marker found");
+        console_info(&csl, "No update marker found");
     }
 }
 
@@ -167,10 +167,10 @@ Result verify_package_checksum(const char *file_path, const char *checksum) {
 
     // Compare the calculated checksum with the expected one
     if (strcmp(calculated_checksum, checksum) == 0) {
-        print_debug(&csl, "Checksum verification successful");
+        console_debug(&csl, "Checksum verification successful");
         return ok(NULL);
     } else {
-        print_error(&csl, "Checksum mismatch: expected %s, got %s", checksum, calculated_checksum);
+        console_error(&csl, "Checksum mismatch: expected %s, got %s", checksum, calculated_checksum);
         return error(3, "Checksum verification failed");
     }
 }
@@ -189,14 +189,14 @@ Result verify_package_checksum(const char *file_path, const char *checksum) {
  */
 Result download_package(PackageUpdateTaskContext *ctx, const char *download_link, const char *checksum) {
     if (ctx == NULL || download_link == NULL || checksum == NULL) {
-        print_error(&csl, "Invalid parameters");
+        console_error(&csl, "Invalid parameters");
         return error(-1, "Invalid parameters");
     }
 
     // Prepare download path
     char download_path[256];
     snprintf(download_path, sizeof(download_path), "%s/%s", config.temp_path, "package-update.ipk");
-    print_debug(&csl, "downloading package from: %s to %s", download_link, download_path);
+    console_debug(&csl, "downloading package from: %s to %s", download_link, download_path);
 
     // Set up download options
     HttpDownloadOptions download_options = {
@@ -208,12 +208,12 @@ Result download_package(PackageUpdateTaskContext *ctx, const char *download_link
     HttpResult download_result = http_download(&download_options);
 
     if (download_result.is_error) {
-        print_error(&csl, "package download failed: %s", download_result.error);
+        console_error(&csl, "package download failed: %s", download_result.error);
         send_package_status(ctx, "error", "package download failed", NULL);
         return error(-1, "package download failed");
     }
 
-    print_debug(&csl, "package downloaded successfully");
+    console_debug(&csl, "package downloaded successfully");
     return ok(strdup(download_path));
 }
 
@@ -233,7 +233,7 @@ Result send_package_check_request(PackageUpdateTaskContext *ctx) {
     // Url
     char package_update_url[256];
     snprintf(package_update_url, sizeof(package_update_url), "%s/%s", config.devices_api, PACKAGE_CHECK_ENDPOINT);
-    print_debug(&csl, "package update url: %s", package_update_url);
+    console_debug(&csl, "package update url: %s", package_update_url);
 
     // Request body
     json_object *json_body = json_object_new_object();
@@ -243,7 +243,7 @@ Result send_package_check_request(PackageUpdateTaskContext *ctx) {
     json_object_object_add(json_body, "device_id", json_object_new_string(ctx->registration->wayru_device_id));
     const char *body = json_object_to_json_string(json_body);
 
-    print_debug(&csl, "package check request body: %s", body);
+    console_debug(&csl, "package check request body: %s", body);
 
     HttpPostOptions options = {
         .url = package_update_url,
@@ -256,7 +256,7 @@ Result send_package_check_request(PackageUpdateTaskContext *ctx) {
     json_object_put(json_body);
 
     if (result.is_error) {
-        print_error(&csl, "package update request failed: %s", result.error);
+        console_error(&csl, "package update request failed: %s", result.error);
 
         // Try to parse response buffer to get error.message
         if (result.response_buffer != NULL) {
@@ -267,7 +267,7 @@ Result send_package_check_request(PackageUpdateTaskContext *ctx) {
                     struct json_object *json_message;
                     if (json_object_object_get_ex(json_error, "message", &json_message)) {
                         const char *error_message = json_object_get_string(json_message);
-                        print_error(&csl, "error message from server: %s", error_message);
+                        console_error(&csl, "error message from server: %s", error_message);
                     }
                 }
                 json_object_put(json_parsed_error);
@@ -279,7 +279,7 @@ Result send_package_check_request(PackageUpdateTaskContext *ctx) {
     }
 
     if (result.response_buffer == NULL) {
-        print_error(&csl, "package update request failed: response buffer is NULL");
+        console_error(&csl, "package update request failed: response buffer is NULL");
         return error(-1, "response buffer is null");
     }
 
@@ -294,14 +294,14 @@ Result send_package_check_request(PackageUpdateTaskContext *ctx) {
 
     json_parsed_response = json_tokener_parse(result.response_buffer);
     if (json_parsed_response == NULL) {
-        print_error(&csl, "failed to parse package update JSON response");
+        console_error(&csl, "failed to parse package update JSON response");
         free(result.response_buffer);
         return error(-1, "failed to parse package update JSON response");
     }
 
     // Get the data object, which contains all other fields
     if (!json_object_object_get_ex(json_parsed_response, "data", &json_data)) {
-        print_error(&csl, "missing 'data' field in package update response");
+        console_error(&csl, "missing 'data' field in package update response");
         json_object_put(json_parsed_response);
         free(result.response_buffer);
         return error(-1, "missing 'data' field in package update response");
@@ -309,7 +309,7 @@ Result send_package_check_request(PackageUpdateTaskContext *ctx) {
 
     // Extract fields from the data object
     if (!json_object_object_get_ex(json_data, "update_available", &json_update_available)) {
-        print_error(&csl, "missing 'update_available' field in package update response");
+        console_error(&csl, "missing 'update_available' field in package update response");
         json_object_put(json_parsed_response);
         free(result.response_buffer);
         return error(-1, "missing 'update_available' field in package update response");
@@ -317,7 +317,7 @@ Result send_package_check_request(PackageUpdateTaskContext *ctx) {
 
     bool update_available = json_object_get_boolean(json_update_available);
     if (!update_available) {
-        print_debug(&csl, "no update available");
+        console_debug(&csl, "no update available");
         json_object_put(json_parsed_response);
         free(result.response_buffer);
         PackageCheckResult check_result = {false, NULL, NULL, NULL, NULL};
@@ -326,24 +326,24 @@ Result send_package_check_request(PackageUpdateTaskContext *ctx) {
 
     bool error_extracting = false;
     if (!json_object_object_get_ex(json_data, "download_link", &json_download_link)) {
-        print_error(&csl, "missing 'download_link' field in package update response");
+        console_error(&csl, "missing 'download_link' field in package update response");
         error_extracting = true;
     }
     if (!json_object_object_get_ex(json_data, "checksum", &json_checksum)) {
-        print_error(&csl, "missing 'checksum' field in package update response");
+        console_error(&csl, "missing 'checksum' field in package update response");
         error_extracting = true;
     }
     if (!json_object_object_get_ex(json_data, "size_bytes", &json_size_bytes)) {
-        print_error(&csl, "missing 'size_bytes' field in package update response");
+        console_error(&csl, "missing 'size_bytes' field in package update response");
         error_extracting = true;
     }
     if (!json_object_object_get_ex(json_data, "new_version", &json_new_version)) {
-        print_error(&csl, "missing 'new_version' field in package update response");
+        console_error(&csl, "missing 'new_version' field in package update response");
         error_extracting = true;
     }
 
     if (error_extracting) {
-        print_error(&csl, "error extracting fields from package update response");
+        console_error(&csl, "error extracting fields from package update response");
         json_object_put(json_parsed_response);
         free(result.response_buffer);
         return error(-1, "error extracting fields from package update response");
@@ -354,10 +354,10 @@ Result send_package_check_request(PackageUpdateTaskContext *ctx) {
     const char *size_bytes = json_object_get_string(json_size_bytes);
     const char *new_version = json_object_get_string(json_new_version);
 
-    print_debug(&csl, "download link: %s", download_link);
-    print_debug(&csl, "checksum: %s", checksum);
-    print_debug(&csl, "size bytes: %s", size_bytes);
-    print_debug(&csl, "new version: %s", new_version);
+    console_debug(&csl, "download link: %s", download_link);
+    console_debug(&csl, "checksum: %s", checksum);
+    console_debug(&csl, "size bytes: %s", size_bytes);
+    console_debug(&csl, "new version: %s", new_version);
 
     PackageCheckResult *check_result = malloc(sizeof(PackageCheckResult));
     if (!check_result) {
@@ -393,16 +393,16 @@ void package_update_task(Scheduler *sch, void *task_context) {
     PackageUpdateTaskContext *ctx = (PackageUpdateTaskContext *)task_context;
 
     if (config.package_update_enabled == 0) {
-        print_debug(&csl, "package update is disabled by configuration; will not reschedule package update task");
+        console_debug(&csl, "package update is disabled by configuration; will not reschedule package update task");
         return;
     }
 
-    print_debug(&csl, "package update task");
+    console_debug(&csl, "package update task");
 
     // Check if an update is available
     Result result = send_package_check_request(ctx);
     if (!result.ok) {
-        print_error(&csl, result.error.message);
+        console_error(&csl, result.error.message);
         schedule_task(sch, time(NULL) + config.package_update_interval, package_update_task, "package update task",
                       ctx);
         return;
@@ -411,13 +411,13 @@ void package_update_task(Scheduler *sch, void *task_context) {
     // Make sure result is valid, and that an update is available
     PackageCheckResult *package_check_result = (PackageCheckResult *)result.data;
     if (!package_check_result) {
-        print_error(&csl, "failed to parse package check result");
+        console_error(&csl, "failed to parse package check result");
         schedule_task(sch, time(NULL) + config.package_update_interval, package_update_task, "package update task",
                       ctx);
         return;
     }
     if (!package_check_result->update_available) {
-        print_info(&csl, "no package update available");
+        console_info(&csl, "no package update available");
         schedule_task(sch, time(NULL) + config.package_update_interval, package_update_task, "package update task",
                       ctx);
         return;
@@ -487,7 +487,7 @@ void package_update_service(Scheduler *sch,
                             AccessToken *access_token) {
     PackageUpdateTaskContext *ctx = (PackageUpdateTaskContext *)malloc(sizeof(PackageUpdateTaskContext));
     if (ctx == NULL) {
-        print_error(&csl, "failed to allocate memory for package update task context");
+        console_error(&csl, "failed to allocate memory for package update task context");
         return;
     }
 
@@ -495,6 +495,6 @@ void package_update_service(Scheduler *sch,
     ctx->registration = registration;
     ctx->access_token = access_token;
 
-    print_debug(&csl, "scheduling package update task");
+    console_debug(&csl, "scheduling package update task");
     package_update_task(sch, ctx);
 }

@@ -52,6 +52,9 @@ void apply_config_defaults(Config *config) {
 
     strcpy(config->time_sync_server, DEFAULT_TIME_SYNC_SERVER);
     config->time_sync_interval = DEFAULT_TIME_SYNC_INTERVAL;
+
+    config->collector_enabled = DEFAULT_COLLECTOR_ENABLED;
+    config->collector_interval = DEFAULT_COLLECTOR_INTERVAL;
 }
 
 void set_config_paths(Config *config, bool dev_env) {

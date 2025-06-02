@@ -54,6 +54,9 @@ typedef struct {
     char time_sync_server[API_SIZE];
     int time_sync_interval;
 
+    bool collector_enabled;
+    int collector_interval;
+
     char active_path[PATH_SIZE];
     char scripts_path[PATH_SIZE];
     char data_path[PATH_SIZE];

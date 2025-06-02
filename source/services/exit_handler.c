@@ -22,7 +22,7 @@ static bool shutdown_requested = false;
 static pthread_mutex_t lock;
 
 void signal_handler(int signal) {
-    print_info(&csl, "Signal %d received. Initiating shutdown ...", signal);
+    console_info(&csl, "Signal %d received. Initiating shutdown ...", signal);
     cleanup_and_exit(0);
 }
 
@@ -33,12 +33,12 @@ void setup_signal_handlers() {
     sigemptyset(&sa.sa_mask);
 
     if (sigaction(SIGINT, &sa, NULL) == -1) {
-        print_error(&csl, "could not set SIGINT handler");
+        console_error(&csl, "could not set SIGINT handler");
         exit(1);
     }
 
     if (sigaction(SIGTERM, &sa, NULL) == -1) {
-        print_error(&csl, "could not set SIGTERM handler");
+        console_error(&csl, "could not set SIGTERM handler");
         exit(1);
     }
 }
@@ -49,18 +49,18 @@ void register_cleanup(cleanup_callback callback, void *data) {
         cleanup_entries[cleanup_count].data = data;
         cleanup_count++;
     } else {
-        print_error(&csl, "too many cleanup functions registered");
+        console_error(&csl, "too many cleanup functions registered");
     }
 }
 
 void cleanup_and_exit(int exit_code) {
-    print_info(&csl, "cleaning up ...");
+    console_info(&csl, "cleaning up ...");
     for (int i = cleanup_count - 1; i >= 0; i--) {
         if (cleanup_entries[i].callback) {
             cleanup_entries[i].callback(cleanup_entries[i].data);
         }
     }
-    print_info(&csl, "exiting with code %d", exit_code);
+    console_info(&csl, "exiting with code %d", exit_code);
     exit(exit_code);
 }
 

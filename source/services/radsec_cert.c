@@ -28,7 +28,7 @@ bool get_radsec_ca_cert(void *params) {
 
     char url[256];
     snprintf(url, sizeof(url), "%s/%s", config.accounting_api, RADSEC_CA_ENDPOINT);
-    print_debug(&csl, "Getting RadSec CA certificate from: %s", url);
+    console_debug(&csl, "Getting RadSec CA certificate from: %s", url);
 
     char ca_cert_path[256];
     snprintf(ca_cert_path, sizeof(ca_cert_path), "%s/%s", config.data_path, RADSEC_CA_FILE_NAME);
@@ -41,10 +41,10 @@ bool get_radsec_ca_cert(void *params) {
 
     HttpResult result = http_download(&get_ca_options);
     if (result.is_error) {
-        print_error(&csl, "Failed to download RadSec CA certificate: %s", result.error);
+        console_error(&csl, "Failed to download RadSec CA certificate: %s", result.error);
         return false;
     } else {
-        print_info(&csl, "RadSec CA certificate downloaded successfully");
+        console_info(&csl, "RadSec CA certificate downloaded successfully");
     }
 
     // Verify that the downloaded RadSec CA certificate is valid
@@ -60,10 +60,10 @@ bool attempt_radsec_ca_cert(AccessToken *access_token) {
     config.delay_seconds = 30;
     bool result = retry(&config);
     if (result == true) {
-        print_debug(&csl, "RadSec CA certificate is valid");
+        console_debug(&csl, "RadSec CA certificate is valid");
         return true;
     } else {
-        print_error(&csl, "Failed to download RadSec CA certificate after %d attempts ... exiting", config.attempts);
+        console_error(&csl, "Failed to download RadSec CA certificate after %d attempts ... exiting", config.attempts);
         return false;
     }
 }
@@ -90,40 +90,40 @@ bool generate_and_sign_radsec_cert(void *params) {
     snprintf(backend_url, sizeof(backend_url), "%s/%s", config.accounting_api, RADSEC_SIGN_ENDPOINT);
 
     // Print the paths for debugging
-    print_debug(&csl, "Key path: %s", key_path);
-    print_debug(&csl, "CSR path: %s", csr_path);
-    print_debug(&csl, "Cert path: %s", cert_path);
-    print_debug(&csl, "CA path: %s", ca_path);
-    print_debug(&csl, "Backend URL: %s", backend_url);
+    console_debug(&csl, "Key path: %s", key_path);
+    console_debug(&csl, "CSR path: %s", csr_path);
+    console_debug(&csl, "Cert path: %s", cert_path);
+    console_debug(&csl, "CA path: %s", ca_path);
+    console_debug(&csl, "Backend URL: %s", backend_url);
 
-    print_debug(&csl, "Checking if the RadSec certificate already exists and is valid ...");
+    console_debug(&csl, "Checking if the RadSec certificate already exists and is valid ...");
     int initial_verify_result = verify_certificate(cert_path, ca_path);
 
-    print_debug(&csl, "Checking if existing certificate matches key ...");
+    console_debug(&csl, "Checking if existing certificate matches key ...");
     int initial_key_cert_match_result = validate_key_cert_match(key_path, cert_path);
 
     if (initial_verify_result == 1 && initial_key_cert_match_result == 1) {
-        print_debug(&csl, "RadSec certificate already exists and is valid. No further action required.");
+        console_debug(&csl, "RadSec certificate already exists and is valid. No further action required.");
         return true;
     } else {
-        print_debug(&csl, "RadSec certificate does not exist or is invalid. Generating a new one.");
+        console_debug(&csl, "RadSec certificate does not exist or is invalid. Generating a new one.");
     }
 
     // Generate private key
-    print_debug(&csl, "Generating private key ...");
+    console_debug(&csl, "Generating private key ...");
     EVP_PKEY *pkey = generate_key_pair(Rsa);
     bool save_pkey_result = save_private_key_in_pem(pkey, key_path);
-    print_debug(&csl, "Save private key result: %d", save_pkey_result);
+    console_debug(&csl, "Save private key result: %d", save_pkey_result);
 
     // Generate CSR
-    print_debug(&csl, "Generating CSR ...");
+    console_debug(&csl, "Generating CSR ...");
     Result csr_result = generate_csr(pkey, csr_path, NULL);
     if (!csr_result.ok) {
-        print_error(&csl, "Failed to generate CSR: %s", csr_result.error);
+        console_error(&csl, "Failed to generate CSR: %s", csr_result.error);
         return false;
     }
 
-    print_debug(&csl, "Sending CSR to backend so it can be signed ...");
+    console_debug(&csl, "Sending CSR to backend so it can be signed ...");
     HttpPostOptions post_cert_sign_options = {
         .url = backend_url,
         .upload_file_path = csr_path,
@@ -132,46 +132,46 @@ bool generate_and_sign_radsec_cert(void *params) {
 
     HttpResult sign_result = http_post(&post_cert_sign_options);
     if (sign_result.is_error) {
-        print_error(&csl, "Failed to sign RadSec certificate: %s", sign_result.error);
+        console_error(&csl, "Failed to sign RadSec certificate: %s", sign_result.error);
         return false;
     }
 
     if (sign_result.response_buffer == NULL) {
-        print_error(&csl, "Failed to sign RadSec certificate: no response");
+        console_error(&csl, "Failed to sign RadSec certificate: no response");
         return false;
     }
 
     // Save the signed certificate
     FILE *cert_file = fopen(cert_path, "wb");
     if (cert_file == NULL) {
-        print_error(&csl, "Failed to open certificate file for writing: %s", cert_path);
+        console_error(&csl, "Failed to open certificate file for writing: %s", cert_path);
         free(sign_result.response_buffer);
         return false;
     }
 
-    print_debug(&csl, "Writing signed certificate to file %s", cert_path);
+    console_debug(&csl, "Writing signed certificate to file %s", cert_path);
 
     fwrite(sign_result.response_buffer, 1, strlen(sign_result.response_buffer), cert_file);
     fclose(cert_file);
     free(sign_result.response_buffer);
 
     // Check that the written certificate is valid with the CA and with the key
-    print_debug(&csl, "Checking if the signed certificate is valid ...");
+    console_debug(&csl, "Checking if the signed certificate is valid ...");
     int verify_result = verify_certificate(cert_path, ca_path);
     if (verify_result == 1) {
-        print_debug(&csl, "RadSec certificate signed and saved successfully");
+        console_debug(&csl, "RadSec certificate signed and saved successfully");
     } else {
-        print_error(&csl, "RadSec certificate is not valid");
+        console_error(&csl, "RadSec certificate is not valid");
         return false;
     }
 
-    print_debug(&csl, "Checking if the certificate matches the key ...");
+    console_debug(&csl, "Checking if the certificate matches the key ...");
     int key_cert_match_result = validate_key_cert_match(key_path, cert_path);
     if (key_cert_match_result == 1) {
-        print_debug(&csl, "RadSec certificate matches the key");
+        console_debug(&csl, "RadSec certificate matches the key");
         return true;
     } else {
-        print_error(&csl, "RadSec certificate does not match the key");
+        console_error(&csl, "RadSec certificate does not match the key");
         return false;
     }
 }
@@ -179,7 +179,7 @@ bool generate_and_sign_radsec_cert(void *params) {
 bool attempt_generate_and_sign_radsec(AccessToken *access_token, Registration *registration) {
     RadSecSignParams *radsec_params = (RadSecSignParams *)malloc(sizeof(RadSecSignParams));
     if (radsec_params == NULL) {
-        print_error(&csl, "Failed to allocate memory for RadSec certificate generation");
+        console_error(&csl, "Failed to allocate memory for RadSec certificate generation");
         return false;
     }
 
@@ -196,10 +196,10 @@ bool attempt_generate_and_sign_radsec(AccessToken *access_token, Registration *r
     free(radsec_params);
 
     if (result == true) {
-        print_info(&csl, "RadSec certificate is ready");
+        console_info(&csl, "RadSec certificate is ready");
         return true;
     } else {
-        print_error(&csl, "Failed to generate and sign RadSec certificate after %d attempts ... exiting",
+        console_error(&csl, "Failed to generate and sign RadSec certificate after %d attempts ... exiting",
                     config.attempts);
         return false;
     }
@@ -210,12 +210,12 @@ bool attempt_generate_and_sign_radsec(AccessToken *access_token, Registration *r
 // @todo: check if radsecproxy is installed with opkg
 void install_radsec_cert() {
     if (config.dev_env) {
-        print_debug(&csl, "Running in dev environment, skipping RadSec certificate installation");
+        console_debug(&csl, "Running in dev environment, skipping RadSec certificate installation");
         return;
     }
 
     const char *is_installed = run_script("opkg list-installed | grep radsecproxy");
-    print_debug(&csl, "Is radsecproxy installed?: %s", is_installed);
+    console_debug(&csl, "Is radsecproxy installed?: %s", is_installed);
 
     run_script("service radsecproxy stop");
     sleep(5);

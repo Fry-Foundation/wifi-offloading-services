@@ -63,7 +63,7 @@ static void apply_command_line_overrides(int argc, char *argv[]) {
         // Console log level can be overridden from command line
         if (strcmp(argv[i], "--config-console-log-level") == 0 && i + 1 < argc) {
             int console_log_level = atoi(argv[i + 1]);
-            set_console_level(console_log_level);
+            console_set_level(console_log_level);
             i++; // Skip the next argument as it's the value
         }
     }
@@ -86,13 +86,13 @@ void init_config(int argc, char *argv[]) {
     // Determine config file path
     char config_file_path[PATH_SIZE];
     if (!determine_config_file_path(dev_env, config_file_path, sizeof(config_file_path))) {
-        print_error(&csl, "Failed to determine config file path");
+        console_error(&csl, "Failed to determine config file path");
         exit(1);
     }
 
     // Parse the UCI config file
     if (!parse_uci_config(config_file_path, &config)) {
-        print_error(&csl, "Failed to parse config file, using defaults");
+        console_error(&csl, "Failed to parse config file, using defaults");
     }
 
     // Apply command line overrides
@@ -100,7 +100,7 @@ void init_config(int argc, char *argv[]) {
 
     // Exit if disabled
     if (!config.enabled) {
-        print_info(&csl, "Service is disabled via configuration");
+        console_info(&csl, "Service is disabled via configuration");
         exit(0);
     }
 
@@ -109,38 +109,40 @@ void init_config(int argc, char *argv[]) {
 }
 
 void print_config_debug(void) {
-    print_debug(&csl, "config.dev_env: %d", config.dev_env);
-    print_debug(&csl, "config.enabled: %d", config.enabled);
-    print_debug(&csl, "config.main_api: %s", config.main_api);
-    print_debug(&csl, "config.accounting_api: %s", config.accounting_api);
-    print_debug(&csl, "config.devices_api: %s", config.devices_api);
-    print_debug(&csl, "config.access_interval: %d", config.access_interval);
-    print_debug(&csl, "config.device_status_interval: %d", config.device_status_interval);
-    print_debug(&csl, "config.active_path: %s", config.active_path);
-    print_debug(&csl, "config.scripts_path: %s", config.scripts_path);
-    print_debug(&csl, "config.data_path: %s", config.data_path);
-    print_debug(&csl, "config.temp_path: %s", config.temp_path);
-    print_debug(&csl, "config.monitoring_enabled: %d", config.monitoring_enabled);
-    print_debug(&csl, "config.monitoring_interval: %d", config.monitoring_interval);
-    print_debug(&csl, "config.monitoring_minimum_interval: %d", config.monitoring_minimum_interval);
-    print_debug(&csl, "config.monitoring_maximum_interval: %d", config.monitoring_maximum_interval);
-    print_debug(&csl, "config.speed_test_enabled: %d", config.speed_test_enabled);
-    print_debug(&csl, "config.speed_test_interval: %d", config.speed_test_interval);
-    print_debug(&csl, "config.speed_test_latency_attempts: %d", config.speed_test_latency_attempts);
-    print_debug(&csl, "config.device_context_interval: %d", config.device_context_interval);
-    print_debug(&csl, "config.mqtt_broker_url: %s", config.mqtt_broker_url);
-    print_debug(&csl, "config.mqtt_keepalive: %d", config.mqtt_keepalive);
-    print_debug(&csl, "config.mqtt_task_interval: %d", config.mqtt_task_interval);
-    print_debug(&csl, "config.reboot_enabled: %d", config.reboot_enabled);
-    print_debug(&csl, "config.reboot_interval: %d", config.reboot_interval);
-    print_debug(&csl, "config.firmware_update_enabled: %d", config.firmware_update_enabled);
-    print_debug(&csl, "config.firmware_update_interval: %d", config.firmware_update_interval);
-    print_debug(&csl, "config.use_n_sysupgrade: %d", config.use_n_sysupgrade);
-    print_debug(&csl, "config.package_update_enabled: %d", config.package_update_enabled);
-    print_debug(&csl, "config.package_update_interval: %d", config.package_update_interval);
-    print_debug(&csl, "config.diagnostic_interval: %d", config.diagnostic_interval);
-    print_debug(&csl, "config.external_connectivity_host: %s", config.external_connectivity_host);
-    print_debug(&csl, "config.nds_interval: %d", config.nds_interval);
-    print_debug(&csl, "config.time_sync_server: %s", config.time_sync_server);
-    print_debug(&csl, "config.time_sync_interval: %d", config.time_sync_interval);
+    console_debug(&csl, "config.dev_env: %d", config.dev_env);
+    console_debug(&csl, "config.enabled: %d", config.enabled);
+    console_debug(&csl, "config.main_api: %s", config.main_api);
+    console_debug(&csl, "config.accounting_api: %s", config.accounting_api);
+    console_debug(&csl, "config.devices_api: %s", config.devices_api);
+    console_debug(&csl, "config.access_interval: %d", config.access_interval);
+    console_debug(&csl, "config.device_status_interval: %d", config.device_status_interval);
+    console_debug(&csl, "config.active_path: %s", config.active_path);
+    console_debug(&csl, "config.scripts_path: %s", config.scripts_path);
+    console_debug(&csl, "config.data_path: %s", config.data_path);
+    console_debug(&csl, "config.temp_path: %s", config.temp_path);
+    console_debug(&csl, "config.monitoring_enabled: %d", config.monitoring_enabled);
+    console_debug(&csl, "config.monitoring_interval: %d", config.monitoring_interval);
+    console_debug(&csl, "config.monitoring_minimum_interval: %d", config.monitoring_minimum_interval);
+    console_debug(&csl, "config.monitoring_maximum_interval: %d", config.monitoring_maximum_interval);
+    console_debug(&csl, "config.speed_test_enabled: %d", config.speed_test_enabled);
+    console_debug(&csl, "config.speed_test_interval: %d", config.speed_test_interval);
+    console_debug(&csl, "config.speed_test_latency_attempts: %d", config.speed_test_latency_attempts);
+    console_debug(&csl, "config.device_context_interval: %d", config.device_context_interval);
+    console_debug(&csl, "config.mqtt_broker_url: %s", config.mqtt_broker_url);
+    console_debug(&csl, "config.mqtt_keepalive: %d", config.mqtt_keepalive);
+    console_debug(&csl, "config.mqtt_task_interval: %d", config.mqtt_task_interval);
+    console_debug(&csl, "config.reboot_enabled: %d", config.reboot_enabled);
+    console_debug(&csl, "config.reboot_interval: %d", config.reboot_interval);
+    console_debug(&csl, "config.firmware_update_enabled: %d", config.firmware_update_enabled);
+    console_debug(&csl, "config.firmware_update_interval: %d", config.firmware_update_interval);
+    console_debug(&csl, "config.use_n_sysupgrade: %d", config.use_n_sysupgrade);
+    console_debug(&csl, "config.package_update_enabled: %d", config.package_update_enabled);
+    console_debug(&csl, "config.package_update_interval: %d", config.package_update_interval);
+    console_debug(&csl, "config.diagnostic_interval: %d", config.diagnostic_interval);
+    console_debug(&csl, "config.external_connectivity_host: %s", config.external_connectivity_host);
+    console_debug(&csl, "config.nds_interval: %d", config.nds_interval);
+    console_debug(&csl, "config.time_sync_server: %s", config.time_sync_server);
+    console_debug(&csl, "config.time_sync_interval: %d", config.time_sync_interval);
+    console_debug(&csl, "config.collector_enabled: %d", config.collector_enabled);
+    console_debug(&csl, "config.collector_interval: %d", config.collector_interval);
 }

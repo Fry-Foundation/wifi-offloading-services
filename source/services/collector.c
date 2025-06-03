@@ -11,6 +11,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <sys/statvfs.h>
 
 typedef struct {
     char *device_id;
@@ -24,15 +25,215 @@ static FILE *log_file = NULL;
 static const char *logs_endpoint = "/logs";
 static const char *log_file_name = "collector.log";
 
+// Dynamic file size limits based on available disk space
+static long max_log_file_size_bytes = 0;
+static long emergency_truncate_size_bytes = 0;
+
+// Calculate safe file size limits based on available disk space
+static void calculate_file_size_limits(long available_disk_mb) {
+    // Safety thresholds for different disk sizes
+    if (available_disk_mb < 0) {
+        // Fallback if disk space detection fails
+        max_log_file_size_bytes = 1024 * 1024; // 1 MB
+        emergency_truncate_size_bytes = 512 * 1024; // 512 KB
+    } else if (available_disk_mb < 50) {
+        // Very small storage (< 50 MB) - be very conservative
+        max_log_file_size_bytes = 512 * 1024; // 512 KB (1% of 50MB)
+        emergency_truncate_size_bytes = 256 * 1024; // 256 KB
+    } else if (available_disk_mb < 500) {
+        // Small storage (50 MB - 500 MB) - use 0.5%
+        max_log_file_size_bytes = (available_disk_mb * 1024 * 1024) / 200; // 0.5%
+        emergency_truncate_size_bytes = max_log_file_size_bytes / 2;
+    } else if (available_disk_mb < 2048) {
+        // Medium storage (500 MB - 2 GB) - use 0.2%
+        max_log_file_size_bytes = (available_disk_mb * 1024 * 1024) / 500; // 0.2%
+        emergency_truncate_size_bytes = max_log_file_size_bytes / 2;
+    } else {
+        // Large storage (> 2 GB) - cap at 5 MB maximum
+        max_log_file_size_bytes = 5 * 1024 * 1024; // 5 MB
+        emergency_truncate_size_bytes = 2 * 1024 * 1024; // 2.5 MB
+    }
+    
+    // Ensure minimum viable log size (at least 100 KB)
+    if (max_log_file_size_bytes < 100 * 1024) {
+        max_log_file_size_bytes = 100 * 1024; // 100 KB minimum
+        emergency_truncate_size_bytes = 50 * 1024; // 50 KB
+    }
+    
+    printf("Collector: Set log limits based on %ld MB disk - Max: %ld KB, Truncate: %ld KB\n",
+           available_disk_mb, 
+           max_log_file_size_bytes / 1024,
+           emergency_truncate_size_bytes / 1024);
+}
+
+// Get available disk space directly within collector service
+static long get_available_disk_space_mb() {
+    if (config.dev_env) {
+        // Return a typical development machine disk space (in MB)
+        return 10240; // 10 GB
+    }
+
+    struct statvfs stat;
+    
+    // Get filesystem statistics for the data path
+    if (statvfs(config.data_path, &stat) != 0) {
+        fprintf(stderr, "Failed to get disk space for %s\n", config.data_path);
+        return -1;
+    }
+    
+    // Calculate available space in MB
+    long available_mb = (long)((stat.f_bavail * stat.f_frsize) / (1024 * 1024));
+    
+    return available_mb;
+}
+
 // Console callback function that's compatible with ConsoleCallback signature
 static void collector_console_callback(const char *topic, const char *level_label, const char *message) {
     // Use the collector_write function to handle structured logging
     collector_write(level_label, topic, message);
 }
 
+static long get_log_file_size(void) {
+    if (!log_file) return 0;
+    
+    // Force flush any pending writes
+    fflush(log_file);
+    
+    long current_pos = ftell(log_file);
+    if (current_pos < 0) return 0;  // Error getting position
+    
+    if (fseek(log_file, 0, SEEK_END) != 0) return 0;  // Error seeking
+    
+    long size = ftell(log_file);
+    if (size < 0) return 0;  // Error getting size
+    
+    if (fseek(log_file, current_pos, SEEK_SET) != 0) {
+        // If we can't restore position, at least go to end
+        fseek(log_file, 0, SEEK_END);
+    }
+    
+    return size;
+}
+
+static bool emergency_rotate_log(void) {
+    if (!log_file) return false;
+    
+    // Build log file path
+    char log_file_path[256];
+    snprintf(log_file_path, sizeof(log_file_path), "%s/%s", config.data_path, log_file_name);
+    
+    // Close current file handle
+    fclose(log_file);
+    log_file = NULL;
+    
+    // Read the file to keep the most recent entries
+    FILE *read_file = fopen(log_file_path, "r");
+    if (!read_file) {
+        // If we can't read, just truncate everything
+        log_file = fopen(log_file_path, "w");
+        if (log_file) {
+            fclose(log_file);
+            log_file = fopen(log_file_path, "a");
+        }
+        return log_file != NULL;
+    }
+    
+    // Get file size and calculate how much to keep
+    fseek(read_file, 0, SEEK_END);
+    long file_size = ftell(read_file);
+    
+    if (file_size <= emergency_truncate_size_bytes) {
+        // File is already small enough, just reopen
+        fclose(read_file);
+        log_file = fopen(log_file_path, "a");
+        return log_file != NULL;
+    }
+    
+    // Read the last portion of the file (most recent logs)
+    long start_pos = file_size - emergency_truncate_size_bytes;
+    fseek(read_file, start_pos, SEEK_SET);
+    
+    // Find the start of a complete log line (after a newline)
+    int c;
+    while ((c = fgetc(read_file)) != EOF && c != '\n') {
+        // Skip partial line
+    }
+    
+    // Calculate remaining bytes to read
+    long current_pos = ftell(read_file);
+    long bytes_to_read = file_size - current_pos;
+    if (bytes_to_read <= 0) {
+        fclose(read_file);
+        log_file = fopen(log_file_path, "w");
+        if (log_file) {
+            fclose(log_file);
+            log_file = fopen(log_file_path, "a");
+        }
+        fprintf(stderr, "Emergency log rotation: truncated to 0 bytes\n");
+        return log_file != NULL;
+    }
+    
+    // Limit bytes to read to our buffer size
+    if (bytes_to_read > emergency_truncate_size_bytes) {
+        bytes_to_read = emergency_truncate_size_bytes - 1;
+    }
+    
+    // Read the remaining content
+    char *preserved_content = malloc(bytes_to_read + 1);
+    if (!preserved_content) {
+        fclose(read_file);
+        log_file = fopen(log_file_path, "w");
+        if (log_file) {
+            fclose(log_file);
+            log_file = fopen(log_file_path, "a");
+        }
+        return log_file != NULL;
+    }
+    
+    size_t bytes_read = fread(preserved_content, 1, bytes_to_read, read_file);
+    preserved_content[bytes_read] = '\0';
+    fclose(read_file);
+    
+    // Rewrite the file with preserved content
+    log_file = fopen(log_file_path, "w");
+    if (log_file && bytes_read > 0) {
+        fwrite(preserved_content, 1, bytes_read, log_file);
+        fflush(log_file);
+        fclose(log_file);
+    } else if (log_file) {
+        fclose(log_file);
+    }
+    
+    free(preserved_content);
+    
+    // Reopen in append mode
+    log_file = fopen(log_file_path, "a");
+    
+    fprintf(stderr, "Emergency log rotation: truncated to %zu bytes\n", bytes_read);
+    return log_file != NULL;
+}
+
 bool collector_write(const char *level, const char *topic, const char *message) {
     if (!log_file) {
         return false;
+    }
+
+    // Don't check file size if limits haven't been initialized yet
+    if (max_log_file_size_bytes == 0) {
+        // Fallback to a reasonable default for early logs
+        max_log_file_size_bytes = 1024 * 1024; // 1 MB
+        emergency_truncate_size_bytes = 512 * 1024; // 512 KB
+    }
+
+    // Check file size before writing (with debug info)
+    long current_size = get_log_file_size();
+    if (current_size >= max_log_file_size_bytes) {
+        fprintf(stderr, "Log file too large (%ld bytes >= %ld bytes), performing emergency rotation\n", 
+                current_size, max_log_file_size_bytes);
+        if (!emergency_rotate_log()) {
+            fprintf(stderr, "Emergency rotation failed, skipping log entry\n");
+            return false;
+        }
     }
 
     // Get current timestamp
@@ -177,10 +378,13 @@ void collector_task(Scheduler *sch, void *task_context) {
                 size_t bytes_read = fread(log_content, 1, file_size, read_file);
                 log_content[bytes_read] = '\0';
                 
+                // Close read file before sending to backend
+                fclose(read_file);
+                read_file = NULL;
+                
                 // Send the log file to the backend
                 if (send_logs_to_backend(context->device_id, context->access_token, log_content, context->device_api_host)) {
                     // Successfully sent logs, truncate the file
-                    fclose(read_file);
                     if (log_file) {
                         fclose(log_file);
                         log_file = fopen(log_file_path, "w"); // Truncate file
@@ -193,11 +397,14 @@ void collector_task(Scheduler *sch, void *task_context) {
                 }
                 
                 free(log_content);
+                log_content = NULL;
+            } else {
+                fclose(read_file);
+                read_file = NULL;
             }
-        }
-        
-        if (read_file != log_file) {
+        } else {
             fclose(read_file);
+            read_file = NULL;
         }
     }
     
@@ -206,14 +413,39 @@ void collector_task(Scheduler *sch, void *task_context) {
 }
 
 void collector_service(Scheduler *sch, char *device_id, char *access_token, int collector_interval, const char *device_api_host) {
-    CollectorContext context = {
-        .device_id = device_id,
-        .access_token = access_token,
-        .collector_interval = collector_interval,
-        .device_api_host = (char *)device_api_host
-    };
+    // Get available disk space and calculate dynamic file size limits
+    long available_disk_mb = get_available_disk_space_mb();
+    calculate_file_size_limits(available_disk_mb);
+    
+    // Debug: Show the calculated limits
+    printf("Collector debug: max_log_file_size_bytes = %ld, emergency_truncate_size_bytes = %ld\n", 
+           max_log_file_size_bytes, emergency_truncate_size_bytes);
 
-    collector_task(sch, &context);
+    // Allocate context once - it will persist across all scheduled task executions
+    CollectorContext *context = malloc(sizeof(CollectorContext));
+    if (!context) {
+        fprintf(stderr, "Failed to allocate memory for collector context\n");
+        return;
+    }
+    
+    // Copy strings to ensure they remain valid throughout service lifetime
+    context->device_id = strdup(device_id);
+    context->access_token = strdup(access_token);
+    context->collector_interval = collector_interval;
+    context->device_api_host = strdup(device_api_host);
+    
+    if (!context->device_id || !context->access_token || !context->device_api_host) {
+        fprintf(stderr, "Failed to allocate memory for collector context strings\n");
+        // Cleanup partial allocation
+        if (context->device_id) free(context->device_id);
+        if (context->access_token) free(context->access_token);
+        if (context->device_api_host) free(context->device_api_host);
+        free(context);
+        return;
+    }
+
+    // Start the collector task - context will be reused across all executions
+    collector_task(sch, context);
 }
 
 void collector_cleanup(void) {

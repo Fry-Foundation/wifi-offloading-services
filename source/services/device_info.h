@@ -19,6 +19,7 @@ typedef struct {
     char *os_version;
     char *os_services_version;
     char *did_public_key;
+    long disk_size_mb;
 } DeviceInfo;
 
 DeviceInfo *init_device_info();

@@ -339,6 +339,11 @@ void collector_init(void) {
 }
 
 static bool send_logs_to_backend(const char *device_id, const char *access_token, const char *log_data, const char *device_api_host) {
+    printf("Collector Backend: Starting send_logs_to_backend\n");
+    printf("Collector Backend: Device ID: %s\n", device_id);
+    printf("Collector Backend: API Host: %s\n", device_api_host);
+    printf("Collector Backend: Log data length: %zu bytes\n", strlen(log_data));
+    
     // Prepare JSON payload
     json_object *json_payload = json_object_new_object();
     json_object *json_device_id = json_object_new_string(device_id);
@@ -350,10 +355,14 @@ static bool send_logs_to_backend(const char *device_id, const char *access_token
     json_object_object_add(json_payload, "timestamp", json_timestamp);
     
     const char *json_string = json_object_to_json_string(json_payload);
+    printf("Collector Backend: JSON payload size: %zu bytes\n", strlen(json_string));
+    printf("Collector Backend: JSON payload preview (first 300 chars): %.300s%s\n", 
+           json_string, strlen(json_string) > 300 ? "..." : "");
     
     // Build the full URL by concatenating host with endpoint
     char full_url[512];
     snprintf(full_url, sizeof(full_url), "%s%s", device_api_host, logs_endpoint);
+    printf("Collector Backend: Full URL: %s\n", full_url);
     
     // Use the HTTP abstraction library
     HttpPostOptions options = {
@@ -366,14 +375,29 @@ static bool send_logs_to_backend(const char *device_id, const char *access_token
         .upload_data_size = 0
     };
     
+    printf("Collector Backend: Calling http_post with bearer token: %s%.10s...\n", 
+           access_token ? "" : "(null) ", access_token ? access_token : "");
+    
     HttpResult result = http_post(&options);
+    
+    printf("Collector Backend: HTTP request completed\n");
+    printf("Collector Backend: Is error: %s\n", result.is_error ? "true" : "false");
+    if (result.is_error) {
+        printf("Collector Backend: Error message: %s\n", result.error ? result.error : "(null)");
+    }
+    printf("Collector Backend: HTTP status code: %ld\n", result.http_status_code);
+    if (result.response_buffer) {
+        printf("Collector Backend: Response body: %s\n", result.response_buffer);
+    } else {
+        printf("Collector Backend: No response body\n");
+    }
     
     // Clean up JSON object
     json_object_put(json_payload);
     
     // Check if request was successful
     if (result.is_error) {
-        fprintf(stderr, "Failed to send logs to backend: %s\n", result.error);
+        fprintf(stderr, "Collector Backend: Failed to send logs to backend: %s\n", result.error);
         if (result.response_buffer) {
             free(result.response_buffer);
         }
@@ -383,7 +407,9 @@ static bool send_logs_to_backend(const char *device_id, const char *access_token
     // Check HTTP status code
     bool success = (result.http_status_code >= 200 && result.http_status_code < 300);
     if (!success) {
-        fprintf(stderr, "Backend returned HTTP status: %ld\n", result.http_status_code);
+        fprintf(stderr, "Collector Backend: Backend returned HTTP status: %ld\n", result.http_status_code);
+    } else {
+        printf("Collector Backend: Request successful with HTTP status: %ld\n", result.http_status_code);
     }
     
     // Clean up response buffer
@@ -391,23 +417,32 @@ static bool send_logs_to_backend(const char *device_id, const char *access_token
         free(result.response_buffer);
     }
     
+    printf("Collector Backend: Returning %s\n", success ? "true" : "false");
     return success;
 }
 
 void collector_task(Scheduler *sch, void *task_context) {
     CollectorContext *context = (CollectorContext *)task_context;
+    
+    printf("Collector: Starting collection task\n");
 
     // Build log file path using config.data_path
     char log_file_path[256];
     snprintf(log_file_path, sizeof(log_file_path), "%s/%s", config.data_path, log_file_name);
+    
+    printf("Collector: Looking for log file at: %s\n", log_file_path);
 
     // Read the log file
     FILE *read_file = fopen(log_file_path, "r");
     if (read_file) {
+        printf("Collector: Successfully opened log file for reading\n");
+        
         // Get file size
         fseek(read_file, 0, SEEK_END);
         long file_size = ftell(read_file);
         fseek(read_file, 0, SEEK_SET);
+        
+        printf("Collector: Log file size: %ld bytes\n", file_size);
         
         if (file_size > 0) {
             // Check available memory before attempting to read file
@@ -417,6 +452,9 @@ void collector_task(Scheduler *sch, void *task_context) {
             // Require at least 2x the file size in available memory for safety margin
             // This accounts for the file buffer + JSON processing + other operations
             long required_memory_kb = file_size_kb * 2;
+            
+            printf("Collector: Memory check - Available: %lu KB, Required: %ld KB, File: %ld KB\n",
+                   available_memory_kb, required_memory_kb, file_size_kb);
             
             if (available_memory_kb == 0 || (long)available_memory_kb < required_memory_kb) {
                 // Not enough memory available
@@ -498,28 +536,43 @@ void collector_task(Scheduler *sch, void *task_context) {
             } else {
                 // Sufficient memory available - reset failure counter
                 consecutive_memory_failures = 0;
+                printf("Collector: Memory check passed, proceeding to read file\n");
+                
                 // Sufficient memory available - proceed with reading file
                 char *log_content = malloc(file_size + 1);
                 if (log_content) {
+                    printf("Collector: Successfully allocated %ld bytes for log content\n", file_size + 1);
+                    
                     size_t bytes_read = fread(log_content, 1, file_size, read_file);
                     log_content[bytes_read] = '\0';
+                    
+                    printf("Collector: Read %zu bytes from log file\n", bytes_read);
                     
                     // Close read file before sending to backend
                     fclose(read_file);
                     read_file = NULL;
                     
+                    printf("Collector: Attempting to send logs to backend\n");
+                    printf("Collector: Device ID: %s\n", context->device_id);
+                    printf("Collector: API Host: %s\n", context->device_api_host);
+                    printf("Collector: Log content preview (first 200 chars): %.200s%s\n", 
+                           log_content, strlen(log_content) > 200 ? "..." : "");
+                    
                     // Send the log file to the backend
                     if (send_logs_to_backend(context->device_id, context->access_token, log_content, context->device_api_host)) {
+                        printf("Collector: Successfully sent logs to backend\n");
                         // Successfully sent logs, truncate the file
                         if (log_file) {
                             fclose(log_file);
                             log_file = fopen(log_file_path, "w"); // Truncate file
                             if (!log_file) {
-                                fprintf(stderr, "Failed to reopen log file for writing\n");
+                                fprintf(stderr, "Collector: Failed to reopen log file for writing\n");
+                            } else {
+                                printf("Collector: Successfully truncated log file after sending\n");
                             }
                         }
                     } else {
-                        fprintf(stderr, "Failed to send logs to backend\n");
+                        fprintf(stderr, "Collector: Failed to send logs to backend\n");
                     }
                     
                     free(log_content);
@@ -532,13 +585,18 @@ void collector_task(Scheduler *sch, void *task_context) {
                 }
             }
         } else {
+            printf("Collector: Log file is empty (0 bytes), nothing to send\n");
             fclose(read_file);
             read_file = NULL;
         }
+    } else {
+        printf("Collector: Failed to open log file for reading: %s\n", log_file_path);
     }
     
     // Reschedule the task with the scheduler from lib/scheduler.c
+    printf("Collector: Rescheduling next collection in %d seconds\n", context->collector_interval);
     schedule_task(sch, time(NULL) + context->collector_interval, collector_task, "collector", task_context);
+    printf("Collector: Collection task completed\n");
 }
 
 void collector_service(Scheduler *sch, char *device_id, char *access_token, int collector_interval, const char *device_api_host) {

@@ -206,7 +206,7 @@ char *get_id() {
     }
     if (retry_count == MAX_RETRIES) {
         console_error(&csl, "unable to obtain UUID after %d attempts. Exiting.", MAX_RETRIES);
-        cleanup_and_exit(1);
+        cleanup_and_exit(1, "Unable to obtain device UUID after maximum retries");
     }
 
     return id;

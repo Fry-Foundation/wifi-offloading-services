@@ -444,7 +444,7 @@ void diagnostic_task(Scheduler *sch, void *task_context) {
             console_error(&csl, "Critical DNS resolution failed. Requesting exit.");
             update_led_status(false, "DNS check - Diagnostic task");
             free(accounting_domain);
-            request_cleanup_and_exit();
+            request_cleanup_and_exit("Critical DNS resolution failed during diagnostic task");
             return;
         }
         free(accounting_domain);
@@ -456,7 +456,7 @@ void diagnostic_task(Scheduler *sch, void *task_context) {
     if (!internet_status) {
         console_error(&csl, "No internet connection. Requesting exit.");
         update_led_status(false, "Internet check - Diagnostic task");
-        request_cleanup_and_exit();
+        request_cleanup_and_exit("No internet connection during diagnostic task");
         return;
     }
 
@@ -466,7 +466,7 @@ void diagnostic_task(Scheduler *sch, void *task_context) {
     if (!wayru_status) {
         console_error(&csl, "Wayru is not reachable. Requesting exit.");
         update_led_status(false, "Wayru check - Diagnostic task");
-        request_cleanup_and_exit();
+        request_cleanup_and_exit("Wayru API unreachable during diagnostic task");
         return;
     }
 
@@ -475,7 +475,7 @@ void diagnostic_task(Scheduler *sch, void *task_context) {
     if (!is_token_valid(context->access_token)) {
         console_error(&csl, "Access token is invalid. Requesting exit.");
         update_led_status(false, "Access token check - Diagnostic task");
-        request_cleanup_and_exit();
+        request_cleanup_and_exit("Access token invalid during diagnostic task");
         return;
     }
 

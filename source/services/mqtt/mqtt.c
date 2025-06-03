@@ -318,7 +318,7 @@ static bool mqtt_recover(MqttTaskContext *context, bool force_full_reinit) {
     // If we get here, all reconnection attempts failed
     console_error(&csl, "All reconnection strategies failed, requesting exit");
     update_led_status(false, "MQTT recovery failed");
-    request_cleanup_and_exit();
+    request_cleanup_and_exit("MQTT reconnection failed after all attempts");
     return false;
 }
 
@@ -466,7 +466,7 @@ void mqtt_service(Scheduler *sch, Mosq *mosq, const MqttConfig *config) {
     MqttTaskContext *context = (MqttTaskContext *)malloc(sizeof(MqttTaskContext));
     if (context == NULL) {
         console_error(&csl, "failed to allocate memory for mqtt task context");
-        cleanup_and_exit(1);
+        cleanup_and_exit(1, "Failed to allocate memory for MQTT task context");
         return;
     }
 

@@ -29,6 +29,10 @@ static const char *log_file_name = "collector.log";
 static long max_log_file_size_bytes = 0;
 static long emergency_truncate_size_bytes = 0;
 
+// Memory failure tracking
+static int consecutive_memory_failures = 0;
+static const int MAX_MEMORY_FAILURES = 3;
+
 // Calculate safe file size limits based on available disk space
 static void calculate_file_size_limits(long available_disk_mb) {
     // Safety thresholds for different disk sizes
@@ -194,6 +198,59 @@ static bool emergency_rotate_log(void) {
     return log_file != NULL;
 }
 
+// Helper function for emergency truncation to specific size
+static bool emergency_truncate_to_size(const char *file_path, long target_size_bytes) {
+    FILE *read_file = fopen(file_path, "r");
+    if (!read_file) return false;
+    
+    // Get current file size
+    fseek(read_file, 0, SEEK_END);
+    long current_size = ftell(read_file);
+    
+    if (current_size <= target_size_bytes) {
+        // File is already small enough
+        fclose(read_file);
+        return true;
+    }
+    
+    // Keep the most recent portion of the file
+    long start_pos = current_size - target_size_bytes;
+    fseek(read_file, start_pos, SEEK_SET);
+    
+    // Find start of complete log line
+    int c;
+    while ((c = fgetc(read_file)) != EOF && c != '\n') {
+        // Skip partial line
+    }
+    
+    // Read the remaining content
+    long remaining_size = current_size - ftell(read_file);
+    if (remaining_size <= 0) {
+        fclose(read_file);
+        return false;
+    }
+    
+    char *preserved_content = malloc(remaining_size + 1);
+    if (!preserved_content) {
+        fclose(read_file);
+        return false;
+    }
+    
+    size_t bytes_read = fread(preserved_content, 1, remaining_size, read_file);
+    preserved_content[bytes_read] = '\0';
+    fclose(read_file);
+    
+    // Rewrite file with preserved content
+    FILE *write_file = fopen(file_path, "w");
+    if (write_file && bytes_read > 0) {
+        fwrite(preserved_content, 1, bytes_read, write_file);
+        fclose(write_file);
+    }
+    
+    free(preserved_content);
+    return true;
+}
+
 bool collector_write(const char *level, const char *topic, const char *message) {
     if (!log_file) {
         return false;
@@ -353,35 +410,126 @@ void collector_task(Scheduler *sch, void *task_context) {
         fseek(read_file, 0, SEEK_SET);
         
         if (file_size > 0) {
-            // Allocate buffer and read file content
-            char *log_content = malloc(file_size + 1);
-            if (log_content) {
-                size_t bytes_read = fread(log_content, 1, file_size, read_file);
-                log_content[bytes_read] = '\0';
+            // Check available memory before attempting to read file
+            unsigned long available_memory_kb = get_available_memory_kb();
+            long file_size_kb = (file_size + 1023) / 1024; // Convert bytes to KB (rounded up)
+            
+            // Require at least 2x the file size in available memory for safety margin
+            // This accounts for the file buffer + JSON processing + other operations
+            long required_memory_kb = file_size_kb * 2;
+            
+            if (available_memory_kb == 0 || (long)available_memory_kb < required_memory_kb) {
+                // Not enough memory available
+                consecutive_memory_failures++;
                 
-                // Close read file before sending to backend
-                fclose(read_file);
-                read_file = NULL;
+                fprintf(stderr, "Collector: Insufficient memory to read log file (failure #%d). "
+                               "File: %ld KB, Available: %lu KB, Required: %ld KB.\n",
+                               consecutive_memory_failures, file_size_kb, available_memory_kb, required_memory_kb);
                 
-                // Send the log file to the backend
-                if (send_logs_to_backend(context->device_id, context->access_token, log_content, context->device_api_host)) {
-                    // Successfully sent logs, truncate the file
-                    if (log_file) {
-                        fclose(log_file);
-                        log_file = fopen(log_file_path, "w"); // Truncate file
-                        if (!log_file) {
-                            fprintf(stderr, "Failed to reopen log file for writing\n");
+                // Take emergency action after consecutive failures
+                if (consecutive_memory_failures >= MAX_MEMORY_FAILURES) {
+                    fprintf(stderr, "Collector: Taking emergency action after %d consecutive memory failures\n", 
+                           consecutive_memory_failures);
+                    
+                    // Emergency truncate the log file to fit in available memory
+                    fclose(read_file);
+                    read_file = NULL;
+                    
+                    // Calculate safe file size (use 1/4 of available memory, minimum 10KB)
+                    long safe_size_bytes = ((long)available_memory_kb * 1024) / 4;
+                    if (safe_size_bytes < 10240) safe_size_bytes = 10240; // 10KB minimum
+                    
+                    if (emergency_truncate_to_size(log_file_path, safe_size_bytes)) {
+                        fprintf(stderr, "Collector: Emergency truncated log file to %ld bytes\n", safe_size_bytes);
+                        
+                        // Reduce future log file size limits to prevent recurrence
+                        max_log_file_size_bytes = safe_size_bytes;
+                        emergency_truncate_size_bytes = safe_size_bytes / 2;
+                        
+                        // Reset counter and try to read the truncated file
+                        consecutive_memory_failures = 0;
+                        
+                        // Attempt to read the now-smaller file
+                        read_file = fopen(log_file_path, "r");
+                        if (read_file) {
+                            fseek(read_file, 0, SEEK_END);
+                            file_size = ftell(read_file);
+                            fseek(read_file, 0, SEEK_SET);
+                            
+                            if (file_size > 0 && file_size <= safe_size_bytes) {
+                                // Proceed with reading the truncated file
+                                char *log_content = malloc(file_size + 1);
+                                if (log_content) {
+                                    size_t bytes_read = fread(log_content, 1, file_size, read_file);
+                                    log_content[bytes_read] = '\0';
+                                    fclose(read_file);
+                                    read_file = NULL;
+                                    
+                                    if (send_logs_to_backend(context->device_id, context->access_token, 
+                                                           log_content, context->device_api_host)) {
+                                        // Truncate the file since we processed it successfully
+                                        if (log_file) {
+                                            fclose(log_file);
+                                            log_file = fopen(log_file_path, "w");
+                                            if (!log_file) {
+                                                fprintf(stderr, "Failed to reopen log file for writing\n");
+                                            }
+                                        }
+                                    }
+                                    
+                                    free(log_content);
+                                } else {
+                                    fclose(read_file);
+                                    read_file = NULL;
+                                }
+                            } else {
+                                if (read_file) {
+                                    fclose(read_file);
+                                    read_file = NULL;
+                                }
+                            }
                         }
                     }
                 } else {
-                    fprintf(stderr, "Failed to send logs to backend\n");
+                    // Just skip this cycle and try again later
+                    fclose(read_file);
+                    read_file = NULL;
                 }
-                
-                free(log_content);
-                log_content = NULL;
             } else {
-                fclose(read_file);
-                read_file = NULL;
+                // Sufficient memory available - reset failure counter
+                consecutive_memory_failures = 0;
+                // Sufficient memory available - proceed with reading file
+                char *log_content = malloc(file_size + 1);
+                if (log_content) {
+                    size_t bytes_read = fread(log_content, 1, file_size, read_file);
+                    log_content[bytes_read] = '\0';
+                    
+                    // Close read file before sending to backend
+                    fclose(read_file);
+                    read_file = NULL;
+                    
+                    // Send the log file to the backend
+                    if (send_logs_to_backend(context->device_id, context->access_token, log_content, context->device_api_host)) {
+                        // Successfully sent logs, truncate the file
+                        if (log_file) {
+                            fclose(log_file);
+                            log_file = fopen(log_file_path, "w"); // Truncate file
+                            if (!log_file) {
+                                fprintf(stderr, "Failed to reopen log file for writing\n");
+                            }
+                        }
+                    } else {
+                        fprintf(stderr, "Failed to send logs to backend\n");
+                    }
+                    
+                    free(log_content);
+                    log_content = NULL;
+                } else {
+                    // malloc failed - this shouldn't happen since we checked memory above
+                    fprintf(stderr, "Collector: Failed to allocate memory for log file despite availability check\n");
+                    fclose(read_file);
+                    read_file = NULL;
+                }
             }
         } else {
             fclose(read_file);

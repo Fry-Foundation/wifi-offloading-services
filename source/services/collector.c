@@ -2,6 +2,7 @@
 #include "lib/console.h"
 #include "lib/scheduler.h"
 #include "lib/http-requests.h"
+#include "lib/stats.h"
 #include "services/config/config.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,7 +12,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <sys/statvfs.h>
 
 typedef struct {
     char *device_id;
@@ -66,26 +66,7 @@ static void calculate_file_size_limits(long available_disk_mb) {
            emergency_truncate_size_bytes / 1024);
 }
 
-// Get available disk space directly within collector service
-static long get_available_disk_space_mb() {
-    if (config.dev_env) {
-        // Return a typical development machine disk space (in MB)
-        return 10240; // 10 GB
-    }
 
-    struct statvfs stat;
-    
-    // Get filesystem statistics for the data path
-    if (statvfs(config.data_path, &stat) != 0) {
-        fprintf(stderr, "Failed to get disk space for %s\n", config.data_path);
-        return -1;
-    }
-    
-    // Calculate available space in MB
-    long available_mb = (long)((stat.f_bavail * stat.f_frsize) / (1024 * 1024));
-    
-    return available_mb;
-}
 
 // Console callback function that's compatible with ConsoleCallback signature
 static void collector_console_callback(const char *topic, const char *level_label, const char *message) {
@@ -414,7 +395,7 @@ void collector_task(Scheduler *sch, void *task_context) {
 
 void collector_service(Scheduler *sch, char *device_id, char *access_token, int collector_interval, const char *device_api_host) {
     // Get available disk space and calculate dynamic file size limits
-    long available_disk_mb = get_available_disk_space_mb();
+    long available_disk_mb = get_available_disk_space_mb(config.data_path);
     calculate_file_size_limits(available_disk_mb);
     
     // Debug: Show the calculated limits

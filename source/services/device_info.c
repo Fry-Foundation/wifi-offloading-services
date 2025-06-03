@@ -9,7 +9,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/statvfs.h>
 
 #define OS_VERSION_FILE "/etc/openwrt_release"
 #define PACKAGE_VERSION_FILE "/etc/wayru-os-services/VERSION"
@@ -305,28 +304,7 @@ char *get_arch() {
     return arch;
 }
 
-long get_available_disk_space_mb() {
-    if (config.dev_env) {
-        // Return a typical development machine disk space (in MB)
-        return 10240; // 10 GB
-    }
 
-    struct statvfs stat;
-    
-    // Get filesystem statistics for the data path
-    if (statvfs(config.data_path, &stat) != 0) {
-        console_error(&csl, "failed to get disk space for %s", config.data_path);
-        return -1;
-    }
-    
-    // Calculate available space in MB
-    // Available blocks * block size / (1024 * 1024) = MB
-    long available_mb = (long)((stat.f_bavail * stat.f_frsize) / (1024 * 1024));
-    
-    console_debug(&csl, "available disk space: %ld MB", available_mb);
-    
-    return available_mb;
-}
 
 DeviceInfo *init_device_info() {
     DeviceInfo *device_info = malloc(sizeof(DeviceInfo));
@@ -345,7 +323,6 @@ DeviceInfo *init_device_info() {
     device_info->public_ip = get_public_ip();
     device_info->os_name = get_os_name();
     device_info->did_public_key = get_did_public_key_or_generate_keypair();
-    device_info->disk_size_mb = get_available_disk_space_mb();
 
     console_info(&csl, "device info initialized");
 

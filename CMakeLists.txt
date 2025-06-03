@@ -51,6 +51,7 @@ SET(LIB_SOURCES
     source/lib/retry.c
     source/lib/result.c
     source/lib/csr.c
+    source/lib/stats.c
 )
 
 SET(SOURCES

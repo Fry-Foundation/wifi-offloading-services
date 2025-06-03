@@ -44,6 +44,14 @@ MemoryStats get_memory_stats(void);
 long get_available_disk_space_mb(const char *path);
 
 /**
+ * Get total disk space in MB for the specified path
+ * Convenience function that returns just the total space
+ * @param path The filesystem path to check
+ * @return Total disk space in MB, or -1 on error
+ */
+long get_total_disk_space_mb(const char *path);
+
+/**
  * Get total memory in KB
  * Convenience function that returns just the total memory
  * @return Total memory in KB, or -1 on error

@@ -97,6 +97,11 @@ long get_available_disk_space_mb(const char *path) {
     return stats.available_mb;
 }
 
+long get_total_disk_space_mb(const char *path) {
+    DiskStats stats = get_disk_stats(path);
+    return stats.total_mb;
+}
+
 unsigned long get_total_memory_kb(void) {
     MemoryStats stats = get_memory_stats();
     return stats.total_kb;

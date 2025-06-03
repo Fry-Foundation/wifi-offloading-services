@@ -2,6 +2,7 @@
 #include "lib/console.h"
 #include "lib/scheduler.h"
 #include "lib/http-requests.h"
+#include "services/config/config.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,9 +21,8 @@ typedef struct {
 
 // File handle for structured logging
 static FILE *log_file = NULL;
-static const char *log_dir = "/tmp/wayru-os-services";
-static const char *log_file_path = "/tmp/wayru-os-services/logs";
 static const char *logs_endpoint = "/logs";
+static const char *log_file_name = "collector.log";
 
 // Console callback function that's compatible with ConsoleCallback signature
 static void collector_console_callback(const char *topic, const char *level_label, const char *message) {
@@ -73,16 +73,20 @@ bool collector_write(const char *level, const char *topic, const char *message) 
 }
 
 void collector_init(void) {
-    // Make sure the log directory exists (/tmp/wayru-os-services)
+    // Make sure the data directory exists (following config.data_path)
     struct stat st = {0};
-    if (stat(log_dir, &st) == -1) {
-        if (mkdir(log_dir, 0755) != 0) {
-            fprintf(stderr, "Failed to create log directory: %s\n", log_dir);
+    if (stat(config.data_path, &st) == -1) {
+        if (mkdir(config.data_path, 0755) != 0) {
+            fprintf(stderr, "Failed to create data directory: %s\n", config.data_path);
             return;
         }
     }
 
-    // Create the log file (/tmp/wayru-os-services/logs) if it doesn't exist
+    // Build log file path using config.data_path
+    char log_file_path[256];
+    snprintf(log_file_path, sizeof(log_file_path), "%s/%s", config.data_path, log_file_name);
+
+    // Create/open the log file
     log_file = fopen(log_file_path, "a");
     if (!log_file) {
         fprintf(stderr, "Failed to open log file: %s\n", log_file_path);
@@ -154,7 +158,11 @@ static bool send_logs_to_backend(const char *device_id, const char *access_token
 void collector_task(Scheduler *sch, void *task_context) {
     CollectorContext *context = (CollectorContext *)task_context;
 
-    // Read the log file (/tmp/wayru-os-services/logs)
+    // Build log file path using config.data_path
+    char log_file_path[256];
+    snprintf(log_file_path, sizeof(log_file_path), "%s/%s", config.data_path, log_file_name);
+
+    // Read the log file
     FILE *read_file = fopen(log_file_path, "r");
     if (read_file) {
         // Get file size

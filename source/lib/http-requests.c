@@ -62,23 +62,23 @@ HttpResult http_get(const HttpGetOptions *options) {
 
     // Request
     res = curl_easy_perform(curl);
-    print_debug(&csl, "response buffer: %s", result.response_buffer);
+    console_debug(&csl, "response buffer: %s", result.response_buffer);
 
     // Response
     if (res != CURLE_OK) {
-        print_error(&csl, "curl GET failed: %s", curl_easy_strerror(res));
+        console_error(&csl, "curl GET failed: %s", curl_easy_strerror(res));
         free(result.response_buffer);
         result.is_error = true;
         snprintf(result.error, ERROR_BUFFER_SIZE, "curl GET failed: %s", curl_easy_strerror(res));
     } else {
-        print_debug(&csl, "response buffer: %s", result.response_buffer);
+        console_debug(&csl, "response buffer: %s", result.response_buffer);
 
         // Get HTTP status code
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &result.http_status_code);
-        print_debug(&csl, "HTTP status code: %ld", result.http_status_code);
+        console_debug(&csl, "HTTP status code: %ld", result.http_status_code);
 
         if (result.http_status_code >= 400) {
-            print_error(&csl, "HTTP status code is greater than 400, error");
+            console_error(&csl, "HTTP status code is greater than 400, error");
             result.is_error = true;
             snprintf(result.error, ERROR_BUFFER_SIZE, "HTTP error, check status code and response buffer");
         } else {
@@ -173,23 +173,23 @@ HttpResult http_post(const HttpPostOptions *options) {
 
     // Request
     res = curl_easy_perform(curl);
-    print_debug(&csl, "curl code: %d", res);
+    console_debug(&csl, "curl code: %d", res);
 
     // Response
     if (res != CURLE_OK) {
-        print_error(&csl, "curl POST failed: %s", curl_easy_strerror(res));
+        console_error(&csl, "curl POST failed: %s", curl_easy_strerror(res));
         free(result.response_buffer);
         result.is_error = true;
         snprintf(result.error, ERROR_BUFFER_SIZE, "curl POST failed: %s", curl_easy_strerror(res));
     } else {
-        print_debug(&csl, "response buffer: %s", result.response_buffer);
+        console_debug(&csl, "response buffer: %s", result.response_buffer);
 
         // Get HTTP status code
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &result.http_status_code);
-        print_debug(&csl, "HTTP status code: %ld", result.http_status_code);
+        console_debug(&csl, "HTTP status code: %ld", result.http_status_code);
 
         if (result.http_status_code >= 400) {
-            print_error(&csl, "HTTP status code is greater than 400, error");
+            console_error(&csl, "HTTP status code is greater than 400, error");
             result.is_error = true;
             snprintf(result.error, ERROR_BUFFER_SIZE, "HTTP error, check status code and response buffer");
         } else {

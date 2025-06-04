@@ -31,7 +31,7 @@ bool save_access_token(char *access_token_json) {
 
     FILE *file = fopen(access_token_file_path, "w");
     if (file == NULL) {
-        print_error(&csl, "failed to open access token file for writing");
+        console_error(&csl, "failed to open access token file for writing");
         return false;
     }
 
@@ -47,27 +47,27 @@ char *read_access_token() {
 
     FILE *file = fopen(access_token_file_path, "r");
     if (file == NULL) {
-        print_debug(&csl, "could not open access token file; it might not exist yet");
+        console_debug(&csl, "could not open access token file; it might not exist yet");
         return NULL;
     }
 
     // Move to the end of the file to determine its size
     if (fseek(file, 0, SEEK_END) != 0) {
-        print_debug(&csl, "failed to seek to the end of the access token file");
+        console_debug(&csl, "failed to seek to the end of the access token file");
         fclose(file);
         return NULL;
     }
 
     long file_size_long = ftell(file);
     if (file_size_long < 0) {
-        print_debug(&csl, "failed to get file size of access token file");
+        console_debug(&csl, "failed to get file size of access token file");
         fclose(file);
         return NULL;
     }
 
     // Ensure the file fits in size_t and prevent integer overflow
     if ((unsigned long)file_size_long + 1 > SIZE_MAX) {
-        print_debug(&csl, "access token file is too large");
+        console_debug(&csl, "access token file is too large");
         fclose(file);
         return NULL;
     }
@@ -76,7 +76,7 @@ char *read_access_token() {
 
     // Reset the file position to the beginning
     if (fseek(file, 0, SEEK_SET) != 0) {
-        print_debug(&csl, "failed to seek to the beginning of the access token file");
+        console_debug(&csl, "failed to seek to the beginning of the access token file");
         fclose(file);
         return NULL;
     }
@@ -84,7 +84,7 @@ char *read_access_token() {
     // Allocate memory for the access token
     char *access_token = malloc(file_size + 1);
     if (access_token == NULL) {
-        print_debug(&csl, "failed to allocate memory for access token");
+        console_debug(&csl, "failed to allocate memory for access token");
         fclose(file);
         return NULL;
     }
@@ -92,7 +92,7 @@ char *read_access_token() {
     // Read the file's contents
     size_t bytes_read = fread(access_token, 1, file_size, file);
     if (bytes_read != file_size) {
-        print_error(&csl, "failed to read access token file");
+        console_error(&csl, "failed to read access token file");
         free(access_token);
         fclose(file);
         return NULL;
@@ -111,34 +111,34 @@ bool parse_access_token(const char *access_token_json, AccessToken *access_token
 
     json_object *json = json_tokener_parse(access_token_json);
     if (json == NULL) {
-        print_error(&csl, "failed to parse access token json");
+        console_error(&csl, "failed to parse access token json");
         return access_token;
     }
 
     json_object *token_json = NULL;
     if (!json_object_object_get_ex(json, "token", &token_json)) {
-        print_error(&csl, "failed to get token from access token json");
+        console_error(&csl, "failed to get token from access token json");
         json_object_put(json);
         return false;
     }
 
     const char *token_str = json_object_get_string(token_json);
     if (token_str == NULL) {
-        print_error(&csl, "failed to get token string from access token json");
+        console_error(&csl, "failed to get token string from access token json");
         json_object_put(json);
         return false;
     }
 
     access_token->token = strdup(token_str);
     if (access_token->token == NULL) {
-        print_error(&csl, "failed to allocate memory for access token string");
+        console_error(&csl, "failed to allocate memory for access token string");
         json_object_put(json);
         return false;
     }
 
     json_object *issued_at_json = NULL;
     if (!json_object_object_get_ex(json, "issued_at_seconds", &issued_at_json)) {
-        print_error(&csl, "failed to get issued_at_seconds from access token json");
+        console_error(&csl, "failed to get issued_at_seconds from access token json");
         free(access_token->token);
         access_token->token = NULL;
         json_object_put(json);
@@ -146,7 +146,7 @@ bool parse_access_token(const char *access_token_json, AccessToken *access_token
     }
 
     if (!json_object_is_type(issued_at_json, json_type_int)) {
-        print_error(&csl, "issued_at_seconds is not an integer");
+        console_error(&csl, "issued_at_seconds is not an integer");
         free(access_token->token);
         access_token->token = NULL;
         json_object_put(json);
@@ -157,7 +157,7 @@ bool parse_access_token(const char *access_token_json, AccessToken *access_token
 
     json_object *expires_at_json = NULL;
     if (!json_object_object_get_ex(json, "expires_at_seconds", &expires_at_json)) {
-        print_error(&csl, "failed to get expires_at_seconds from access token json");
+        console_error(&csl, "failed to get expires_at_seconds from access token json");
         free(access_token->token);
         access_token->token = NULL;
         json_object_put(json);
@@ -165,7 +165,7 @@ bool parse_access_token(const char *access_token_json, AccessToken *access_token
     }
 
     if (!json_object_is_type(expires_at_json, json_type_int)) {
-        print_error(&csl, "expires_at_seconds is not an integer");
+        console_error(&csl, "expires_at_seconds is not an integer");
         free(access_token->token);
         access_token->token = NULL;
         json_object_put(json);
@@ -187,7 +187,7 @@ char *request_access_token(Registration *registration) {
     json_object_object_add(json_body, "wayru_device_id", json_object_new_string(registration->wayru_device_id));
     json_object_object_add(json_body, "access_key", json_object_new_string(registration->access_key));
     const char *body_json_str = json_object_to_json_string(json_body);
-    print_debug(&csl, "access request body is %s", body_json_str);
+    console_debug(&csl, "access request body is %s", body_json_str);
 
     HttpPostOptions options = {
         .url = url,
@@ -198,12 +198,12 @@ char *request_access_token(Registration *registration) {
     json_object_put(json_body);
 
     if (result.is_error) {
-        print_error(&csl, "failed to request access token with error: %s", result.error);
+        console_error(&csl, "failed to request access token with error: %s", result.error);
         return NULL;
     }
 
     if (result.response_buffer == NULL) {
-        print_error(&csl, "no access token data found in response");
+        console_error(&csl, "no access token data found in response");
         return NULL;
     }
 
@@ -228,7 +228,7 @@ time_t calculate_next_run(time_t expires_at_seconds, time_t access_interval) {
 AccessToken *init_access_token(Registration *registration) {
     AccessToken *access_token = (AccessToken *)malloc(sizeof(AccessToken));
     if (access_token == NULL) {
-        print_error(&csl, "failed to allocate memory for access token");
+        console_error(&csl, "failed to allocate memory for access token");
         return NULL;
     }
 
@@ -252,25 +252,25 @@ AccessToken *init_access_token(Registration *registration) {
     // Request a new access token
     char *access_token_json_str = request_access_token(registration);
     if (access_token_json_str == NULL) {
-        print_error(&csl, "failed to request access token");
+        console_error(&csl, "failed to request access token");
         return access_token;
     }
 
     bool save_result = save_access_token(access_token_json_str);
     if (!save_result) {
-        print_error(&csl, "failed to save access token");
+        console_error(&csl, "failed to save access token");
         free(access_token_json_str);
         return access_token;
     }
 
     bool parse_result = parse_access_token(access_token_json_str, access_token);
     if (!parse_result) {
-        print_error(&csl, "failed to parse access token");
+        console_error(&csl, "failed to parse access token");
         free(access_token_json_str);
         return access_token;
     }
 
-    print_info(&csl, "access token initialized");
+    console_info(&csl, "access token initialized");
     free(access_token_json_str);
     return access_token;
 }
@@ -280,20 +280,20 @@ void access_token_task(Scheduler *sch, void *task_context) {
 
     char *access_token_json_str = request_access_token(context->registration);
     if (access_token_json_str == NULL) {
-        print_error(&csl, "failed to request access token");
+        console_error(&csl, "failed to request access token");
         return;
     }
 
     bool save_result = save_access_token(access_token_json_str);
     if (!save_result) {
-        print_error(&csl, "failed to save access token");
+        console_error(&csl, "failed to save access token");
         free(access_token_json_str);
         return;
     }
 
     bool parse_result = parse_access_token(access_token_json_str, context->access_token);
     if (!parse_result) {
-        print_error(&csl, "failed to parse access token");
+        console_error(&csl, "failed to parse access token");
         free(access_token_json_str);
         return;
     }
@@ -316,7 +316,7 @@ void access_token_service(Scheduler *sch,
                           AccessTokenCallbacks *callbacks) {
     AccessTokenTaskContext *context = (AccessTokenTaskContext *)malloc(sizeof(AccessTokenTaskContext));
     if (context == NULL) {
-        print_error(&csl, "failed to allocate memory for access token task context");
+        console_error(&csl, "failed to allocate memory for access token task context");
         return;
     }
 
@@ -336,28 +336,28 @@ void clean_access_token(AccessToken *access_token) {
         }
         free(access_token);
     }
-    print_info(&csl, "cleaned access token");
+    console_info(&csl, "cleaned access token");
 }
 
 bool is_token_valid(AccessToken *access_token) {
     if (access_token == NULL || access_token->token == NULL) {
-        print_error(&csl, "Invalid access token object or token is NULL");
+        console_error(&csl, "Invalid access token object or token is NULL");
         return false;
     }
 
     time_t current_time = time(NULL);
     if (current_time == ((time_t)-1)) {
-        print_error(&csl, "Failed to get the current time");
+        console_error(&csl, "Failed to get the current time");
         return false;
     }
 
-    print_debug(&csl, "Current time: %ld, Expires at: %ld", current_time, access_token->expires_at_seconds);
+    console_debug(&csl, "Current time: %ld, Expires at: %ld", current_time, access_token->expires_at_seconds);
 
     if (current_time >= access_token->expires_at_seconds) {
-        print_debug(&csl, "Access token has expired");
+        console_debug(&csl, "Access token has expired");
         return false;
     }
 
-    print_debug(&csl, "Access token is valid");
+    console_debug(&csl, "Access token is valid");
     return true;
 }

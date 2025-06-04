@@ -13,9 +13,9 @@ static Console csl = {
 };
 void execute_reboot() {
     if (config.dev_env)
-        print_debug(&csl, "Running reboot command ... but not rebooting because we are on dev mode");
+        console_debug(&csl, "Running reboot command ... but not rebooting because we are on dev mode");
     else {
-        print_debug(&csl, "Running reboot command");
+        console_debug(&csl, "Running reboot command");
         run_script("reboot now");
     }
 }
@@ -24,11 +24,11 @@ void reboot_task(Scheduler *sch, void *task_context) {
     (void)task_context;
 
     if (config.reboot_enabled == 0) {
-        print_debug(&csl, "reboot is disabled by configuration; will not reschedule reboot task");
+        console_debug(&csl, "reboot is disabled by configuration; will not reschedule reboot task");
         return;
     }
 
-    print_debug(&csl, "executing scheduled reboot task.");
+    console_debug(&csl, "executing scheduled reboot task.");
     execute_reboot();
 
     // schedule_task(sch, time(NULL) + config.reboot_interval, reboot_task, "reboot", NULL);
@@ -36,10 +36,10 @@ void reboot_task(Scheduler *sch, void *task_context) {
 
 void reboot_service(Scheduler *sch) {
     if (config.reboot_enabled) {
-        print_debug(&csl, "scheduling reboot task");
+        console_debug(&csl, "scheduling reboot task");
 
         schedule_task(sch, time(NULL) + config.reboot_interval, reboot_task, "reboot", NULL);
     } else {
-        print_debug(&csl, "reboot service is disabled in configuration");
+        console_debug(&csl, "reboot service is disabled in configuration");
     }
 }

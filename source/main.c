@@ -20,6 +20,7 @@
 #include "services/site-clients.h"
 #include "services/speedtest.h"
 #include "services/time_sync.h"
+#include "services/collector.h"
 #include <lib/retry.h>
 #include <mosquitto.h>
 #include <stdbool.h>
@@ -30,13 +31,16 @@ static Console csl = {
 };
 
 int main(int argc, char *argv[]) {
-    print_info(&csl, "starting wayru-os-services");
+    console_info(&csl, "starting wayru-os-services");
 
     // Signal handlers
     setup_signal_handlers();
 
     // Config
     init_config(argc, argv);
+
+    // Collector
+    collector_init();
 
     // DeviceInfo
     DeviceInfo *device_info = init_device_info();
@@ -46,7 +50,7 @@ int main(int argc, char *argv[]) {
     bool diagnostic_status = init_diagnostic_service(device_info);
     if (!diagnostic_status) {
         update_led_status(false, "Diagnostic tests failed");
-        cleanup_and_exit(1);
+        cleanup_and_exit(1, "Diagnostic tests failed");
     }
 
     // Registration
@@ -57,8 +61,8 @@ int main(int argc, char *argv[]) {
     // Access token
     AccessToken *access_token = init_access_token(registration);
     if (access_token == NULL) {
-        print_error(&csl, "Failed to start access token ... exiting");
-        cleanup_and_exit(1);
+        console_error(&csl, "Failed to start access token ... exiting");
+        cleanup_and_exit(1, "Failed to initialize access token");
     }
     register_cleanup((cleanup_callback)clean_access_token, access_token);
 
@@ -70,16 +74,16 @@ int main(int argc, char *argv[]) {
 
     // Certificate checks
     bool ca_cert_result = attempt_ca_cert(access_token);
-    if (!ca_cert_result) cleanup_and_exit(1);
+    if (!ca_cert_result) cleanup_and_exit(1, "Failed to obtain CA certificate");
 
     bool generate_and_sign_result = attempt_generate_and_sign(access_token);
-    if (!generate_and_sign_result) cleanup_and_exit(1);
+    if (!generate_and_sign_result) cleanup_and_exit(1, "Failed to generate and sign certificate");
 
     bool radsec_cert_result = attempt_radsec_ca_cert(access_token);
-    if (!radsec_cert_result) cleanup_and_exit(1);
+    if (!radsec_cert_result) cleanup_and_exit(1, "Failed to obtain RADSEC CA certificate");
 
     bool generate_and_sign_radsec_result = attempt_generate_and_sign_radsec(access_token, registration);
-    if (!generate_and_sign_radsec_result) cleanup_and_exit(1);
+    if (!generate_and_sign_radsec_result) cleanup_and_exit(1, "Failed to generate and sign RADSEC certificate");
 
     install_radsec_cert();
 
@@ -131,6 +135,7 @@ int main(int argc, char *argv[]) {
     speedtest_service(sch, mqtt_client.mosq, registration, access_token);
     commands_service(mqtt_client.mosq, device_info, registration, access_token);
     reboot_service(sch);
+    collector_service(sch, registration->wayru_device_id, access_token->token, config.collector_interval, config.devices_api);
 
     run_tasks(sch);
 

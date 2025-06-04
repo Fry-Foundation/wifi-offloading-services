@@ -53,7 +53,7 @@ DeviceStatus request_device_status(void *task_context) {
     json_object_object_add(json_body, "wayru_device_id", json_object_new_string(context->wayru_device_id));
     const char *body = json_object_to_json_string(json_body);
 
-    print_debug(&csl, "device status request body %s", body);
+    console_debug(&csl, "device status request body %s", body);
 
     HttpPostOptions options = {
         .url = device_status_url,
@@ -66,12 +66,12 @@ DeviceStatus request_device_status(void *task_context) {
     json_object_put(json_body);
 
     if (result.is_error) {
-        print_error(&csl, "error requesting device status: %s", result.error);
+        console_error(&csl, "error requesting device status: %s", result.error);
         return Unknown;
     }
 
     if (result.response_buffer == NULL) {
-        print_error(&csl, "no response received, assuming unknown status");
+        console_error(&csl, "no response received, assuming unknown status");
         return Unknown;
     }
 
@@ -82,13 +82,13 @@ DeviceStatus request_device_status(void *task_context) {
     parsed_response = json_tokener_parse(result.response_buffer);
     if (parsed_response == NULL) {
         // JSON parsing failed
-        print_error(&csl, "failed to parse device status JSON data");
+        console_error(&csl, "failed to parse device status JSON data");
         free(result.response_buffer);
         return Unknown;
     }
 
     if (!json_object_object_get_ex(parsed_response, "deviceStatus", &device_status)) {
-        print_error(&csl, "deviceStatus field missing or invalid");
+        console_error(&csl, "deviceStatus field missing or invalid");
         json_object_put(parsed_response);
         free(result.response_buffer);
         return Unknown;
@@ -99,7 +99,7 @@ DeviceStatus request_device_status(void *task_context) {
     json_object_put(parsed_response);
     free(result.response_buffer);
 
-    print_debug(&csl, "device status response: %d", response_device_status);
+    console_debug(&csl, "device status response: %d", response_device_status);
 
     on_boot = false;
 
@@ -109,9 +109,9 @@ DeviceStatus request_device_status(void *task_context) {
 void device_status_task(Scheduler *sch, void *task_context) {
     DeviceStatusTaskContext *context = (DeviceStatusTaskContext *)task_context;
     device_status = request_device_status(context);
-    print_debug(&csl, "device status: %d", device_status);
-    print_debug(&csl, "device status interval: %d", config.device_status_interval);
-    print_debug(&csl, "device status interval time: %ld", time(NULL) + config.device_status_interval);
+    console_debug(&csl, "device status: %d", device_status);
+    console_debug(&csl, "device status interval: %d", config.device_status_interval);
+    console_debug(&csl, "device status interval time: %ld", time(NULL) + config.device_status_interval);
     schedule_task(sch, time(NULL) + config.device_status_interval, device_status_task, "device status", context);
 }
 

@@ -52,22 +52,22 @@ static TopicCallback topic_callbacks[MAX_TOPIC_CALLBACKS];
 static int topic_callbacks_count = 0;
 
 void on_connect(Mosq *mosq, void *obj, int reason_code) {
-    print_debug(&csl, "MQTT client on_connect callback, reason_code: %d", reason_code);
+    console_debug(&csl, "MQTT client on_connect callback, reason_code: %d", reason_code);
 
     if (reason_code) {
-        print_error(&csl, "unable to connect to the broker. %s", mosquitto_connack_string(reason_code));
+        console_error(&csl, "unable to connect to the broker. %s", mosquitto_connack_string(reason_code));
     } else {
-        print_info(&csl, "connected to the broker");
+        console_info(&csl, "connected to the broker");
     }
 }
 
 void on_disconnect(Mosq *mosq, void *obj, int reason_code) {
-    print_info(&csl, "Disconnected from broker, reason_code: %d", reason_code);
+    console_info(&csl, "Disconnected from broker, reason_code: %d", reason_code);
     
     if (reason_code == 0) {
-        print_info(&csl, "Normal disconnection");
+        console_info(&csl, "Normal disconnection");
     } else {
-        print_error(&csl, "Unexpected disconnection: %s", mosquitto_reason_string(reason_code));
+        console_error(&csl, "Unexpected disconnection: %s", mosquitto_reason_string(reason_code));
     }
     
     // Note: Don't attempt reconnection here - let the main loop handle it
@@ -83,24 +83,24 @@ void on_message(Mosq *mosq, void *obj, const struct mosquitto_message *msg) {
 }
 
 void on_publish(Mosq *mosq, void *obj, int mid) {
-    print_info(&csl, "message has been published, message id %d", mid);
+    console_info(&csl, "message has been published, message id %d", mid);
 }
 
 void on_subscribe(Mosq *mosq, void *obj, int mid, int qos, const int *granted_qos) {
-    print_info(&csl, "subscribed to a topic, message id %d", mid);
+    console_info(&csl, "subscribed to a topic, message id %d", mid);
 }
 
 void subscribe_mqtt(Mosq *mosq, char *topic, int qos, MessageCallback callback) {
     if (topic_callbacks_count >= MAX_TOPIC_CALLBACKS) {
-        print_error(&csl, "maximum number of topic callbacks reached");
+        console_error(&csl, "maximum number of topic callbacks reached");
         return;
     }
 
     int rc = mosquitto_subscribe(mosq, NULL, topic, qos);
     if (rc != MOSQ_ERR_SUCCESS) {
-        print_error(&csl, "unable to subscribe to the topic '%s'", mosquitto_strerror(rc));
+        console_error(&csl, "unable to subscribe to the topic '%s'", mosquitto_strerror(rc));
     } else {
-        print_info(&csl, "subscribed to the topic %s successfully", topic);
+        console_info(&csl, "subscribed to the topic %s successfully", topic);
         topic_callbacks[topic_callbacks_count].topic = strdup(topic);
         topic_callbacks[topic_callbacks_count].callback = callback;
         topic_callbacks[topic_callbacks_count].qos = qos;
@@ -111,13 +111,13 @@ void subscribe_mqtt(Mosq *mosq, char *topic, int qos, MessageCallback callback) 
 void publish_mqtt(Mosq *mosq, char *topic, const char *message, int qos) {
     int rc = mosquitto_publish(mosq, NULL, topic, strlen(message), message, qos, false);
     if (rc != MOSQ_ERR_SUCCESS) {
-        print_error(&csl, "unable to publish message. %s", mosquitto_strerror(rc));
+        console_error(&csl, "unable to publish message. %s", mosquitto_strerror(rc));
     }
 }
 
 Mosq *init_mosquitto(const MqttConfig *config) {
-    print_debug(&csl, "user is %s", config->username);
-    print_debug(&csl, "password is %s", config->password);
+    console_debug(&csl, "user is %s", config->username);
+    console_debug(&csl, "password is %s", config->password);
 
     Mosq *mosq;
     int rc;
@@ -127,14 +127,14 @@ Mosq *init_mosquitto(const MqttConfig *config) {
     // Create a new Mosquitto client instance
     mosq = mosquitto_new(config->client_id, CLEAN_SESSION, NULL);
     if (!mosq) {
-        print_error(&csl, "unable to create Mosquitto client instance.\n");
+        console_error(&csl, "unable to create Mosquitto client instance.\n");
         mosquitto_lib_cleanup();
         return NULL;
     }
 
     int pw_set = mosquitto_username_pw_set(mosq, config->username, config->password);
     if (pw_set != MOSQ_ERR_SUCCESS) {
-        print_error(&csl, "unable to set username and password. %s\n", mosquitto_strerror(pw_set));
+        console_error(&csl, "unable to set username and password. %s\n", mosquitto_strerror(pw_set));
         mosquitto_destroy(mosq);
         mosquitto_lib_cleanup();
         return NULL;
@@ -148,13 +148,13 @@ Mosq *init_mosquitto(const MqttConfig *config) {
     snprintf(key_path, sizeof(key_path), "%s/%s", config->data_path, MQTT_KEY_FILE_NAME);
     snprintf(crt_path, sizeof(crt_path), "%s/%s", config->data_path, MQTT_CERT_FILE_NAME);
 
-    print_debug(&csl, "CA Path: %s", ca_path);
-    print_debug(&csl, "Key Path: %s", key_path);
-    print_debug(&csl, "Crt Path: %s", crt_path);
+    console_debug(&csl, "CA Path: %s", ca_path);
+    console_debug(&csl, "Key Path: %s", key_path);
+    console_debug(&csl, "Crt Path: %s", crt_path);
 
     int tls_set = mosquitto_tls_set(mosq, ca_path, NULL, crt_path, key_path, NULL);
     if (tls_set != MOSQ_ERR_SUCCESS) {
-        print_error(&csl, "unable to set TLS. %s\n", mosquitto_strerror(tls_set));
+        console_error(&csl, "unable to set TLS. %s\n", mosquitto_strerror(tls_set));
         mosquitto_destroy(mosq);
         mosquitto_lib_cleanup();
         return NULL;
@@ -162,7 +162,7 @@ Mosq *init_mosquitto(const MqttConfig *config) {
 
     int tls_opts_set = mosquitto_tls_opts_set(mosq, TLS_VERIFY, TLS_VERSION, NULL);
     if (tls_opts_set != MOSQ_ERR_SUCCESS) {
-        print_error(&csl, "unable to set TLS options. %s\n", mosquitto_strerror(tls_opts_set));
+        console_error(&csl, "unable to set TLS options. %s\n", mosquitto_strerror(tls_opts_set));
         mosquitto_destroy(mosq);
         mosquitto_lib_cleanup();
         return NULL;
@@ -178,7 +178,7 @@ Mosq *init_mosquitto(const MqttConfig *config) {
     // Connect to an MQTT broker
     rc = mosquitto_connect(mosq, config->broker_url, PORT, config->keepalive);
     if (rc != MOSQ_ERR_SUCCESS) {
-        print_error(&csl, "unable to connect to broker. %s\n", mosquitto_strerror(rc));
+        console_error(&csl, "unable to connect to broker. %s\n", mosquitto_strerror(rc));
         mosquitto_destroy(mosq);
         mosquitto_lib_cleanup();
         return NULL;
@@ -188,14 +188,14 @@ Mosq *init_mosquitto(const MqttConfig *config) {
 }
 
 void resubscribe_mqtt(Mosq *mosq) {
-    print_info(&csl, "Resuscribing to %d topics", topic_callbacks_count);
+    console_info(&csl, "Resuscribing to %d topics", topic_callbacks_count);
     for (int i = 0; i < topic_callbacks_count; i++) {
         int rc = mosquitto_subscribe(mosq, NULL, topic_callbacks[i].topic, topic_callbacks[i].qos);
         if (rc != MOSQ_ERR_SUCCESS) {
-            print_error(&csl, "unable to resubscribe to the topic '%s'. %s", topic_callbacks[i].topic,
+            console_error(&csl, "unable to resubscribe to the topic '%s'. %s", topic_callbacks[i].topic,
                         mosquitto_strerror(rc));
         } else {
-            print_info(&csl, "resubscribed to the topic %s successfully", topic_callbacks[i].topic);
+            console_info(&csl, "resubscribed to the topic %s successfully", topic_callbacks[i].topic);
         }
     }
 }
@@ -203,11 +203,11 @@ void resubscribe_mqtt(Mosq *mosq) {
 void refresh_mosquitto_credentials(Mosq *mosq, const char *username) {
     int pw_set = mosquitto_username_pw_set(mosq, username, "any");
     if (pw_set != MOSQ_ERR_SUCCESS) {
-        print_error(&csl, "Unable to set username and password. %s\n", mosquitto_strerror(pw_set));
+        console_error(&csl, "Unable to set username and password. %s\n", mosquitto_strerror(pw_set));
         return;
     }
 
-    print_info(&csl, "mosquitto client credentials refreshed.");
+    console_info(&csl, "mosquitto client credentials refreshed.");
 }
 
 // Enhanced function that handles both lightweight reconnection and full reinitialization
@@ -222,16 +222,16 @@ static bool mqtt_recover(MqttTaskContext *context, bool force_full_reinit) {
         int delay = MQTT_RECONNECT_BASE_DELAY_SECONDS * (1 << (reconnect_attempt - 1));
         if (delay > MQTT_RECONNECT_MAX_DELAY_SECONDS) delay = MQTT_RECONNECT_MAX_DELAY_SECONDS;
         
-        print_info(&csl, "Attempting reconnection (attempt %d/%d) in %d seconds", 
+        console_info(&csl, "Attempting reconnection (attempt %d/%d) in %d seconds", 
                    reconnect_attempt, MQTT_RECONNECT_MAX_ATTEMPTS, delay);
         sleep(delay);
         
         // Strategy 1: Try lightweight reconnect first (unless forced to skip)
         if (!force_full_reinit) {
-            print_info(&csl, "Trying lightweight reconnection...");
+            console_info(&csl, "Trying lightweight reconnection...");
             int rc = mosquitto_reconnect(context->mosq);
             if (rc == MOSQ_ERR_SUCCESS) {
-                print_info(&csl, "Lightweight reconnection successful");
+                console_info(&csl, "Lightweight reconnection successful");
                 
                 // Wait for connection to stabilize
                 sleep(MQTT_CONNECTION_STABILIZE_DELAY_SECONDS);
@@ -244,26 +244,26 @@ static bool mqtt_recover(MqttTaskContext *context, bool force_full_reinit) {
                 update_led_status(true, "MQTT reconnected");
                 return true;
             } else {
-                print_error(&csl, "Lightweight reconnection failed: %s", mosquitto_strerror(rc));
+                console_error(&csl, "Lightweight reconnection failed: %s", mosquitto_strerror(rc));
             }
         } else {
-            print_info(&csl, "Skipping lightweight reconnection due to error type requiring full reinitialization");
+            console_info(&csl, "Skipping lightweight reconnection due to error type requiring full reinitialization");
         }
         
         // Strategy 2: Try complete reinitialization as fallback
-        print_info(&csl, "Trying complete reinitialization...");
+        console_info(&csl, "Trying complete reinitialization...");
         
         // Reinitialize the client
         int rc = mosquitto_reinitialise(context->mosq, context->config.client_id, CLEAN_SESSION, NULL);
         if (rc != MOSQ_ERR_SUCCESS) {
-            print_error(&csl, "Client reinitialization failed: %s", mosquitto_strerror(rc));
+            console_error(&csl, "Client reinitialization failed: %s", mosquitto_strerror(rc));
             continue; // Try next attempt
         }
         
         // Reconfigure credentials
         int pw_set = mosquitto_username_pw_set(context->mosq, context->config.username, context->config.password);
         if (pw_set != MOSQ_ERR_SUCCESS) {
-            print_error(&csl, "Failed to set credentials: %s", mosquitto_strerror(pw_set));
+            console_error(&csl, "Failed to set credentials: %s", mosquitto_strerror(pw_set));
             continue; // Try next attempt
         }
         
@@ -278,13 +278,13 @@ static bool mqtt_recover(MqttTaskContext *context, bool force_full_reinit) {
         
         int tls_set = mosquitto_tls_set(context->mosq, ca_path, NULL, crt_path, key_path, NULL);
         if (tls_set != MOSQ_ERR_SUCCESS) {
-            print_error(&csl, "Failed to set TLS: %s", mosquitto_strerror(tls_set));
+            console_error(&csl, "Failed to set TLS: %s", mosquitto_strerror(tls_set));
             continue; // Try next attempt
         }
         
         int tls_opts_set = mosquitto_tls_opts_set(context->mosq, TLS_VERIFY, TLS_VERSION, NULL);
         if (tls_opts_set != MOSQ_ERR_SUCCESS) {
-            print_error(&csl, "Failed to set TLS options: %s", mosquitto_strerror(tls_opts_set));
+            console_error(&csl, "Failed to set TLS options: %s", mosquitto_strerror(tls_opts_set));
             continue; // Try next attempt
         }
         
@@ -298,7 +298,7 @@ static bool mqtt_recover(MqttTaskContext *context, bool force_full_reinit) {
         // Attempt new connection
         rc = mosquitto_connect(context->mosq, context->config.broker_url, PORT, context->config.keepalive);
         if (rc == MOSQ_ERR_SUCCESS) {
-            print_info(&csl, "Complete reinitialization successful");
+            console_info(&csl, "Complete reinitialization successful");
             
             // Wait for connection to stabilize
             sleep(MQTT_CONNECTION_STABILIZE_DELAY_SECONDS);
@@ -311,14 +311,14 @@ static bool mqtt_recover(MqttTaskContext *context, bool force_full_reinit) {
             update_led_status(true, "MQTT fully reinitialized");
             return true;
         } else {
-            print_error(&csl, "Complete reinitialization failed: %s", mosquitto_strerror(rc));
+            console_error(&csl, "Complete reinitialization failed: %s", mosquitto_strerror(rc));
         }
     }
     
     // If we get here, all reconnection attempts failed
-    print_error(&csl, "All reconnection strategies failed, requesting exit");
+    console_error(&csl, "All reconnection strategies failed, requesting exit");
     update_led_status(false, "MQTT recovery failed");
-    request_cleanup_and_exit();
+    request_cleanup_and_exit("MQTT reconnection failed after all attempts");
     return false;
 }
 
@@ -327,11 +327,11 @@ void mqtt_task(Scheduler *sch, void *task_context) {
     
     // Check if shutdown has been requested by another component
     if (is_shutdown_requested()) {
-        print_info(&csl, "Shutdown requested, stopping MQTT task");
+        console_info(&csl, "Shutdown requested, stopping MQTT task");
         return;
     }
     
-    print_info(&csl, "running mqtt task");
+    console_info(&csl, "running mqtt task");
     int res = mosquitto_loop(context->mosq, -1, 1);
 
     bool should_reschedule = true;
@@ -350,7 +350,7 @@ void mqtt_task(Scheduler *sch, void *task_context) {
      */
     switch (res) {
     case MOSQ_ERR_SUCCESS:
-        print_info(&csl, "mosquitto loop success");
+        console_info(&csl, "mosquitto loop success");
         // Reset all error counters on success
         context->invalid_state_count = 0;
         context->protocol_error_count = 0;
@@ -361,14 +361,14 @@ void mqtt_task(Scheduler *sch, void *task_context) {
         break;
 
     case MOSQ_ERR_NO_CONN:
-        print_error(&csl, "MQTT error: No connection to broker");
+        console_error(&csl, "MQTT error: No connection to broker");
         if (!mqtt_recover(context, false)) {
             should_reschedule = false;
         }
         break;
 
     case MOSQ_ERR_CONN_LOST:
-        print_error(&csl, "MQTT error: Connection to broker lost");
+        console_error(&csl, "MQTT error: Connection to broker lost");
         if (!mqtt_recover(context, false)) {
             should_reschedule = false;
         }
@@ -378,7 +378,7 @@ void mqtt_task(Scheduler *sch, void *task_context) {
         {
             char error_buf[256];
             strerror_r(errno, error_buf, sizeof(error_buf));
-            print_error(&csl, "MQTT error: System error occurred (errno: %d, %s)", errno, error_buf);
+            console_error(&csl, "MQTT error: System error occurred (errno: %d, %s)", errno, error_buf);
         }
         // System call failures can corrupt internal client state - force full reinitialization
         if (!mqtt_recover(context, true)) {
@@ -387,7 +387,7 @@ void mqtt_task(Scheduler *sch, void *task_context) {
         break;
 
     case MOSQ_ERR_PROTOCOL:
-        print_error(&csl, "MQTT error: Protocol error communicating with broker");
+        console_error(&csl, "MQTT error: Protocol error communicating with broker");
         // Protocol errors are serious - force immediate full reinitialization
         if (!mqtt_recover(context, true)) {
             should_reschedule = false;
@@ -395,11 +395,11 @@ void mqtt_task(Scheduler *sch, void *task_context) {
         break;
 
     case MOSQ_ERR_INVAL:
-        print_error(&csl, "MQTT error: Invalid parameters");
+        console_error(&csl, "MQTT error: Invalid parameters");
         context->invalid_state_count++;
 
         if (context->invalid_state_count <= MQTT_INVALID_PARAM_MAX_ATTEMPTS) {
-            print_info(&csl, "Invalid parameter error count: %d/%d, forcing full recovery due to potential state corruption", 
+            console_info(&csl, "Invalid parameter error count: %d/%d, forcing full recovery due to potential state corruption", 
                        context->invalid_state_count, MQTT_INVALID_PARAM_MAX_ATTEMPTS);
         }
         
@@ -412,11 +412,11 @@ void mqtt_task(Scheduler *sch, void *task_context) {
         break;
 
     case MOSQ_ERR_NOMEM:
-        print_error(&csl, "MQTT error: Out of memory");
+        console_error(&csl, "MQTT error: Out of memory");
         context->memory_error_count++;
 
         if (context->memory_error_count <= MQTT_MEMORY_ERROR_MAX_ATTEMPTS) {
-            print_info(&csl, "Memory error count: %d/%d, waiting %d seconds before full recovery", 
+            console_info(&csl, "Memory error count: %d/%d, waiting %d seconds before full recovery", 
                        context->memory_error_count, MQTT_MEMORY_ERROR_MAX_ATTEMPTS, MQTT_MEMORY_ERROR_DELAY_SECONDS);
             // For memory errors, wait a bit longer before attempting recovery
             sleep(MQTT_MEMORY_ERROR_DELAY_SECONDS);
@@ -431,11 +431,11 @@ void mqtt_task(Scheduler *sch, void *task_context) {
         break;
 
     default:
-        print_error(&csl, "MQTT error: Unknown error code %d (%s)", res, mosquitto_strerror(res));
+        console_error(&csl, "MQTT error: Unknown error code %d (%s)", res, mosquitto_strerror(res));
         context->unknown_error_count++;
 
         if (context->unknown_error_count <= MQTT_UNKNOWN_ERROR_MAX_ATTEMPTS) {
-            print_info(&csl, "Unknown error count: %d/%d, attempting full recovery", 
+            console_info(&csl, "Unknown error count: %d/%d, attempting full recovery", 
                        context->unknown_error_count, MQTT_UNKNOWN_ERROR_MAX_ATTEMPTS);
         }
         
@@ -449,7 +449,7 @@ void mqtt_task(Scheduler *sch, void *task_context) {
 
     // Connection health monitoring
     if (last_successful_loop > 0 && time(NULL) - last_successful_loop > LAST_SUCCESSFUL_LOOP_TIMEOUT) {
-        print_error(&csl, "No successful MQTT operations for %d seconds, forcing reconnection", LAST_SUCCESSFUL_LOOP_TIMEOUT);
+        console_error(&csl, "No successful MQTT operations for %d seconds, forcing reconnection", LAST_SUCCESSFUL_LOOP_TIMEOUT);
         // Force full reinitialization after extended period of failures to clear any accumulated issues
         if (!mqtt_recover(context, true)) {
             should_reschedule = false;
@@ -465,8 +465,8 @@ void mqtt_task(Scheduler *sch, void *task_context) {
 void mqtt_service(Scheduler *sch, Mosq *mosq, const MqttConfig *config) {
     MqttTaskContext *context = (MqttTaskContext *)malloc(sizeof(MqttTaskContext));
     if (context == NULL) {
-        print_error(&csl, "failed to allocate memory for mqtt task context");
-        cleanup_and_exit(1);
+        console_error(&csl, "failed to allocate memory for mqtt task context");
+        cleanup_and_exit(1, "Failed to allocate memory for MQTT task context");
         return;
     }
 
@@ -494,7 +494,7 @@ void cleanup_mqtt(Mosq **mosq) {
 
     mosquitto_destroy(*mosq);
     mosquitto_lib_cleanup();
-    print_info(&csl, "cleaned mqtt client");
+    console_info(&csl, "cleaned mqtt client");
 }
 
 // MQTT access token refresh callback function

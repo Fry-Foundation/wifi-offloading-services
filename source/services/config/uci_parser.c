@@ -81,7 +81,7 @@ static void parse_config_option(Config *config, const char *option_name, const c
         config->device_status_interval = atoi(option_value);
     } else if (strcmp(option_name, "console_log_level") == 0) {
         int console_log_level = atoi(option_value);
-        set_console_level(console_log_level);
+        console_set_level(console_log_level);
     } else if (strcmp(option_name, "monitoring_enabled") == 0) {
         config->monitoring_enabled = (atoi(option_value) == 1);
     } else if (strcmp(option_name, "monitoring_interval") == 0) {
@@ -132,13 +132,17 @@ static void parse_config_option(Config *config, const char *option_name, const c
         snprintf(config->time_sync_server, sizeof(config->time_sync_server), "%s", option_value);
     } else if (strcmp(option_name, "time_sync_interval") == 0) {
         config->time_sync_interval = atoi(option_value);
+    } else if (strcmp(option_name, "collector_enabled") == 0) {
+        config->collector_enabled = (atoi(option_value) == 1);
+    } else if (strcmp(option_name, "collector_interval") == 0) {
+        config->collector_interval = atoi(option_value);
     }
 }
 
 bool parse_uci_config(const char *config_path, Config *config) {
     FILE *file = fopen(config_path, "r");
     if (file == NULL) {
-        print_error(&csl, "Failed to open config file: %s", config_path);
+        console_error(&csl, "Failed to open config file: %s", config_path);
         return false;
     }
 

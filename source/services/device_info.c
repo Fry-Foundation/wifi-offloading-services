@@ -27,7 +27,7 @@ char *get_os_version() {
 
     FILE *file = fopen(OS_VERSION_FILE, "r");
     if (file == NULL) {
-        print_error(&csl, "error opening file");
+        console_error(&csl, "error opening file");
         return NULL;
     }
 
@@ -56,15 +56,15 @@ char *get_os_version() {
     if (*distrib_release != '\0') { // Check if distrib_release is not empty
         os_version = strdup(distrib_release);
         if (os_version == NULL) {
-            print_error(&csl, "memory allocation failed for os_version");
+            console_error(&csl, "memory allocation failed for os_version");
             fclose(file);
             return NULL;
         }
     } else {
-        print_error(&csl, "os_version is empty");
+        console_error(&csl, "os_version is empty");
     }
 
-    print_debug(&csl, "os_version is: %s", os_version);
+    console_debug(&csl, "os_version is: %s", os_version);
 
     return os_version;
 }
@@ -76,7 +76,7 @@ char *get_os_services_version() {
 
     FILE *file = fopen(PACKAGE_VERSION_FILE, "r");
     if (file == NULL) {
-        print_error(&csl, "error opening services version file");
+        console_error(&csl, "error opening services version file");
         return NULL;
     }
 
@@ -85,7 +85,7 @@ char *get_os_services_version() {
     char version[MAX_LINE_LENGTH];
 
     if (fgets(version, MAX_LINE_LENGTH, file) == NULL) {
-        print_error(&csl, "failed to read services version");
+        console_error(&csl, "failed to read services version");
         fclose(file);
         return NULL; // Handle failed read attempt
     }
@@ -99,11 +99,11 @@ char *get_os_services_version() {
     // Allocate memory for the version string and return
     os_services_version = strdup(version);
     if (os_services_version == NULL) {
-        print_error(&csl, "memory allocation failed for services version");
+        console_error(&csl, "memory allocation failed for services version");
         return NULL;
     }
 
-    print_debug(&csl, "services version is: %s", os_services_version);
+    console_debug(&csl, "services version is: %s", os_services_version);
 
     return os_services_version;
 }
@@ -116,7 +116,7 @@ char *get_mac() {
         mac[strcspn(mac, "\n")] = 0;
     }
 
-    print_debug(&csl, "mac address is: %s", mac);
+    console_debug(&csl, "mac address is: %s", mac);
 
     return mac;
 }
@@ -133,7 +133,7 @@ DeviceProfile get_device_profile() {
 
     FILE *file = fopen(DEVICE_PROFILE_FILE, "r");
     if (file == NULL) {
-        print_error(&csl, "error opening device info file");
+        console_error(&csl, "error opening device info file");
         return device_profile;
     }
 
@@ -166,7 +166,7 @@ DeviceProfile get_device_profile() {
     // Free the JSON object
     json_object_put(parsed_json);
 
-    print_debug(&csl, "device identifiers are: %s, %s, %s", device_profile.name, device_profile.brand,
+    console_debug(&csl, "device identifiers are: %s, %s, %s", device_profile.name, device_profile.brand,
                 device_profile.model);
 
     return device_profile;
@@ -177,7 +177,7 @@ char *get_id() {
     DeviceProfile device_profile = get_device_profile();
 
     if (strcmp(device_profile.model, "Odyssey") == 0) {
-        print_info(&csl, "Device is Odyssey, skipping openwisp UUID retrieval");
+        console_info(&csl, "Device is Odyssey, skipping openwisp UUID retrieval");
         return NULL;
     }
 
@@ -194,19 +194,19 @@ char *get_id() {
                 id[strcspn(id, "\n")] = 0;
             }
 
-            print_debug(&csl, "UUID found; took %d attempts.", retry_count + 1);
-            print_debug(&csl, "UUID is: %s", id);
+            console_debug(&csl, "UUID found; took %d attempts.", retry_count + 1);
+            console_debug(&csl, "UUID is: %s", id);
 
             break; // Exit the loop if a valid UUID is obtained
         }
 
-        print_debug(&csl, "retrying to obtain UUID...");
+        console_debug(&csl, "retrying to obtain UUID...");
         sleep(5); // Wait for 5 seconds before retrying
         retry_count++;
     }
     if (retry_count == MAX_RETRIES) {
-        print_error(&csl, "unable to obtain UUID after %d attempts. Exiting.", MAX_RETRIES);
-        cleanup_and_exit(1);
+        console_error(&csl, "unable to obtain UUID after %d attempts. Exiting.", MAX_RETRIES);
+        cleanup_and_exit(1, "Unable to obtain device UUID after maximum retries");
     }
 
     return id;
@@ -220,7 +220,7 @@ char *get_public_ip() {
         public_ip[strcspn(public_ip, "\n")] = 0;
     }
 
-    print_debug(&csl, "public ip: %s", public_ip);
+    console_debug(&csl, "public ip: %s", public_ip);
 
     return public_ip;
 }
@@ -248,7 +248,7 @@ char *get_arch() {
 
     FILE *f = fopen("/etc/openwrt_release", "r");
     if (f == NULL) {
-        print_error(&csl, "error opening file");
+        console_error(&csl, "error opening file");
         return NULL;
     }
 
@@ -288,13 +288,13 @@ char *get_arch() {
     fclose(f);
 
     if (distrib_arch[0] == '\0' || distrib_target[0] == '\0') {
-        print_error(&csl, "missing fields in /etc/openwrt_release");
+        console_error(&csl, "missing fields in /etc/openwrt_release");
         return NULL;
     }
 
     char *subtarget = strchr(distrib_target, '/');
     if (!subtarget || *(subtarget + 1) == '\0') {
-        print_error(&csl, "invalid DISTRIB_TARGET format");
+        console_error(&csl, "invalid DISTRIB_TARGET format");
         return NULL;
     }
 
@@ -303,6 +303,8 @@ char *get_arch() {
     snprintf(arch, sizeof(arch), "%s_%s", distrib_arch, subtarget);
     return arch;
 }
+
+
 
 DeviceInfo *init_device_info() {
     DeviceInfo *device_info = malloc(sizeof(DeviceInfo));
@@ -322,7 +324,7 @@ DeviceInfo *init_device_info() {
     device_info->os_name = get_os_name();
     device_info->did_public_key = get_did_public_key_or_generate_keypair();
 
-    print_info(&csl, "device info initialized");
+    console_info(&csl, "device info initialized");
 
     return device_info;
 }
@@ -338,5 +340,5 @@ void clean_device_info(DeviceInfo *device_info) {
     free(device_info->device_id);
     free(device_info->public_ip);
     free(device_info->did_public_key);
-    print_info(&csl, "cleaned device info");
+    console_info(&csl, "cleaned device info");
 }

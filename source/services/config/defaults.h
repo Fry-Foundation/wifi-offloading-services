@@ -47,6 +47,9 @@
 #define DEFAULT_TIME_SYNC_SERVER "ptbtime1.ptb.de"
 #define DEFAULT_TIME_SYNC_INTERVAL 3600
 
+#define DEFAULT_COLLECTOR_ENABLED true
+#define DEFAULT_COLLECTOR_INTERVAL 300
+
 // Development environment paths
 #define DEV_ACTIVE_PATH "."
 #define DEV_SCRIPTS_PATH "./scripts"

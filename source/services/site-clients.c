@@ -31,11 +31,11 @@ void handle_connect(const char *mac) {
              "nds-set-preemptive-list.lua", mac, SESSION_TIMEOUT, UPLOAD_RATE, DOWNLOAD_RATE, UPLOAD_QUOTA,
              DOWNLOAD_QUOTA, CUSTOM);
 
-    print_debug(&csl, "Command: %s", command);
+    console_debug(&csl, "Command: %s", command);
 
     // Run the script
     char *output = run_script(command);
-    print_debug(&csl, "Script output: %s", output);
+    console_debug(&csl, "Script output: %s", output);
 
     // Clean up
     free(output);
@@ -48,23 +48,23 @@ void handle_disconnect(const char *mac) {
 
     // Run the script
     char *output = run_script(command);
-    print_debug(&csl, "Script output: %s", output);
+    console_debug(&csl, "Script output: %s", output);
 
     // Clean up
     free(output);
 }
 
 void site_clients_callback(Mosq *_, const struct mosquitto_message *message) {
-    print_debug(&csl, "Received message on site clients topic, payload: %s", (char *)message->payload);
+    console_debug(&csl, "Received message on site clients topic, payload: %s", (char *)message->payload);
 
     json_object *events_array = json_tokener_parse((char *)message->payload);
     if (events_array == NULL) {
-        print_error(&csl, "Failed to parse site clients topic payload JSON");
+        console_error(&csl, "Failed to parse site clients topic payload JSON");
         return;
     }
 
     if (json_object_get_type(events_array) != json_type_array) {
-        print_error(&csl, "Expected JSON array in site clients topic payload");
+        console_error(&csl, "Expected JSON array in site clients topic payload");
         json_object_put(events_array);
         return;
     }
@@ -74,13 +74,13 @@ void site_clients_callback(Mosq *_, const struct mosquitto_message *message) {
         // Get each event string from the array
         json_object *event_json = json_object_array_get_idx(events_array, i);
         if (!event_json) {
-            print_warn(&csl, "Could not get event JSON object from array");
+            console_warn(&csl, "Could not get event JSON object from array");
             continue;
         }
 
         const char *event_str = json_object_get_string(event_json);
         if (!event_str) {
-            print_warn(&csl, "Could not get event string from JSON object");
+            console_warn(&csl, "Could not get event string from JSON object");
             continue;
         }
 
@@ -97,7 +97,7 @@ void site_clients_callback(Mosq *_, const struct mosquitto_message *message) {
         const char *method_key = "method=";
         const char *method_ptr = strstr(event_str, method_key);
         if (!method_ptr) {
-            print_warn(&csl, "Could not find method in event string");
+            console_warn(&csl, "Could not find method in event string");
             continue;
         }
         method_ptr += strlen(method_key);
@@ -113,7 +113,7 @@ void site_clients_callback(Mosq *_, const struct mosquitto_message *message) {
         const char *mac_key = "clientmac=";
         const char *mac_ptr = strstr(event_str, mac_key);
         if (!mac_ptr) {
-            print_warn(&csl, "Could not find mac in event string");
+            console_warn(&csl, "Could not find mac in event string");
             continue;
         }
         mac_ptr += strlen(mac_key);
@@ -141,7 +141,7 @@ void configure_site_mac(char *mac) {
 
     // Run the script
     char *output = run_script(command);
-    print_debug(&csl, "Script output: %s", output);
+    console_debug(&csl, "Script output: %s", output);
 
     // Clean up
     free(output);
@@ -149,7 +149,7 @@ void configure_site_mac(char *mac) {
 
 void init_site_clients(Mosq *mosq, Site *site, NdsClient *nds_client) {
     if (site == NULL || site->id == NULL || site->mac == NULL) {
-        print_info(&csl, "no site to subscribe to or incomplete details");
+        console_info(&csl, "no site to subscribe to or incomplete details");
         return;
     }
 
@@ -158,7 +158,7 @@ void init_site_clients(Mosq *mosq, Site *site, NdsClient *nds_client) {
     }
 
     if (nds_client->opennds_installed == false) {
-        print_warn(&csl, "OpenNDS is not installed, skipping site clients service");
+        console_warn(&csl, "OpenNDS is not installed, skipping site clients service");
         return;
     }
 

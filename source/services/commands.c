@@ -28,7 +28,7 @@ char *execute_command(const char *cmd) {
     size_t result_size = 0;
     FILE *pipe = popen(cmd, "r");
     if (!pipe) {
-        print_error(&csl, "Failed to execute command: %s", cmd);
+        console_error(&csl, "Failed to execute command: %s", cmd);
         return strdup("Error executing command");
     }
 
@@ -49,7 +49,7 @@ char *execute_command(const char *cmd) {
 }
 
 void commands_callback(struct mosquitto *mosq, const struct mosquitto_message *message) {
-    print_debug(&csl, "Received message on commands topic, payload: %s", (char *)message->payload);
+    console_debug(&csl, "Received message on commands topic, payload: %s", (char *)message->payload);
 
     // Parse the JSON payload
     struct json_object *parsed_json;
@@ -57,12 +57,12 @@ void commands_callback(struct mosquitto *mosq, const struct mosquitto_message *m
 
     parsed_json = json_tokener_parse((char *)message->payload);
     if (!parsed_json) {
-        print_error(&csl, "Failed to parse commands topic payload JSON");
+        console_error(&csl, "Failed to parse commands topic payload JSON");
         return;
     }
 
     if (!json_object_object_get_ex(parsed_json, "command", &command)) {
-        print_error(&csl, "Failed to extract command field from commands topic payload JSON");
+        console_error(&csl, "Failed to extract command field from commands topic payload JSON");
         json_object_put(parsed_json);
         return;
     }
@@ -70,7 +70,7 @@ void commands_callback(struct mosquitto *mosq, const struct mosquitto_message *m
     const char *command_str = json_object_get_string(command);
 
     if (strcmp(command_str, "check_firmware_update") == 0) {
-        print_info(&csl, "Received firmware update command");
+        console_info(&csl, "Received firmware update command");
         send_firmware_check_request(firmware_update_command_context.codename, firmware_update_command_context.version,
                                     firmware_update_command_context.wayru_device_id,
                                     firmware_update_command_context.access_token);
@@ -81,7 +81,7 @@ void commands_callback(struct mosquitto *mosq, const struct mosquitto_message *m
         if (json_object_object_get_ex(parsed_json, "command_id", &command_id)) {
             cmd_id = json_object_get_string(command_id);
         } else {
-            print_error(&csl, "Failed to extract command_id field from commands topic payload JSON");
+            console_error(&csl, "Failed to extract command_id field from commands topic payload JSON");
             json_object_put(parsed_json);
             return;
         }
@@ -91,15 +91,15 @@ void commands_callback(struct mosquitto *mosq, const struct mosquitto_message *m
         if (json_object_object_get_ex(parsed_json, "response_topic", &response_topic)) {
             resp_topic = json_object_get_string(response_topic);
         } else {
-            print_error(&csl, "Failed to extract response_topic field from commands topic payload JSON");
+            console_error(&csl, "Failed to extract response_topic field from commands topic payload JSON");
             json_object_put(parsed_json);
             return;
         }
 
         // Execute command and receive its output
-        print_info(&csl, "Executing command: %s", command_str);
+        console_info(&csl, "Executing command: %s", command_str);
         char *output = execute_command(command_str);
-        print_info(&csl, "Command output: %s", output);
+        console_info(&csl, "Command output: %s", output);
 
         // Prepare response json
         struct json_object *response_json = json_object_new_object();
@@ -109,7 +109,7 @@ void commands_callback(struct mosquitto *mosq, const struct mosquitto_message *m
         const char *response_payload = json_object_to_json_string(response_json);
 
         // Publish
-        print_info(&csl, "Publishing response to topic: %s", resp_topic);
+        console_info(&csl, "Publishing response to topic: %s", resp_topic);
         publish_mqtt(mosq, (char *)resp_topic, response_payload, 0);
         json_object_put(response_json);
         free(output);

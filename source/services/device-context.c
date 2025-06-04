@@ -29,20 +29,20 @@ char *request_device_context(Registration *registration, AccessToken *access_tok
              DEVICE_CONTEXT_ENDPOINT);
 
     // print token
-    print_debug(&csl, "url: %s", url);
-    print_debug(&csl, "access token: %s", access_token->token);
+    console_debug(&csl, "url: %s", url);
+    console_debug(&csl, "access token: %s", access_token->token);
 
     HttpGetOptions options = {.url = url, .bearer_token = access_token->token};
 
     HttpResult result = http_get(&options);
     if (result.is_error) {
-        print_error(&csl, "failed to request device context");
-        print_error(&csl, "error: %s", result.error);
+        console_error(&csl, "failed to request device context");
+        console_error(&csl, "error: %s", result.error);
         return NULL;
     }
 
     if (result.response_buffer == NULL) {
-        print_error(&csl, "no response received");
+        console_error(&csl, "no response received");
         return NULL;
     }
 
@@ -52,34 +52,34 @@ char *request_device_context(Registration *registration, AccessToken *access_tok
 void parse_and_update_device_context(DeviceContext *device_context, char *device_context_json) {
     json_object *json = json_tokener_parse(device_context_json);
     if (json == NULL) {
-        print_error(&csl, "failed to parse device context json");
+        console_error(&csl, "failed to parse device context json");
         return;
     }
 
     json_object *site_json = NULL;
     if (!json_object_object_get_ex(json, "site", &site_json)) {
-        print_debug(&csl, "failed to get site from device context json");
+        console_debug(&csl, "failed to get site from device context json");
         json_object_put(json);
         return;
     }
 
     json_object *site_id_json = NULL;
     if (!json_object_object_get_ex(site_json, "id", &site_id_json)) {
-        print_debug(&csl, "failed to get site id from device context json; device might not be part of a site");
+        console_debug(&csl, "failed to get site id from device context json; device might not be part of a site");
         json_object_put(json);
         return;
     }
 
     json_object *site_name_json = NULL;
     if (!json_object_object_get_ex(site_json, "name", &site_name_json)) {
-        print_debug(&csl, "failed to get site name from device context json");
+        console_debug(&csl, "failed to get site name from device context json");
         json_object_put(json);
         return;
     }
 
     json_object *site_mac_json = NULL;
     if (!json_object_object_get_ex(site_json, "mac", &site_mac_json)) {
-        print_debug(&csl, "failed to get site mac from device context json");
+        console_debug(&csl, "failed to get site mac from device context json");
         json_object_put(json);
         return;
     }
@@ -102,12 +102,12 @@ DeviceContext *init_device_context(Registration *registration, AccessToken *acce
 
     char *device_context_json = request_device_context(registration, access_token);
     if (device_context_json == NULL) {
-        print_debug(&csl, "failed to request device context");
+        console_debug(&csl, "failed to request device context");
         return device_context;
     }
 
     parse_and_update_device_context(device_context, device_context_json);
-    print_info(&csl, "device context initialized");
+    console_info(&csl, "device context initialized");
     return device_context;
 }
 
@@ -116,12 +116,12 @@ void device_context_task(Scheduler *sch, void *task_context) {
 
     char *device_context_json = request_device_context(context->registration, context->access_token);
     if (device_context_json == NULL) {
-        print_debug(&csl, "failed to request device context");
+        console_debug(&csl, "failed to request device context");
         return;
     }
 
     parse_and_update_device_context(context->device_context, device_context_json);
-    print_info(&csl, "device context checked");
+    console_info(&csl, "device context checked");
     schedule_task(sch, time(NULL) + config.device_context_interval, device_context_task, "device context", context);
 }
 
@@ -131,7 +131,7 @@ void device_context_service(Scheduler *sch,
                             AccessToken *access_token) {
     DeviceContextTaskContext *context = (DeviceContextTaskContext *)malloc(sizeof(DeviceContextTaskContext));
     if (context == NULL) {
-        print_error(&csl, "failed to allocate memory for device context task context");
+        console_error(&csl, "failed to allocate memory for device context task context");
         return;
     }
 
@@ -150,5 +150,5 @@ void clean_device_context(DeviceContext *device_context) {
         free(device_context->site);
     }
     free(device_context);
-    print_info(&csl, "cleaned device context");
+    console_info(&csl, "cleaned device context");
 }

@@ -16,14 +16,19 @@ typedef struct {
     const char *topic;
 } Console;
 
+// Define callback function type
+// Parameters: topic, level_label, formatted_message
+typedef void (*ConsoleCallback)(const char *topic, const char *level_label, const char *message);
+
 // Current level
 extern ConsoleLevel console_level;
 
 // Function declarations
-void set_console_level(ConsoleLevel level);
-void print_error(Console *console, const char *format, ...);
-void print_warn(Console *console, const char *format, ...);
-void print_info(Console *console, const char *format, ...);
-void print_debug(Console *console, const char *format, ...);
+void console_set_level(ConsoleLevel level);
+void console_set_callback(ConsoleCallback callback);
+void console_error(Console *console, const char *format, ...);
+void console_warn(Console *console, const char *format, ...);
+void console_info(Console *console, const char *format, ...);
+void console_debug(Console *console, const char *format, ...);
 
 #endif // CONSOLE_H

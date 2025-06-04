@@ -24,7 +24,6 @@ Scheduler *init_scheduler() {
 
 void clean_scheduler(Scheduler *sch) {
     if (sch == NULL) {
-        print_debug(&csl, "no scheduler found, skipping cleanup");
         return;
     }
 
@@ -42,7 +41,7 @@ void clean_scheduler(Scheduler *sch) {
     }
 
     free(sch);
-    print_info(&csl, "cleaned scheduler");
+    console_info(&csl, "scheduler cleaned up");
 }
 
 Task *create_task(time_t execute_at, TaskFunction task_function, const char *detail, void *task_context) {
@@ -50,7 +49,7 @@ Task *create_task(time_t execute_at, TaskFunction task_function, const char *det
 
     // Handle memory allocation failure
     if (!new_task) {
-        print_error(&csl, "Failed to allocate memory for task");
+        console_error(&csl, "Failed to allocate memory for task");
         return NULL;
     }
 
@@ -77,11 +76,9 @@ void schedule_task(Scheduler *sch,
                    void *task_context) {
     Task *new_task = create_task(execute_at, task_function, detail, task_context);
     if (!new_task) {
-        print_error(&csl, "Failed to create task");
+        console_error(&csl, "Failed to create task");
         return;
     }
-
-    print_debug(&csl, "Task '%s' created", new_task->detail);
 
     // Insert task at the beginning of the list if:
     // - Task list is empty
@@ -89,7 +86,6 @@ void schedule_task(Scheduler *sch,
     if (!sch->head || difftime(sch->head->execute_at, new_task->execute_at) > 0) {
         new_task->next = sch->head;
         sch->head = new_task;
-        print_debug(&csl, "Task '%s' inserted at the beginning of the list", new_task->detail);
         return;
     }
 
@@ -107,8 +103,6 @@ void schedule_task(Scheduler *sch,
 
     // Current task's pointer should point to the new task
     current->next = new_task;
-
-    print_debug(&csl, "Task '%s' inserted into the list", new_task->detail);
 }
 
 int get_task_count(Scheduler *sch) {
@@ -126,15 +120,15 @@ int get_task_count(Scheduler *sch) {
 void print_tasks(Scheduler *sch) {
     Task *current = sch->head;
     if (current == NULL) {
-        print_debug(&csl, "No tasks scheduled");
+        console_debug(&csl, "No tasks scheduled");
         return;
     }
 
-    print_debug(&csl, "Tasks scheduled:");
+    console_debug(&csl, "Scheduled tasks:");
     time_t current_time = time(NULL);
     while (current != NULL) {
         int time_left = difftime(current->execute_at, current_time);
-        print_debug(&csl, "- '%s' will run in: %d seconds", current->detail, time_left);
+        console_debug(&csl, "  %s (in %ds)", current->detail, time_left);
         current = current->next;
     }
 }
@@ -148,17 +142,11 @@ void print_tasks(Scheduler *sch) {
 void execute_tasks(Scheduler *sch) {
     time_t now = time(NULL);
 
-    // print_debug(&csl, "-------------------------------------------------");
-    // print_debug(&csl, "Executing tasks, time is now: %ld", now);
-    // print_debug(&csl, "Task count: %d", get_task_count(sch));
-    // print_tasks(sch);
-    // print_debug(&csl, "-------------------------------------------------");
-
     while (sch->head && difftime(sch->head->execute_at, now) <= 0) {
         // Get the task at the head of the list
         Task *task = sch->head;
 
-        print_debug(&csl, "Executing task '%s' with memory address '%p'", task->detail, (void *)task);
+        console_debug(&csl, "Executing: %s", task->detail);
 
         // Move the head of the list to the next task
         sch->head = sch->head->next;
@@ -167,20 +155,18 @@ void execute_tasks(Scheduler *sch) {
         task->task_function(sch, task->task_context);
 
         // Free the task memory
-        print_debug(&csl, "Freeing task memory for task with memory address: '%p'", (void *)task);
         free(task);
     }
 }
 
 void run_tasks(Scheduler *sch) {
-    print_debug(&csl, "Running tasks");
     while (1) {
         if (is_shutdown_requested()) {
-            print_info(&csl, "Shutdown requested, stopping task execution");
+            console_info(&csl, "Shutdown requested, stopping scheduler");
             break;
         }
         execute_tasks(sch);
         sleep(SLEEP_SECONDS);
     }
-    cleanup_and_exit(0);
+    cleanup_and_exit(0, get_shutdown_reason());
 }

@@ -22,7 +22,7 @@ void save_device_registration(char *device_registration_json) {
 
     FILE *file = fopen(registration_file_path, "w");
     if (file == NULL) {
-        print_error(&csl, "failed to open device registration file for writing; did not save registration");
+        console_error(&csl, "failed to open device registration file for writing; did not save registration");
         return;
     }
 
@@ -38,7 +38,7 @@ char *read_device_registration() {
 
     FILE *file = fopen(registration_file_path, "r");
     if (file == NULL) {
-        print_debug(&csl, "failed to open device registration file");
+        console_debug(&csl, "failed to open device registration file");
         return NULL;
     }
 
@@ -49,7 +49,7 @@ char *read_device_registration() {
 
     char *device_registration = malloc(file_size + 1);
     if (device_registration == NULL) {
-        print_error(&csl, "failed to allocate memory for device registration");
+        console_error(&csl, "failed to allocate memory for device registration");
         fclose(file);
         return NULL;
     }
@@ -71,25 +71,25 @@ Registration *parse_device_registration(const char *device_registration_json) {
     parsed_registration = json_tokener_parse(device_registration_json);
     if (parsed_registration == NULL) {
         // JSON parsing failed
-        print_error(&csl, "failed to parse device registration JSON data");
+        console_error(&csl, "failed to parse device registration JSON data");
         return NULL;
     }
 
     if (!json_object_object_get_ex(parsed_registration, "wayru_device_id", &wayru_device_id)) {
-        print_error(&csl, "failed to get wayru_device_id from device registration");
+        console_error(&csl, "failed to get wayru_device_id from device registration");
         json_object_put(parsed_registration);
         return NULL;
     }
 
     if (!json_object_object_get_ex(parsed_registration, "access_key", &access_key)) {
-        print_error(&csl, "failed to get access_key from device registration");
+        console_error(&csl, "failed to get access_key from device registration");
         json_object_put(parsed_registration);
         return NULL;
     }
 
     Registration *registration = malloc(sizeof(Registration));
     if (registration == NULL) {
-        print_error(&csl, "failed to allocate memory for registration");
+        console_error(&csl, "failed to allocate memory for registration");
         json_object_put(parsed_registration);
         return NULL;
     }
@@ -114,7 +114,7 @@ Registration *init_registration(char *mac, char *model, char *brand, char *openw
         }
     }
 
-    print_info(&csl, "device is not registered, attempting to register ...");
+    console_info(&csl, "device is not registered, attempting to register ...");
 
     // Url
     char register_url[256];
@@ -132,7 +132,7 @@ Registration *init_registration(char *mac, char *model, char *brand, char *openw
 
     // json_object_object_add(json_body, "openwisp_device_id", json_object_new_string(openwisp_device_id));
     const char *body = json_object_to_json_string(json_body);
-    print_debug(&csl, "register device request body %s", body);
+    console_debug(&csl, "register device request body %s", body);
 
     HttpPostOptions options = {
         .url = register_url,
@@ -143,26 +143,26 @@ Registration *init_registration(char *mac, char *model, char *brand, char *openw
     json_object_put(json_body);
 
     if (result.is_error) {
-        print_error(&csl, "failed to register device, error: %s", result.error);
+        console_error(&csl, "failed to register device, error: %s", result.error);
         return false;
     }
 
     if (result.response_buffer == NULL) {
-        print_error(&csl, "failed to register device, no response received");
+        console_error(&csl, "failed to register device, no response received");
         return false;
     }
 
     // Parse response
     registration = parse_device_registration(result.response_buffer);
     if (registration->wayru_device_id == NULL || registration->access_key == NULL) {
-        print_error(&csl, "failed to register device, no device id or access key received");
+        console_error(&csl, "failed to register device, no device id or access key received");
         free(result.response_buffer);
         return false;
     }
 
     // Save registration
     save_device_registration(result.response_buffer);
-    print_info(&csl, "registration initialized");
+    console_info(&csl, "registration initialized");
 
     // Cleanup
     free(result.response_buffer);
@@ -172,7 +172,7 @@ Registration *init_registration(char *mac, char *model, char *brand, char *openw
 
 void clean_registration(Registration *registration) {
     if (registration == NULL) {
-        print_debug(&csl, "no registration found, skipping cleanup");
+        console_debug(&csl, "no registration found, skipping cleanup");
         return;
     }
 
@@ -186,5 +186,5 @@ void clean_registration(Registration *registration) {
         registration->access_key = NULL;
     }
 
-    print_info(&csl, "cleaned registration");
+    console_info(&csl, "cleaned registration");
 }

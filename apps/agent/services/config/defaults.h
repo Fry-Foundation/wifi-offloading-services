@@ -6,7 +6,7 @@
 
 // Default configuration values
 #define DEFAULT_ENABLED true
-#define DEFAULT_MAIN_API "https://api.prod-2.wayru.tech"
+#define DEFAULT_MAIN_API "https://prod.api.az.wayru.tech"
 #define DEFAULT_ACCOUNTING_API "https://wifi.api.wayru.tech"
 #define DEFAULT_DEVICES_API "https://devices.wayru.tech"
 #define DEFAULT_ACCESS_INTERVAL 10800

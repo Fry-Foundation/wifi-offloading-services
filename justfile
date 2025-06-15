@@ -5,6 +5,8 @@ default:
 # Development environment setup
 dev:
     just cmake
+    mkdir -p dev/agent
+    cp build/agent dev/agent
     bash tools/dev.sh
 
 # Generate compilation database (compile_commands.json)
@@ -17,7 +19,7 @@ format:
 
 # Compile for specific architecture
 compile arch:
-    cd tools/compile && go run compile.go {{arch}} 
+    cd tools/compile && go run compile.go {{arch}}
 
 # Upload IPK release package
 release arch:
@@ -25,5 +27,5 @@ release arch:
 
 # Build with CMake
 cmake:
-    mkdir -p output
-    cd output && cmake .. && make
+    mkdir -p build
+    cd build && cmake .. && make

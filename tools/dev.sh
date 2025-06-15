@@ -4,15 +4,15 @@ set -e
 
 # Copy scripts and data files
 echo "Copying scripts and data files..."
-mkdir -p output/scripts
-cp source/scripts/dev/* output/scripts/
-chmod +x output/scripts/*
+mkdir -p dev/agent/scripts
+cp apps/agent/scripts/dev/* dev/agent/scripts/
+chmod +x dev/agent/scripts/*
 
-mkdir -p output/data
-mkdir -p output/data/did-key
+mkdir -p dev/agent/data
+mkdir -p dev/agent/data/did-key
 
-cp VERSION output/VERSION
+cp VERSION dev/agent/VERSION
 
 # Run the program
 echo "Starting wayru-os-services in development mode..."
-cd output && ./wayru-os-services --dev 
+cd dev/agent && ./agent --dev

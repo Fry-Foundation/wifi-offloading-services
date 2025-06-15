@@ -55,7 +55,6 @@ sdk_aarch64_cortex-a53_filogic
 *.pdb
 
 # Kernel Module Compile Results
-*.mod*
 *.cmd
 .tmp_versions/
 modules.order

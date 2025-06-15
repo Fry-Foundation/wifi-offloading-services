@@ -80,44 +80,48 @@ target_link_libraries(wayru-crypto
     ${json_c_library}
 )
 
-# Create executables with common configuration
-foreach(app agent)
-    # Collect all service source files for agent
-    if(${app} STREQUAL "agent")
-        file(GLOB_RECURSE AGENT_SERVICE_SOURCES
-            "apps/agent/services/*.c"
-        )
-        add_executable(${app}
-            apps/${app}/main.c
-            ${AGENT_SERVICE_SOURCES}
-        )
-    else()
-        add_executable(${app} apps/${app}/main.c)
-    endif()
+# Agent app - Full featured with all services
+file(GLOB_RECURSE AGENT_SERVICE_SOURCES
+    "apps/agent/services/*.c"
+)
+add_executable(agent
+    apps/agent/main.c
+    ${AGENT_SERVICE_SOURCES}
+)
+target_include_directories(agent PRIVATE
+    apps/agent
+    lib/core
+    lib/http
+    lib/crypto
+    lib
+)
+target_link_libraries(agent
+    PRIVATE
+    wayru-core
+    wayru-http
+    wayru-crypto
+    ${ubus_library}
+    ${ubox_library}
+    ${blobmsg_json_library}
+    ${mosquitto_library}
+    ${lua_library}
+)
 
-    target_include_directories(${app} PRIVATE
-        apps/${app}
-        lib/core
-        lib/http
-        lib/crypto
-        lib
-    )
-    target_link_libraries(
-        ${app}
-        PRIVATE
-        wayru-core
-        wayru-http
-        wayru-crypto
-        ${ubus_library}
-        ${ubox_library}
-        ${blobmsg_json_library}
-        ${mosquitto_library}
-        ${lua_library}
-    )
-endforeach()
+# Health app - Lightweight health checker
+add_executable(health
+    apps/health/main.c
+)
+target_include_directories(health PRIVATE
+    lib/core
+    lib
+)
+target_link_libraries(health
+    PRIVATE
+    wayru-core
+)
 
 # Install targets
 install(TARGETS wayru-core wayru-http wayru-crypto ARCHIVE DESTINATION lib)
-install(TARGETS agent RUNTIME DESTINATION bin)
+install(TARGETS agent health RUNTIME DESTINATION bin)
 
 enable_testing()

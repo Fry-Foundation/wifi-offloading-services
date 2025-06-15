@@ -7,7 +7,7 @@ PKG_VERSION:=$(shell cat VERSION)
 PKG_RELEASE:=1
 
 # This is a custom variable, used below
-SOURCE_DIR:=source
+AGENT_DIR:=apps/agent
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/cmake.mk
@@ -16,7 +16,8 @@ include $(INCLUDE_DIR)/cmake.mk
 define Build/Prepare
 	mkdir -p $(PKG_BUILD_DIR)
 	$(CP) ./CMakeLists.txt $(PKG_BUILD_DIR)/
-	$(CP) ./source $(PKG_BUILD_DIR)/
+	$(CP) ./apps $(PKG_BUILD_DIR)/
+	$(CP) ./lib $(PKG_BUILD_DIR)/
 	$(CP) ./VERSION $(PKG_BUILD_DIR)/
 endef
 
@@ -25,7 +26,7 @@ define Package/wayru-os-services
   SECTION:=admin
   CATEGORY:=Administration
   TITLE:=Wayru config daemon and scripts
-  DEPENDS:=+libcurl +libjson-c +libopenssl +libmosquitto-ssl
+  DEPENDS:=+libcurl +libjson-c +libopenssl +libmosquitto-ssl +libubus +libubox +libblobmsg-json +lua
 endef
 
 # Package description; a more verbose description on what our package does
@@ -47,14 +48,24 @@ define Package/wayru-os-services/install
 	$(INSTALL_DIR) $(1)/etc/wayru-os-services/data
 	$(INSTALL_DIR) $(1)/etc/wayru-os-services/data/did-key
 
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/wayru-os-services $(1)/usr/bin/
-	$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/wayru-os-services.init $(1)/etc/init.d/wayru-os-services
-	$(INSTALL_CONF) $(SOURCE_DIR)/scripts/openwrt/wayru-os-services.config $(1)/etc/config/wayru-os-services
-	$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/wayru-os-services.config $(1)/etc/wayru-os-services/config.uci
+	# Install the two new binaries
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/agent $(1)/usr/bin/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/health $(1)/usr/bin/
 
-	$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/*.sh $(1)/etc/wayru-os-services/scripts/
-	$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/*.lua $(1)/etc/wayru-os-services/scripts/
-	$(INSTALL_DATA) VERSION $(1)/etc/wayru-os-services/VERSION
+	# Create a symlink for backward compatibility
+	ln -sf /usr/bin/agent $(1)/usr/bin/wayru-os-services
+
+	# Install init script and config
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/apps/agent/scripts/openwrt/wayru-os-services.init $(1)/etc/init.d/wayru-os-services
+	$(INSTALL_CONF) $(PKG_BUILD_DIR)/apps/agent/scripts/openwrt/wayru-os-services.config $(1)/etc/config/wayru-os-services
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/apps/agent/scripts/openwrt/wayru-os-services.config $(1)/etc/wayru-os-services/config.uci
+
+	# Install all scripts from the openwrt directory
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/apps/agent/scripts/openwrt/*.sh $(1)/etc/wayru-os-services/scripts/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/apps/agent/scripts/openwrt/*.lua $(1)/etc/wayru-os-services/scripts/
+
+	# Install VERSION file
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/VERSION $(1)/etc/wayru-os-services/VERSION
 endef
 
 define Package/wayru-os-services/conffiles

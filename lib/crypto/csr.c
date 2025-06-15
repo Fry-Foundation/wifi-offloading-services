@@ -1,5 +1,5 @@
 #include "csr.h"
-#include <lib/result.h>
+#include "result.h"
 #include <openssl/evp.h>
 #include <openssl/pem.h>
 #include <openssl/x509.h>

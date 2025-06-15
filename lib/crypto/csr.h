@@ -1,7 +1,7 @@
 #ifndef CSR_H
 #define CSR_H
 
-#include <lib/result.h>
+#include "result.h"
 #include <openssl/evp.h>
 #include <stdbool.h>
 

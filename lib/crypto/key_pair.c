@@ -1,5 +1,5 @@
 #include "key_pair.h"
-#include "lib/console.h"
+#include "console.h"
 #include <json-c/json.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>

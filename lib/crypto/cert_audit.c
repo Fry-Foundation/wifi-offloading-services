@@ -1,4 +1,4 @@
-#include "lib/console.h"
+#include "console.h"
 #include <openssl/err.h>
 #include <openssl/pem.h>
 #include <openssl/x509.h>

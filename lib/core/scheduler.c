@@ -1,8 +1,7 @@
 #include "scheduler.h"
-#include "services/exit_handler.h"
-#include <lib/console.h>
+// #include "services/exit_handler.h"
+#include "core/console.h"
 #include <stdalign.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -161,12 +160,12 @@ void execute_tasks(Scheduler *sch) {
 
 void run_tasks(Scheduler *sch) {
     while (1) {
-        if (is_shutdown_requested()) {
-            console_info(&csl, "Shutdown requested, stopping scheduler");
-            break;
-        }
+        // if (is_shutdown_requested()) {
+        //     console_info(&csl, "Shutdown requested, stopping scheduler");
+        //     break;
+        // }
         execute_tasks(sch);
         sleep(SLEEP_SECONDS);
     }
-    cleanup_and_exit(0, get_shutdown_reason());
+    // cleanup_and_exit(0, get_shutdown_reason());
 }

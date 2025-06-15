@@ -1,5 +1,5 @@
 #include "script_runner.h"
-#include "lib/console.h"
+#include "console.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

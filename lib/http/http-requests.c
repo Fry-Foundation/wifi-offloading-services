@@ -1,6 +1,6 @@
 #include "http-requests.h"
-#include "lib/console.h"
-#include "lib/curl_helpers.h"
+#include "console.h"
+#include "curl_helpers.h"
 #include <curl/curl.h>
 #include <stdio.h>
 #include <stdlib.h>

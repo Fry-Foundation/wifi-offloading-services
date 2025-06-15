@@ -82,8 +82,21 @@ target_link_libraries(wayru-crypto
 
 # Create executables with common configuration
 foreach(app agent)
-    add_executable(${app} apps/${app}/main.c)
+    # Collect all service source files for agent
+    if(${app} STREQUAL "agent")
+        file(GLOB_RECURSE AGENT_SERVICE_SOURCES
+            "apps/agent/services/*.c"
+        )
+        add_executable(${app}
+            apps/${app}/main.c
+            ${AGENT_SERVICE_SOURCES}
+        )
+    else()
+        add_executable(${app} apps/${app}/main.c)
+    endif()
+
     target_include_directories(${app} PRIVATE
+        apps/${app}
         lib/core
         lib/http
         lib/crypto

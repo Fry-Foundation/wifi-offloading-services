@@ -2,12 +2,13 @@
 default:
     @just --list
 
-# Development environment setup
-dev:
+# Development environment setup for specific app
+dev app="agent":
     just cmake
-    mkdir -p dev/agent
-    cp build/agent dev/agent
-    bash tools/dev.sh
+    @if [ ! -f "build/{{app}}" ]; then echo "Error: App '{{app}}' not found in build directory."; exit 1; fi
+    mkdir -p dev/{{app}}
+    cp build/{{app}} dev/{{app}}
+    bash tools/dev.sh {{app}}
 
 # Generate compilation database (compile_commands.json)
 compdb:

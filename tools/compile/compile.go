@@ -91,10 +91,11 @@ func main() {
 	projectRoot := filepath.Join(currentDir, "..", "..")
 
 	// Directories
-	buildDir := filepath.Join(projectRoot, "build")
+	outputDir := filepath.Join(projectRoot, "output")
 	feedDir := filepath.Join(projectRoot, "feed")
 	sdkDir := filepath.Join(
 		projectRoot,
+		"sdk",
 		fmt.Sprintf("sdk_%s_%s", selectedBuild.Architecture, selectedBuild.Subtarget),
 	)
 
@@ -103,16 +104,17 @@ func main() {
 	os.RemoveAll(feedDir)
 	os.MkdirAll(filepath.Join(feedDir, "admin", "wayru-os-services"), 0755)
 	archDir := fmt.Sprintf("%s_%s", selectedBuild.Architecture, selectedBuild.Subtarget)
-	outputDir := filepath.Join(buildDir, archDir)
-	os.RemoveAll(outputDir)
-	os.MkdirAll(outputDir, 0755)
+	archOutputDir := filepath.Join(outputDir, archDir)
+	os.RemoveAll(archOutputDir)
+	os.MkdirAll(archOutputDir, 0755)
 
 	// Copy source files into feed
 	fmt.Println("Copying build source to feed directory")
 	copyFile(filepath.Join(projectRoot, "Makefile"), filepath.Join(feedDir, "admin", "wayru-os-services", "Makefile"))
 	copyFile(filepath.Join(projectRoot, "CMakeLists.txt"), filepath.Join(feedDir, "admin", "wayru-os-services", "CMakeLists.txt"))
 	copyFile(filepath.Join(projectRoot, "VERSION"), filepath.Join(feedDir, "admin", "wayru-os-services", "VERSION"))
-	copyDir(filepath.Join(projectRoot, "source"), filepath.Join(feedDir, "admin", "wayru-os-services", "source"))
+	copyDir(filepath.Join(projectRoot, "apps"), filepath.Join(feedDir, "admin", "wayru-os-services", "apps"))
+	copyDir(filepath.Join(projectRoot, "lib"), filepath.Join(feedDir, "admin", "wayru-os-services", "lib"))
 
 	// Prepare SDK paths
 	var muslSuffix string
@@ -141,7 +143,9 @@ func main() {
 		fmt.Println("SDK directory does not exist; proceeding to download and extract.")
 
 		// Download tar.xz
-		sdkArchivePath := filepath.Join(projectRoot, sdkFilename)
+		sdkBaseDir := filepath.Join(projectRoot, "sdk")
+		os.MkdirAll(sdkBaseDir, 0755)
+		sdkArchivePath := filepath.Join(sdkBaseDir, sdkFilename)
 		if _, err := os.Stat(sdkArchivePath); os.IsNotExist(err) {
 			fmt.Printf("Downloading SDK from: %s\n", sdkURL)
 			err := downloadFile(sdkURL, sdkArchivePath)
@@ -155,7 +159,8 @@ func main() {
 
 		// Extract SDK
 		fmt.Printf("Extracting SDK to: %s\n", sdkDir)
-		err := extractSDK(sdkArchivePath, projectRoot)
+		sdkBaseDir = filepath.Join(projectRoot, "sdk")
+		err := extractSDK(sdkArchivePath, sdkBaseDir)
 		if err != nil {
 			log.Fatalf("Failed to extract SDK: %v", err)
 		}
@@ -169,7 +174,7 @@ func main() {
 			muslSuffix,
 		)
 
-		err = os.Rename(filepath.Join(projectRoot, sdkExtractedName), sdkDir)
+		err = os.Rename(filepath.Join(sdkBaseDir, sdkExtractedName), sdkDir)
 		if err != nil {
 			log.Fatalf("Failed to rename SDK directory: %v", err)
 		}
@@ -211,7 +216,7 @@ func main() {
 	err = runDockerContainerFromImage(
 		imageName,
 		sdkDir,
-		outputDir,
+		archOutputDir,
 		selectedBuild.FeedsName,
 		feedDir,
 	)
@@ -220,7 +225,7 @@ func main() {
 	}
 
 	fmt.Printf("\nPackage built for architecture: %s\n", selectedBuild.Architecture)
-	fmt.Printf("Saved to: %s\n", outputDir)
+	fmt.Printf("Saved to: %s\n", archOutputDir)
 
 }
 

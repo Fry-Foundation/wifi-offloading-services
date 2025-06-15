@@ -120,8 +120,31 @@ target_link_libraries(health
     wayru-core
 )
 
+# Collector app - Log collection and forwarding
+add_executable(collector
+    apps/collector/main.c
+    apps/collector/ubus.c
+    apps/collector/collect.c
+)
+target_include_directories(collector PRIVATE
+    apps/collector
+    lib/core
+    lib/http
+    lib
+)
+target_link_libraries(collector
+    PRIVATE
+    wayru-core
+    wayru-http
+    ${ubus_library}
+    ${ubox_library}
+    ${blobmsg_json_library}
+    ${json_c_library}
+    ${curl_library}
+)
+
 # Install targets
 install(TARGETS wayru-core wayru-http wayru-crypto ARCHIVE DESTINATION lib)
-install(TARGETS agent health RUNTIME DESTINATION bin)
+install(TARGETS agent health collector RUNTIME DESTINATION bin)
 
 enable_testing()

@@ -48,9 +48,10 @@ define Package/wayru-os-services/install
 	$(INSTALL_DIR) $(1)/etc/wayru-os-services/data
 	$(INSTALL_DIR) $(1)/etc/wayru-os-services/data/did-key
 
-	# Install the two new binaries
+	# Install the three new binaries
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/agent $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/health $(1)/usr/bin/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/collector $(1)/usr/bin/
 
 	# Create a symlink for backward compatibility
 	ln -sf /usr/bin/agent $(1)/usr/bin/wayru-os-services

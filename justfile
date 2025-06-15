@@ -1,8 +1,9 @@
-# Default recipe
+# Default recipe - shows available commands
 default:
     @just --list
 
 # Development environment setup for specific app
+# Available apps: agent, health, collector
 dev app="agent":
     just cmake
     @if [ ! -f "build/{{app}}" ]; then echo "Error: App '{{app}}' not found in build directory."; exit 1; fi

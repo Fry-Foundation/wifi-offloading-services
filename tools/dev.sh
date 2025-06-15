@@ -36,9 +36,32 @@ case "$APP" in
         cd dev/health && ./health --dev
         ;;
 
+    "collector")
+        # Set up collector app dev environment
+        echo "Setting up collector app development environment..."
+        mkdir -p dev/collector/data
+        mkdir -p dev/collector/logs
+        mkdir -p dev/collector/scripts
+
+        # Copy collector development scripts and config
+        echo "Copying collector scripts and configuration files..."
+        cp apps/collector/scripts/dev/* dev/collector/scripts/
+        chmod +x dev/collector/scripts/*
+
+        cp VERSION dev/collector/VERSION
+
+        # Run the collector program
+        echo "Starting wayru-os-services collector in development mode..."
+        echo "Available development scripts in dev/collector/scripts/:"
+        echo "  - test-logs.sh: Generate test syslog messages"
+        echo "  - collector.conf: Development configuration"
+        echo ""
+        cd dev/collector && ./collector --dev
+        ;;
+
     *)
         echo "Error: Unknown app '$APP'"
-        echo "Supported apps: agent, health"
+        echo "Supported apps: agent, health, collector"
         exit 1
         ;;
 esac

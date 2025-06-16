@@ -72,4 +72,4 @@ compile_commands.json
 certificates/
 .env
 
-dev/
+run

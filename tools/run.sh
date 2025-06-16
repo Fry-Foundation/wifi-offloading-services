@@ -3,6 +3,7 @@
 set -e
 
 APP="${1:-agent}"
+RUN_DIR="run/$APP"
 
 echo "Setting up development environment for app: $APP"
 
@@ -10,45 +11,45 @@ case "$APP" in
     "agent")
         # Copy scripts and data files for agent
         echo "Copying agent scripts and data files..."
-        mkdir -p dev/agent/scripts
-        cp apps/agent/scripts/dev/* dev/agent/scripts/
-        chmod +x dev/agent/scripts/*
+        mkdir -p $RUN_DIR/scripts
+        cp apps/agent/scripts/dev/* $RUN_DIR/scripts/
+        chmod +x $RUN_DIR/scripts/*
 
-        mkdir -p dev/agent/data
-        mkdir -p dev/agent/data/did-key
+        mkdir -p $RUN_DIR/data
+        mkdir -p $RUN_DIR/data/did-key
 
-        cp VERSION dev/agent/VERSION
+        cp VERSION $RUN_DIR/VERSION
 
         # Run the agent program
         echo "Starting wayru-os-services agent in development mode..."
-        cd dev/agent && ./agent --dev
+        cd $RUN_DIR && ./agent --dev
         ;;
 
     "config")
         # Set up config app dev environment
         echo "Setting up config app in development environment..."
-        mkdir -p dev/config/data
+        mkdir -p $RUN_DIR/data
 
-        cp VERSION dev/config/VERSION
+        cp VERSION $RUN_DIR/VERSION
 
         # Run the config program
         echo "Starting config app in development mode..."
-        cd dev/config && ./config --dev
+        cd $RUN_DIR && ./config --dev
         ;;
 
     "collector")
         # Set up collector app dev environment
         echo "Setting up collector app development environment..."
-        mkdir -p dev/collector/data
-        mkdir -p dev/collector/logs
-        mkdir -p dev/collector/scripts
+        mkdir -p $RUN_DIR/data
+        mkdir -p $RUN_DIR/logs
+        mkdir -p $RUN_DIR/scripts
 
         # Copy collector development scripts and config
         echo "Copying collector scripts and configuration files..."
-        cp apps/collector/scripts/dev/* dev/collector/scripts/
-        chmod +x dev/collector/scripts/*
+        cp apps/collector/scripts/dev/* $RUN_DIR/scripts/
+        chmod +x $RUN_DIR/scripts/*
 
-        cp VERSION dev/collector/VERSION
+        cp VERSION $RUN_DIR/VERSION
 
         # Run the collector program
         echo "Starting wayru-os-services collector in development mode..."
@@ -56,7 +57,7 @@ case "$APP" in
         echo "  - test-logs.sh: Generate test syslog messages"
         echo "  - collector.conf: Development configuration"
         echo ""
-        cd dev/collector && ./collector --dev
+        cd $RUN_DIR && ./collector --dev
         ;;
 
     *)

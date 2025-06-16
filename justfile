@@ -4,12 +4,12 @@ default:
 
 # Development environment setup for specific app
 # Available apps: agent, health, collector
-dev app="agent":
+run app="agent":
     just cmake
     @if [ ! -f "build/{{app}}" ]; then echo "Error: App '{{app}}' not found in build directory."; exit 1; fi
-    mkdir -p dev/{{app}}
-    cp build/{{app}} dev/{{app}}
-    bash tools/dev.sh {{app}}
+    mkdir -p run/{{app}}
+    cp build/{{app}} run/{{app}}
+    bash tools/run.sh {{app}}
 
 # Generate compilation database (compile_commands.json)
 compdb:

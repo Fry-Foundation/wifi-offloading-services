@@ -1,88 +1,152 @@
 cmake_minimum_required(VERSION 3.10)
+project(wayru-os-services C)
 
-PROJECT(wayru-os-services C)
+# Definitions
+add_definitions(-Wall)
+if(CMAKE_C_COMPILER_VERSION VERSION_GREATER 6)
+    add_definitions(-Wextra)
+endif()
+add_definitions(-Os -std=gnu99 -g3 -Wmissing-declarations -Wno-unused-parameter)
 
-ADD_DEFINITIONS(-Wall)
-IF(CMAKE_C_COMPILER_VERSION VERSION_GREATER 6)
-    ADD_DEFINITIONS(-Wextra)
-ENDIF()
-ADD_DEFINITIONS(-Os -std=gnu99 -g3 -Wmissing-declarations -Wno-unused-parameter)
+# Custom ubus paths via environment variables or cmake variables
+set(ubus_root "" CACHE PATH "Root directory for ubus libraries")
+if(ubus_root)
+    list(APPEND cmake_prefix_path ${ubus_root})
+endif()
 
-SET(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "")
-
-# Source files
-SET(SERVICES_SOURCES
-    source/services/config/config.c
-    source/services/config/uci_parser.c
-    source/services/config/defaults.c
-    source/services/device_info.c
-    source/services/device_status.c
-    source/services/did-key.c
-    source/services/end_report.c
-    source/services/mqtt/cert.c
-    source/services/mqtt/mqtt.c
-    source/services/monitoring.c
-    source/services/speedtest.c
-    source/services/registration.c
-    source/services/access_token.c
-    source/services/firmware_upgrade.c
-    source/services/package_update.c
-    source/services/device-context.c
-    source/services/nds.c
-    source/services/site-clients.c
-    source/services/commands.c
-    source/services/gen_id.c
-    source/services/reboot.c
-    source/services/radsec_cert.c
-    source/services/diagnostic/diagnostic.c
-    source/services/exit_handler.c
-    source/services/time_sync.c
-    source/services/collector.c
-)
-
-SET(LIB_SOURCES
-    source/lib/console.c
-    source/lib/curl_helpers.c
-    source/lib/key_pair.c
-    source/lib/http-requests.c
-    source/lib/scheduler.c
-    source/lib/script_runner.c
-    source/lib/cert_audit.c
-    source/lib/retry.c
-    source/lib/result.c
-    source/lib/csr.c
-    source/lib/stats.c
-)
-
-SET(SOURCES
-    source/main.c
-    ${SERVICES_SOURCES}
-    ${LIB_SOURCES}
-)
+# Find include directories
+find_path(ubus_include_dir names libubus.h)
+if(ubus_include_dir)
+    include_directories(${ubus_include_dir})
+endif()
 
 # Find required libraries
-FIND_LIBRARY(CURL_LIBRARY NAMES curl)
-FIND_LIBRARY(JSON_C_LIBRARY NAMES json-c)
-FIND_LIBRARY(SSL_LIBRARY NAMES ssl)
-FIND_LIBRARY(CRYPTO_LIBRARY NAMES crypto)
-FIND_LIBRARY(MOSQUITTO_LIBRARY NAMES mosquitto)
+find_library(ubus_library names ubus REQUIRED)
+find_library(ubox_library names ubox REQUIRED)
+find_library(blobmsg_json_library names blobmsg_json REQUIRED)
+find_library(curl_library names curl REQUIRED)
+find_library(json_c_library names json-c REQUIRED)
+find_library(ssl_library names ssl REQUIRED)
+find_library(crypto_library names crypto REQUIRED)
+find_library(mosquitto_library names mosquitto REQUIRED)
+find_library(lua_library names lua REQUIRED)
 
-# Include directories
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/source)
+# Create granular static libraries by functionality
 
-# Create executable
-ADD_EXECUTABLE(wayru-os-services ${SOURCES})
-
-# Link libraries
-TARGET_LINK_LIBRARIES(wayru-os-services
-    ${CURL_LIBRARY}
-    ${JSON_C_LIBRARY}
-    ${SSL_LIBRARY}
-    ${CRYPTO_LIBRARY}
-    ${MOSQUITTO_LIBRARY}
+# Core utilities (no external deps)
+add_library(wayru-core STATIC
+    lib/core/console.c
+    lib/core/result.c
+    lib/core/retry.c
+    lib/core/script_runner.c
+    lib/core/stats.c
+    lib/core/scheduler.c
+    lib/core/uloop_scheduler.c
+)
+target_include_directories(wayru-core PUBLIC
+    lib/core
+    lib
 )
 
-# Installation
-INSTALL(TARGETS wayru-os-services
-    RUNTIME DESTINATION bin
-) 
+# HTTP/networking utilities
+add_library(wayru-http STATIC
+    lib/http/curl_helpers.c
+    lib/http/http-requests.c
+)
+target_include_directories(wayru-http PUBLIC
+    lib/http
+    lib
+)
+target_link_libraries(wayru-http
+    PUBLIC
+    wayru-core
+    ${curl_library}
+)
+
+# Cryptography utilities
+add_library(wayru-crypto STATIC
+    lib/crypto/cert_audit.c
+    lib/crypto/csr.c
+    lib/crypto/key_pair.c
+)
+target_include_directories(wayru-crypto PUBLIC
+    lib/crypto
+    lib
+)
+target_link_libraries(wayru-crypto
+    PUBLIC
+    wayru-core
+    ${ssl_library}
+    ${crypto_library}
+    ${json_c_library}
+)
+
+# Agent app - Full featured with all services
+file(GLOB_RECURSE AGENT_SERVICE_SOURCES
+    "apps/agent/services/*.c"
+)
+add_executable(wayru-agent
+    apps/agent/main.c
+    ${AGENT_SERVICE_SOURCES}
+)
+target_include_directories(wayru-agent PRIVATE
+    apps/agent
+    lib/core
+    lib/http
+    lib/crypto
+    lib
+)
+target_link_libraries(wayru-agent
+    PRIVATE
+    wayru-core
+    wayru-http
+    wayru-crypto
+    ${ubus_library}
+    ${ubox_library}
+    ${blobmsg_json_library}
+    ${mosquitto_library}
+    ${lua_library}
+)
+
+# Config app - Renderer and applier
+add_executable(wayru-config
+    apps/config/main.c
+)
+target_include_directories(wayru-config PRIVATE
+    lib/core
+    lib
+)
+target_link_libraries(wayru-config
+    PRIVATE
+    wayru-core
+)
+
+# Collector app - Log collection and forwarding
+add_executable(wayru-collector
+    apps/collector/main.c
+    apps/collector/ubus.c
+    apps/collector/collect.c
+    apps/collector/config.c
+)
+target_include_directories(wayru-collector PRIVATE
+    apps/collector
+    lib/core
+    lib/http
+    lib
+)
+target_link_libraries(wayru-collector
+    PRIVATE
+    wayru-core
+    wayru-http
+    ${ubus_library}
+    ${ubox_library}
+    ${blobmsg_json_library}
+    ${json_c_library}
+    ${curl_library}
+)
+
+# Install targets
+install(TARGETS wayru-core wayru-http wayru-crypto ARCHIVE DESTINATION lib)
+install(TARGETS wayru-agent wayru-config wayru-collector RUNTIME DESTINATION bin)
+
+enable_testing()

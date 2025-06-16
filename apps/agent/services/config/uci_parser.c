@@ -158,13 +158,13 @@ bool parse_uci_config(const char *config_path, Config *config) {
         }
 
         // Check for section start
-        if (strstr(trimmed_line, "config wayru_os_services") != NULL) {
+        if (strstr(trimmed_line, "config wayru_agent") != NULL) {
             in_wayru_section = true;
             continue;
         }
 
         // Check for new section (exit wayru section)
-        if (strncmp(trimmed_line, "config ", 7) == 0 && strstr(trimmed_line, "wayru_os_services") == NULL) {
+        if (strncmp(trimmed_line, "config ", 7) == 0 && strstr(trimmed_line, "wayru_agent") == NULL) {
             in_wayru_section = false;
             continue;
         }

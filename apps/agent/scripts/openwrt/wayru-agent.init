@@ -7,8 +7,8 @@ USE_PROCD=1
 
 start_service() {
 	procd_open_instance
-	procd_set_param command /usr/bin/wayru-os-services
-	procd_set_param file /etc/config/wayru-os-services
+	procd_set_param command /usr/bin/wayru-agent
+	procd_set_param file /etc/config/wayru-agent
 	procd_set_param respawn 3600 60 0
 	procd_set_param term_timeout 30
 	procd_set_param stdout 1
@@ -16,5 +16,5 @@ start_service() {
 }
 
 stop_service() {
-	logger -s "wayru-os-services stopping"
+	logger -s "wayru-agent stopping"
 }

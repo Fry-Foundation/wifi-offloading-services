@@ -57,14 +57,14 @@
 #define DEV_TEMP_PATH "./tmp"
 
 // Production environment paths
-#define PROD_ACTIVE_PATH "/etc/wayru-os-services"
-#define PROD_SCRIPTS_PATH "/etc/wayru-os-services/scripts"
-#define PROD_DATA_PATH "/etc/wayru-os-services/data"
+#define PROD_ACTIVE_PATH "/etc/wayru-agent"
+#define PROD_SCRIPTS_PATH "/etc/wayru-agent/scripts"
+#define PROD_DATA_PATH "/etc/wayru-agent/data"
 #define PROD_TEMP_PATH "/tmp"
 
 // Config file paths
-#define DEV_CONFIG_PATH "../source/scripts/dev/wayru-os-services.config"
-#define PROD_CONFIG_PATH "/etc/config/wayru-os-services"
+#define DEV_CONFIG_PATH "./scripts/wayru-agent.config"
+#define PROD_CONFIG_PATH "/etc/config/wayru-agent"
 
 /**
  * Apply default values to the config structure

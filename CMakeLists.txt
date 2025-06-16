@@ -85,18 +85,18 @@ target_link_libraries(wayru-crypto
 file(GLOB_RECURSE AGENT_SERVICE_SOURCES
     "apps/agent/services/*.c"
 )
-add_executable(agent
+add_executable(wayru-agent
     apps/agent/main.c
     ${AGENT_SERVICE_SOURCES}
 )
-target_include_directories(agent PRIVATE
+target_include_directories(wayru-agent PRIVATE
     apps/agent
     lib/core
     lib/http
     lib/crypto
     lib
 )
-target_link_libraries(agent
+target_link_libraries(wayru-agent
     PRIVATE
     wayru-core
     wayru-http
@@ -109,31 +109,31 @@ target_link_libraries(agent
 )
 
 # Config app - Renderer and applier
-add_executable(config
+add_executable(wayru-config
     apps/config/main.c
 )
-target_include_directories(config PRIVATE
+target_include_directories(wayru-config PRIVATE
     lib/core
     lib
 )
-target_link_libraries(config
+target_link_libraries(wayru-config
     PRIVATE
     wayru-core
 )
 
 # Collector app - Log collection and forwarding
-add_executable(collector
+add_executable(wayru-collector
     apps/collector/main.c
     apps/collector/ubus.c
     apps/collector/collect.c
 )
-target_include_directories(collector PRIVATE
+target_include_directories(wayru-collector PRIVATE
     apps/collector
     lib/core
     lib/http
     lib
 )
-target_link_libraries(collector
+target_link_libraries(wayru-collector
     PRIVATE
     wayru-core
     wayru-http
@@ -146,6 +146,6 @@ target_link_libraries(collector
 
 # Install targets
 install(TARGETS wayru-core wayru-http wayru-crypto ARCHIVE DESTINATION lib)
-install(TARGETS agent config collector RUNTIME DESTINATION bin)
+install(TARGETS wayru-agent wayru-config wayru-collector RUNTIME DESTINATION bin)
 
 enable_testing()

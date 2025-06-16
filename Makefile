@@ -50,7 +50,7 @@ define Package/wayru-os-services/install
 
 	# Install the three new binaries
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/agent $(1)/usr/bin/
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/health $(1)/usr/bin/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/config $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/collector $(1)/usr/bin/
 
 	# Create a symlink for backward compatibility

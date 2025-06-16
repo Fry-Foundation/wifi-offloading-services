@@ -108,15 +108,15 @@ target_link_libraries(agent
     ${lua_library}
 )
 
-# Health app - Lightweight health checker
-add_executable(health
-    apps/health/main.c
+# Config app - Renderer and applier
+add_executable(config
+    apps/config/main.c
 )
-target_include_directories(health PRIVATE
+target_include_directories(config PRIVATE
     lib/core
     lib
 )
-target_link_libraries(health
+target_link_libraries(config
     PRIVATE
     wayru-core
 )
@@ -146,6 +146,6 @@ target_link_libraries(collector
 
 # Install targets
 install(TARGETS wayru-core wayru-http wayru-crypto ARCHIVE DESTINATION lib)
-install(TARGETS agent health collector RUNTIME DESTINATION bin)
+install(TARGETS agent config collector RUNTIME DESTINATION bin)
 
 enable_testing()

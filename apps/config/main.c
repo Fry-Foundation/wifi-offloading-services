@@ -35,9 +35,9 @@ int main(int argc, char *argv[]) {
     process_command_line_args(argc, argv, &dev_env);
 
     if (dev_env) {
-        console_info(&csl, "Health service started in development mode");
+        console_info(&csl, "wayru-config started in development mode");
     } else {
-        console_info(&csl, "Health service started");
+        console_info(&csl, "wayru-config service started");
     }
 
     // TODO: Add health check logic here

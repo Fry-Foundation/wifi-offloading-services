@@ -24,16 +24,16 @@ case "$APP" in
         cd dev/agent && ./agent --dev
         ;;
 
-    "health")
-        # Set up health app dev environment
-        echo "Setting up health app development environment..."
-        mkdir -p dev/health/data
+    "config")
+        # Set up config app dev environment
+        echo "Setting up config app in development environment..."
+        mkdir -p dev/config/data
 
-        cp VERSION dev/health/VERSION
+        cp VERSION dev/config/VERSION
 
-        # Run the health program
-        echo "Starting wayru-os-services health in development mode..."
-        cd dev/health && ./health --dev
+        # Run the config program
+        echo "Starting config app in development mode..."
+        cd dev/config && ./config --dev
         ;;
 
     "collector")

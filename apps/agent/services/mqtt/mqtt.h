@@ -4,9 +4,6 @@
 #include "services/callbacks.h"
 #include <mosquitto.h>
 
-// Forward declarations to avoid circular dependencies
-typedef struct Scheduler Scheduler;
-
 typedef void (*MessageCallback)(struct mosquitto *mosq, const struct mosquitto_message *message);
 
 // type alias for struct mosquitto
@@ -27,12 +24,15 @@ typedef struct {
     MqttConfig config;
 } MqttClient;
 
+typedef struct MqttTaskContext MqttTaskContext;
+
 Mosq *init_mqtt(const MqttConfig *config);
 void refresh_mosquitto_credentials(Mosq *mosq, const char *username);
 void publish_mqtt(Mosq *mosq, char *topic, const char *message, int qos);
 void subscribe_mqtt(Mosq *mosq, char *topic, int qos, MessageCallback callback);
-void mqtt_service(Scheduler *sch, Mosq *mosq, const MqttConfig *config);
+MqttTaskContext *mqtt_service(Mosq *mosq, const MqttConfig *config);
 void cleanup_mqtt(Mosq **mosq);
+void clean_mqtt_context(MqttTaskContext *context);
 
 // Function to create MQTT access token refresh callback
 AccessTokenCallbacks create_mqtt_token_callbacks(MqttClient *client);

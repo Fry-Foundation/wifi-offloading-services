@@ -41,6 +41,7 @@ add_library(wayru-core STATIC
     lib/core/script_runner.c
     lib/core/stats.c
     lib/core/scheduler.c
+    lib/core/uloop_scheduler.c
 )
 target_include_directories(wayru-core PUBLIC
     lib/core

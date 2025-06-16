@@ -1,7 +1,7 @@
 #ifndef DEVICE_STATUS_H
 #define DEVICE_STATUS_H
 
-#include "core/scheduler.h"
+#include "core/uloop_scheduler.h"
 #include "services/access_token.h"
 #include "services/device_info.h"
 #include <stdbool.h>
@@ -16,8 +16,16 @@ typedef enum {
     Banned = 5,
 } DeviceStatus;
 
+typedef struct {
+    char *wayru_device_id;
+    DeviceInfo *device_info;
+    AccessToken *access_token;
+    task_id_t task_id;  // Store current task ID for cleanup
+} DeviceStatusTaskContext;
+
 extern DeviceStatus device_status;
 
-void device_status_service(Scheduler *sch, DeviceInfo *device_info, char *wayru_device_id, AccessToken *access_token);
+DeviceStatusTaskContext *device_status_service(DeviceInfo *device_info, char *wayru_device_id, AccessToken *access_token);
+void clean_device_status_context(DeviceStatusTaskContext *context);
 
 #endif /* DEVICE_STATUS_H */

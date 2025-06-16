@@ -1,6 +1,6 @@
 #include "nds.h"
 #include "core/console.h"
-#include "core/scheduler.h"
+#include "core/uloop_scheduler.h"
 #include "core/script_runner.h"
 #include "services/config/config.h"
 #include "services/device-context.h"
@@ -115,7 +115,7 @@ NdsClient *init_nds_client() {
     return client;
 }
 
-void nds_task(Scheduler *sch, void *task_context) {
+void nds_task(void *task_context) {
     console_info(&csl, "Running nds task");
 
     NdsTaskContext *ctx = (NdsTaskContext *)task_context;
@@ -179,36 +179,66 @@ void nds_task(Scheduler *sch, void *task_context) {
         console_error(&csl, "Failed to read from site clients fifo");
     }
 
-    schedule_task(sch, time(NULL) + config.nds_interval, nds_task, "nds", ctx);
+    // No manual rescheduling needed - repeating tasks auto-reschedule
 }
 
-void nds_service(Scheduler *sch, Mosq *mosq, Site *site, NdsClient *nds_client, DeviceInfo *device_info) {
-    NdsTaskContext *ctx = (NdsTaskContext *)malloc(sizeof(NdsTaskContext));
-    if (ctx == NULL) {
-        console_error(&csl, "failed to allocate memory for nds task context");
-        return;
-    }
-
+NdsTaskContext *nds_service(Mosq *mosq, Site *site, NdsClient *nds_client, DeviceInfo *device_info) {
     if (config.dev_env) {
-        return;
+        console_info(&csl, "NDS service not started (dev mode)");
+        return NULL;
     }
 
     if (nds_client->opennds_installed == false) {
         console_warn(&csl, "OpenNDS is not installed, skipping nds service");
-        return;
+        return NULL;
     }
 
     if (nds_client->fifo_fd == -1) {
         console_error(&csl, "nds fifo fd is invalid");
-        return;
+        return NULL;
+    }
+
+    NdsTaskContext *ctx = (NdsTaskContext *)malloc(sizeof(NdsTaskContext));
+    if (ctx == NULL) {
+        console_error(&csl, "failed to allocate memory for nds task context");
+        return NULL;
     }
 
     ctx->mosq = mosq;
     ctx->site = site;
     ctx->client = nds_client;
     ctx->device_info = device_info;
+    ctx->task_id = 0;
 
-    nds_task(sch, ctx);
+    // Convert seconds to milliseconds for scheduler
+    uint32_t interval_ms = config.nds_interval * 1000;
+    uint32_t initial_delay_ms = config.nds_interval * 1000;  // Start after one interval
+
+    console_info(&csl, "Starting NDS service with interval %u ms", interval_ms);
+    
+    // Schedule repeating task
+    ctx->task_id = schedule_repeating(initial_delay_ms, interval_ms, nds_task, ctx);
+    
+    if (ctx->task_id == 0) {
+        console_error(&csl, "failed to schedule NDS task");
+        free(ctx);
+        return NULL;
+    }
+
+    console_debug(&csl, "Successfully scheduled NDS task with ID %u", ctx->task_id);
+    return ctx;
+}
+
+void clean_nds_context(NdsTaskContext *context) {
+    console_debug(&csl, "clean_nds_context called with context: %p", context);
+    if (context != NULL) {
+        if (context->task_id != 0) {
+            console_debug(&csl, "Cancelling NDS task %u", context->task_id);
+            cancel_task(context->task_id);
+        }
+        console_debug(&csl, "Freeing NDS context %p", context);
+        free(context);
+    }
 }
 
 void clean_nds_fifo(int *nds_fifo_fd) {

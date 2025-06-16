@@ -1,5 +1,6 @@
+#include "speedtest.h"
 #include "core/console.h"
-#include "core/scheduler.h"
+#include "core/uloop_scheduler.h"
 #include "services/config/config.h"
 #include "services/gen_id.h"
 #include "services/mqtt/mqtt.h"
@@ -19,11 +20,7 @@
 
 #define SPEEDTEST_ENDPOINT "monitoring/speedtest"
 
-typedef struct {
-    struct mosquitto *mosq;
-    Registration *registration;
-    AccessToken *access_token;
-} SpeedTestTaskContext;
+
 
 typedef struct {
     bool is_error;
@@ -74,7 +71,7 @@ float get_average_latency(const char *hostname) {
     }
 }
 
-void speedtest_task(Scheduler *sch, void *task_context) {
+void speedtest_task(void *task_context) {
     SpeedTestTaskContext *context = (SpeedTestTaskContext *)task_context;
 
     console_debug(&csl, "Starting speedtest task");
@@ -107,32 +104,57 @@ void speedtest_task(Scheduler *sch, void *task_context) {
 
     // Schedule monitoring_task to rerun later
     unsigned int seed = time(0);
-    const int random_speed_test_interval =
-        rand_r(&seed) % (config.speed_test_maximum_interval - config.speed_test_minimum_interval + 1) +
-        config.speed_test_minimum_interval;
-    schedule_task(sch, time(NULL) + random_speed_test_interval, speedtest_task, "speedtest", context);
+    // No manual rescheduling needed - repeating tasks auto-reschedule
 }
 
-void speedtest_service(Scheduler *sch, struct mosquitto *mosq, Registration *registration, AccessToken *access_token) {
+SpeedTestTaskContext *speedtest_service(struct mosquitto *mosq, Registration *registration, AccessToken *access_token) {
     if (config.speed_test_enabled == 0) {
         console_info(&csl, "Speedtest service is disabled by config");
-        return;
+        return NULL;
     }
 
     SpeedTestTaskContext *context = (SpeedTestTaskContext *)malloc(sizeof(SpeedTestTaskContext));
     if (context == NULL) {
         console_error(&csl, "failed to allocate memory for speedtest task context");
-        return;
+        return NULL;
     }
 
     context->mosq = mosq;
     context->registration = registration;
     context->access_token = access_token;
+    context->task_id = 0;
 
+    // Use a random interval between configured min/max
     unsigned int seed = time(0);
-    const int random_speed_test_interval =
+    uint32_t random_interval = 
         rand_r(&seed) % (config.speed_test_maximum_interval - config.speed_test_minimum_interval + 1) +
         config.speed_test_minimum_interval;
+    uint32_t interval_ms = random_interval * 1000;  // Convert to milliseconds
+    uint32_t initial_delay_ms = interval_ms;
 
-    schedule_task(sch, time(NULL) + random_speed_test_interval, speedtest_task, "speedtest", context);
+    console_info(&csl, "Starting speedtest service with interval %u ms", interval_ms);
+    
+    // Schedule repeating task
+    context->task_id = schedule_repeating(initial_delay_ms, interval_ms, speedtest_task, context);
+    
+    if (context->task_id == 0) {
+        console_error(&csl, "failed to schedule speedtest task");
+        free(context);
+        return NULL;
+    }
+
+    console_debug(&csl, "Successfully scheduled speedtest task with ID %u", context->task_id);
+    return context;
+}
+
+void clean_speedtest_context(SpeedTestTaskContext *context) {
+    console_debug(&csl, "clean_speedtest_context called with context: %p", context);
+    if (context != NULL) {
+        if (context->task_id != 0) {
+            console_debug(&csl, "Cancelling speedtest task %u", context->task_id);
+            cancel_task(context->task_id);
+        }
+        console_debug(&csl, "Freeing speedtest context %p", context);
+        free(context);
+    }
 }

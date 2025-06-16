@@ -1,5 +1,5 @@
 #include "core/console.h"
-#include "core/scheduler.h"
+#include "core/uloop_scheduler.h"
 #include "services/access_token.h"
 #include "services/commands.h"
 #include "services/config/config.h"
@@ -20,14 +20,23 @@
 #include "services/site-clients.h"
 #include "services/speedtest.h"
 #include "services/time_sync.h"
-#include "services/collector.h"
+
+#include "services/ubus_server.h"
+#include <libubox/uloop.h>
 
 static Console csl = {
     .topic = "main",
 };
 
 int main(int argc, char *argv[]) {
-    console_info(&csl, "starting wayru-os-services");
+    console_info(&csl, "starting wayru-agent");
+
+    // Initialize scheduler (includes uloop initialization)
+    scheduler_init();
+    console_info(&csl, "uloop scheduler initialized");
+    
+    // Verify scheduler is ready
+    console_debug(&csl, "Scheduler initialization complete, proceeding with service setup");
 
     // Signal handlers
     setup_signal_handlers();
@@ -35,8 +44,7 @@ int main(int argc, char *argv[]) {
     // Config
     init_config(argc, argv);
 
-    // Collector
-    collector_init();
+
 
     // DeviceInfo
     DeviceInfo *device_info = init_device_info();
@@ -110,30 +118,150 @@ int main(int argc, char *argv[]) {
     // Site clients
     init_site_clients(mqtt_client.mosq, device_context->site, nds_client);
 
-    // Scheduler
-    Scheduler *sch = init_scheduler();
-    register_cleanup((cleanup_callback)clean_scheduler, sch);
+    // Register scheduler cleanup
+    register_cleanup((cleanup_callback)scheduler_shutdown, NULL);
+
+    // UBUS Server cleanup registration
+    register_cleanup((cleanup_callback)ubus_server_cleanup, NULL);
 
     // Create MQTT access token refresh callback
     AccessTokenCallbacks token_callbacks = create_mqtt_token_callbacks(&mqtt_client);
 
-    // Schedule service tasks
-    time_sync_service(sch);
-    access_token_service(sch, access_token, registration, &token_callbacks);
-    mqtt_service(sch, mqtt_client.mosq, &mqtt_client.config);
-    device_context_service(sch, device_context, registration, access_token);
-    device_status_service(sch, device_info, registration->wayru_device_id, access_token);
-    nds_service(sch, mqtt_client.mosq, device_context->site, nds_client, device_info);
-    monitoring_service(sch, mqtt_client.mosq, registration);
-    firmware_upgrade_check(sch, device_info, registration, access_token);
-    package_update_service(sch, device_info, registration, access_token);
-    start_diagnostic_service(sch, access_token);
-    speedtest_service(sch, mqtt_client.mosq, registration, access_token);
-    commands_service(mqtt_client.mosq, device_info, registration, access_token);
-    reboot_service(sch);
-    collector_service(sch, registration->wayru_device_id, access_token->token, config.collector_interval, config.devices_api);
+    // Schedule service tasks - migrating to use the new uloop_scheduler API
+    AccessTokenTaskContext *access_token_context = access_token_service(access_token, registration, &token_callbacks);
+    if (access_token_context != NULL) {
+        console_info(&csl, "Access token service started successfully");
+        register_cleanup((cleanup_callback)clean_access_token_context, access_token_context);
+    } else {
+        console_error(&csl, "Failed to start access token service");
+        cleanup_and_exit(1, "Failed to initialize access token service");
+    }
 
-    run_tasks(sch);
+    // Time sync service
+    TimeSyncTaskContext *time_sync_context = time_sync_service();
+    if (time_sync_context != NULL) {
+        console_info(&csl, "Time sync service started successfully");
+        register_cleanup((cleanup_callback)clean_time_sync_context, time_sync_context);
+    } else {
+        console_info(&csl, "Time sync service not started (dev mode or requirements not met)");
+    }
+
+    // MQTT service
+    MqttTaskContext *mqtt_context = mqtt_service(mqtt_client.mosq, &mqtt_client.config);
+    if (mqtt_context != NULL) {
+        console_info(&csl, "MQTT service started successfully");
+        register_cleanup((cleanup_callback)clean_mqtt_context, mqtt_context);
+    } else {
+        console_error(&csl, "Failed to start MQTT service");
+        cleanup_and_exit(1, "Failed to initialize MQTT service");
+    }
+
+    // Device context service
+    DeviceContextTaskContext *device_context_context = device_context_service(device_context, registration, access_token);
+    if (device_context_context != NULL) {
+        console_info(&csl, "Device context service started successfully");
+        register_cleanup((cleanup_callback)clean_device_context_context, device_context_context);
+    } else {
+        console_error(&csl, "Failed to start device context service");
+        cleanup_and_exit(1, "Failed to initialize device context service");
+    }
+
+    // Device status service
+    DeviceStatusTaskContext *device_status_context = device_status_service(device_info, registration->wayru_device_id, access_token);
+    if (device_status_context != NULL) {
+        console_info(&csl, "Device status service started successfully");
+        register_cleanup((cleanup_callback)clean_device_status_context, device_status_context);
+    } else {
+        console_error(&csl, "Failed to start device status service");
+        cleanup_and_exit(1, "Failed to initialize device status service");
+    }
+
+    // Reboot service
+    RebootTaskContext *reboot_context = reboot_service();
+    if (reboot_context != NULL) {
+        console_info(&csl, "Reboot service started successfully");
+        register_cleanup((cleanup_callback)clean_reboot_context, reboot_context);
+    } else {
+        console_info(&csl, "Reboot service not started (disabled in configuration)");
+    }
+
+    // NDS service
+    NdsTaskContext *nds_context = nds_service(mqtt_client.mosq, device_context->site, nds_client, device_info);
+    if (nds_context != NULL) {
+        console_info(&csl, "NDS service started successfully");
+        register_cleanup((cleanup_callback)clean_nds_context, nds_context);
+    } else {
+        console_info(&csl, "NDS service not started (dev mode or requirements not met)");
+    }
+
+    // Monitoring service
+    MonitoringTaskContext *monitoring_context = monitoring_service(mqtt_client.mosq, registration);
+    if (monitoring_context != NULL) {
+        console_info(&csl, "Monitoring service started successfully");
+        register_cleanup((cleanup_callback)clean_monitoring_context, monitoring_context);
+    } else {
+        console_info(&csl, "Monitoring service not started (disabled in configuration)");
+    }
+
+    // Firmware upgrade service
+    FirmwareUpgradeTaskContext *firmware_context = firmware_upgrade_check(device_info, registration, access_token);
+    if (firmware_context != NULL) {
+        console_info(&csl, "Firmware upgrade service started successfully");
+        register_cleanup((cleanup_callback)clean_firmware_upgrade_context, firmware_context);
+    } else {
+        console_error(&csl, "Failed to start firmware upgrade service");
+        cleanup_and_exit(1, "Failed to initialize firmware upgrade service");
+    }
+
+    // Package update service
+    PackageUpdateTaskContext *package_update_context = package_update_service(device_info, registration, access_token);
+    if (package_update_context != NULL) {
+        console_info(&csl, "Package update service started successfully");
+        register_cleanup((cleanup_callback)clean_package_update_context, package_update_context);
+    } else {
+        console_error(&csl, "Failed to start package update service");
+        cleanup_and_exit(1, "Failed to initialize package update service");
+    }
+
+    // Diagnostic service
+    DiagnosticTaskContext *diagnostic_context = start_diagnostic_service(access_token);
+    if (diagnostic_context != NULL) {
+        console_info(&csl, "Diagnostic service started successfully");
+        register_cleanup((cleanup_callback)clean_diagnostic_context, diagnostic_context);
+    } else {
+        console_error(&csl, "Failed to start diagnostic service");
+        cleanup_and_exit(1, "Failed to initialize diagnostic service");
+    }
+
+    // Speedtest service
+    SpeedTestTaskContext *speedtest_context = speedtest_service(mqtt_client.mosq, registration, access_token);
+    if (speedtest_context != NULL) {
+        console_info(&csl, "Speedtest service started successfully");
+        register_cleanup((cleanup_callback)clean_speedtest_context, speedtest_context);
+    } else {
+        console_info(&csl, "Speedtest service not started (disabled in configuration)");
+    }
+
+    // Commands service (no scheduler needed - just sets up MQTT subscriptions)
+    commands_service(mqtt_client.mosq, device_info, registration, access_token);
+    console_info(&csl, "Commands service initialized successfully");
+
+    // UBUS server service
+    UbusServerTaskContext *ubus_context = ubus_server_service(access_token, device_info, registration);
+    if (ubus_context != NULL) {
+        console_info(&csl, "UBUS server service started successfully");
+        register_cleanup((cleanup_callback)clean_ubus_server_context, ubus_context);
+    } else {
+        console_error(&csl, "Failed to start UBUS server service");
+        cleanup_and_exit(1, "Failed to initialize UBUS server service");
+    }
+    
+    console_debug(&csl, "All services initialized, about to start scheduler main loop");
+
+    console_info(&csl, "Services scheduled, starting scheduler main loop");
+    console_debug(&csl, "About to call scheduler_run()");
+    int scheduler_result = scheduler_run();
+    console_info(&csl, "Scheduler main loop ended with result: %d", scheduler_result);
 
     return 0;
 }

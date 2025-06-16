@@ -1,6 +1,6 @@
 #include "mqtt.h"
 #include "core/console.h"
-#include "core/scheduler.h"
+#include "core/uloop_scheduler.h"
 #include "services/diagnostic/diagnostic.h"
 #include "services/exit_handler.h"
 #include "services/mqtt/cert.h"
@@ -33,14 +33,15 @@ static Console csl = {
     .topic = "mqtt",
 };
 
-typedef struct {
+struct MqttTaskContext {
     Mosq *mosq;
     MqttConfig config;
     int invalid_state_count;
     int protocol_error_count;
     int memory_error_count;
     int unknown_error_count;
-} MqttTaskContext;
+    task_id_t task_id;  // Store current task ID for rescheduling
+};
 
 typedef struct {
     char *topic;
@@ -322,7 +323,7 @@ static bool mqtt_recover(MqttTaskContext *context, bool force_full_reinit) {
     return false;
 }
 
-void mqtt_task(Scheduler *sch, void *task_context) {
+void mqtt_task(void *task_context) {
     MqttTaskContext *context = (MqttTaskContext *)task_context;
 
     // Check if shutdown has been requested by another component
@@ -458,16 +459,20 @@ void mqtt_task(Scheduler *sch, void *task_context) {
 
     // Schedule the next task execution
     if (should_reschedule) {
-        schedule_task(sch, time(NULL) + context->config.task_interval, mqtt_task, "mqtt task", context);
+        uint32_t interval_ms = context->config.task_interval * 1000;
+        console_debug(&csl, "Rescheduling MQTT task in %u ms", interval_ms);
+        context->task_id = schedule_once(interval_ms, mqtt_task, context);
+        if (context->task_id == 0) {
+            console_error(&csl, "Failed to reschedule MQTT task");
+        }
     }
 }
 
-void mqtt_service(Scheduler *sch, Mosq *mosq, const MqttConfig *config) {
+MqttTaskContext *mqtt_service(Mosq *mosq, const MqttConfig *config) {
     MqttTaskContext *context = (MqttTaskContext *)malloc(sizeof(MqttTaskContext));
     if (context == NULL) {
         console_error(&csl, "failed to allocate memory for mqtt task context");
-        cleanup_and_exit(1, "Failed to allocate memory for MQTT task context");
-        return;
+        return NULL;
     }
 
     context->mosq = mosq;
@@ -476,8 +481,20 @@ void mqtt_service(Scheduler *sch, Mosq *mosq, const MqttConfig *config) {
     context->protocol_error_count = 0;
     context->memory_error_count = 0;
     context->unknown_error_count = 0;
+    context->task_id = 0;
 
-    schedule_task(sch, time(NULL), mqtt_task, "mqtt task", context);
+    // Schedule immediate execution
+    console_info(&csl, "Starting MQTT service");
+    context->task_id = schedule_once(0, mqtt_task, context);
+    
+    if (context->task_id == 0) {
+        console_error(&csl, "Failed to schedule MQTT task");
+        free(context);
+        return NULL;
+    }
+
+    console_debug(&csl, "Successfully scheduled MQTT task with ID %u", context->task_id);
+    return context;
 }
 
 void cleanup_mqtt(Mosq **mosq) {
@@ -504,6 +521,18 @@ void mqtt_token_refresh_callback(const char *new_token, void *context) {
     refresh_mosquitto_credentials(client->mosq, new_token);
     // Update the config struct
     client->config.username = new_token;
+}
+
+void clean_mqtt_context(MqttTaskContext *context) {
+    console_debug(&csl, "clean_mqtt_context called with context: %p", context);
+    if (context != NULL) {
+        if (context->task_id != 0) {
+            console_debug(&csl, "Cancelling MQTT task %u", context->task_id);
+            cancel_task(context->task_id);
+        }
+        console_debug(&csl, "Freeing MQTT context %p", context);
+        free(context);
+    }
 }
 
 // Function to create MQTT access token refresh callback

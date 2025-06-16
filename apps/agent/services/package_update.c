@@ -2,6 +2,7 @@
 #include "core/console.h"
 #include "core/result.h"
 #include "core/script_runner.h"
+#include "core/uloop_scheduler.h"
 #include "http/http-requests.h"
 #include "services/access_token.h"
 #include "services/config/config.h"
@@ -17,11 +18,7 @@ static Console csl = {
     .topic = "package-update",
 };
 
-typedef struct {
-    DeviceInfo *device_info;
-    Registration *registration;
-    AccessToken *access_token;
-} PackageUpdateTaskContext;
+
 
 typedef struct {
     bool update_available;
@@ -389,7 +386,7 @@ Result send_package_check_request(PackageUpdateTaskContext *ctx) {
  *
  * @return void. Function either completes the update process or reschedules itself after reporting any errors.
  */
-void package_update_task(Scheduler *sch, void *task_context) {
+void package_update_task(void *task_context) {
     PackageUpdateTaskContext *ctx = (PackageUpdateTaskContext *)task_context;
 
     if (config.package_update_enabled == 0) {
@@ -403,23 +400,18 @@ void package_update_task(Scheduler *sch, void *task_context) {
     Result result = send_package_check_request(ctx);
     if (!result.ok) {
         console_error(&csl, result.error.message);
-        schedule_task(sch, time(NULL) + config.package_update_interval, package_update_task, "package update task",
-                      ctx);
         return;
     }
 
     // Make sure result is valid, and that an update is available
     PackageCheckResult *package_check_result = (PackageCheckResult *)result.data;
     if (!package_check_result) {
-        console_error(&csl, "failed to parse package check result");
-        schedule_task(sch, time(NULL) + config.package_update_interval, package_update_task, "package update task",
-                      ctx);
+        console_error(&csl, "package check result is NULL");
         return;
     }
+
     if (!package_check_result->update_available) {
-        console_info(&csl, "no package update available");
-        schedule_task(sch, time(NULL) + config.package_update_interval, package_update_task, "package update task",
-                      ctx);
+        console_debug(&csl, "no package update available");
         return;
     }
 
@@ -429,8 +421,6 @@ void package_update_task(Scheduler *sch, void *task_context) {
     Result download_result = download_package(ctx, package_check_result->download_link, package_check_result->checksum);
     if (!download_result.ok) {
         send_package_status(ctx, "error", download_result.error.message, NULL);
-        schedule_task(sch, time(NULL) + config.package_update_interval, package_update_task, "package update task",
-                      ctx);
         return;
     }
 
@@ -439,8 +429,6 @@ void package_update_task(Scheduler *sch, void *task_context) {
     Result verify_result = verify_package_checksum(download_path, package_check_result->checksum);
     if (!verify_result.ok) {
         send_package_status(ctx, "error", verify_result.error.message, NULL);
-        schedule_task(sch, time(NULL) + config.package_update_interval, package_update_task, "package update task",
-                      ctx);
         return;
     }
 
@@ -481,20 +469,47 @@ void package_update_task(Scheduler *sch, void *task_context) {
  * @return void. If memory allocation for the context fails, an error is logged and the function returns without
  * scheduling.
  */
-void package_update_service(Scheduler *sch,
-                            DeviceInfo *device_info,
-                            Registration *registration,
-                            AccessToken *access_token) {
+PackageUpdateTaskContext *package_update_service(DeviceInfo *device_info,
+                                                  Registration *registration,
+                                                  AccessToken *access_token) {
     PackageUpdateTaskContext *ctx = (PackageUpdateTaskContext *)malloc(sizeof(PackageUpdateTaskContext));
     if (ctx == NULL) {
         console_error(&csl, "failed to allocate memory for package update task context");
-        return;
+        return NULL;
     }
 
     ctx->device_info = device_info;
     ctx->registration = registration;
     ctx->access_token = access_token;
+    ctx->task_id = 0;
 
-    console_debug(&csl, "scheduling package update task");
-    package_update_task(sch, ctx);
+    // Convert seconds to milliseconds for scheduler
+    uint32_t interval_ms = config.package_update_interval * 1000;
+    uint32_t initial_delay_ms = config.package_update_interval * 1000;  // Start after one interval
+
+    console_info(&csl, "Starting package update service with interval %u ms", interval_ms);
+    
+    // Schedule repeating task
+    ctx->task_id = schedule_repeating(initial_delay_ms, interval_ms, package_update_task, ctx);
+    
+    if (ctx->task_id == 0) {
+        console_error(&csl, "failed to schedule package update task");
+        free(ctx);
+        return NULL;
+    }
+
+    console_debug(&csl, "Successfully scheduled package update task with ID %u", ctx->task_id);
+    return ctx;
+}
+
+void clean_package_update_context(PackageUpdateTaskContext *context) {
+    console_debug(&csl, "clean_package_update_context called with context: %p", context);
+    if (context != NULL) {
+        if (context->task_id != 0) {
+            console_debug(&csl, "Cancelling package update task %u", context->task_id);
+            cancel_task(context->task_id);
+        }
+        console_debug(&csl, "Freeing package update context %p", context);
+        free(context);
+    }
 }

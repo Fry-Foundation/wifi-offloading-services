@@ -1,6 +1,6 @@
 #include "device_status.h"
 #include "core/console.h"
-#include "core/scheduler.h"
+#include "core/uloop_scheduler.h"
 #include "http/http-requests.h"
 #include "services/access_token.h"
 #include "services/config/config.h"
@@ -21,11 +21,7 @@ DeviceStatus device_status = Unknown;
 
 bool on_boot = true;
 
-typedef struct {
-    char *wayru_device_id;
-    DeviceInfo *device_info;
-    AccessToken *access_token;
-} DeviceStatusTaskContext;
+
 
 DeviceStatus request_device_status(void *task_context) {
     DeviceStatusTaskContext *context = (DeviceStatusTaskContext *)task_context;
@@ -106,25 +102,60 @@ DeviceStatus request_device_status(void *task_context) {
     return response_device_status;
 }
 
-void device_status_task(Scheduler *sch, void *task_context) {
+void device_status_task(void *task_context) {
     DeviceStatusTaskContext *context = (DeviceStatusTaskContext *)task_context;
     device_status = request_device_status(context);
     console_debug(&csl, "device status: %d", device_status);
     console_debug(&csl, "device status interval: %d", config.device_status_interval);
-    console_debug(&csl, "device status interval time: %ld", time(NULL) + config.device_status_interval);
-    schedule_task(sch, time(NULL) + config.device_status_interval, device_status_task, "device status", context);
+    // No manual rescheduling needed - repeating tasks auto-reschedule
 }
 
-void device_status_service(Scheduler *sch, DeviceInfo *device_info, char *wayru_device_id, AccessToken *access_token) {
+DeviceStatusTaskContext *device_status_service(DeviceInfo *device_info, char *wayru_device_id, AccessToken *access_token) {
     DeviceStatusTaskContext *context = (DeviceStatusTaskContext *)malloc(sizeof(DeviceStatusTaskContext));
+    if (context == NULL) {
+        console_error(&csl, "failed to allocate memory for device status task context");
+        return NULL;
+    }
+
     context->wayru_device_id = wayru_device_id;
     context->device_info = device_info;
     context->access_token = access_token;
-    device_status_task(sch, context);
+    context->task_id = 0;
+
+    // Convert seconds to milliseconds for scheduler
+    uint32_t interval_ms = config.device_status_interval * 1000;
+    uint32_t initial_delay_ms = config.device_status_interval * 1000;  // Start after one interval
+
+    console_info(&csl, "Starting device status service with interval %u ms", interval_ms);
+    
+    // Schedule repeating task
+    context->task_id = schedule_repeating(initial_delay_ms, interval_ms, device_status_task, context);
+    
+    if (context->task_id == 0) {
+        console_error(&csl, "failed to schedule device status task");
+        free(context);
+        return NULL;
+    }
+
+    console_debug(&csl, "Successfully scheduled device status task with ID %u", context->task_id);
 
     // Side effects
     // Make sure wayru operator is running (all status codes but 6)
     // Start the peaq did service (on status 5)
     // Check that the captive portal is running (on status 6)
     // Disable wayru operator network (on status 6)
+
+    return context;
+}
+
+void clean_device_status_context(DeviceStatusTaskContext *context) {
+    console_debug(&csl, "clean_device_status_context called with context: %p", context);
+    if (context != NULL) {
+        if (context->task_id != 0) {
+            console_debug(&csl, "Cancelling device status task %u", context->task_id);
+            cancel_task(context->task_id);
+        }
+        console_debug(&csl, "Freeing device status context %p", context);
+        free(context);
+    }
 }

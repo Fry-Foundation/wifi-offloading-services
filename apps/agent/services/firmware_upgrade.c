@@ -1,6 +1,6 @@
 #include "firmware_upgrade.h"
 #include "core/console.h"
-#include "core/scheduler.h"
+#include "core/uloop_scheduler.h"
 #include "core/script_runner.h"
 #include "http/http-requests.h"
 #include "services/access_token.h"
@@ -24,11 +24,7 @@ static Console csl = {
     .topic = "firmware-upgrade",
 };
 
-typedef struct {
-    DeviceInfo *device_info;
-    Registration *registration;
-    AccessToken *access_token;
-} FirmwareUpgradeTaskContext;
+
 
 int run_sysupgrade() {
 
@@ -399,37 +395,57 @@ void send_firmware_check_request(const char *codename,
     free(result.response_buffer);
 }
 
-void firmware_upgrade_task(Scheduler *sch, void *task_context) {
+void firmware_upgrade_task(void *task_context) {
     FirmwareUpgradeTaskContext *context = (FirmwareUpgradeTaskContext *)task_context;
-
-    if (config.firmware_update_enabled == 0) {
-        console_debug(&csl, "firmware update is disabled by configuration; will not reschedule firmware update task");
-        return;
-    }
-
     console_debug(&csl, "firmware upgrade task");
     send_firmware_check_request(context->device_info->name, context->device_info->os_version,
                                 context->registration->wayru_device_id, context->access_token);
-    schedule_task(sch, time(NULL) + config.firmware_update_interval, firmware_upgrade_task, "firmware_upgrade",
-                  context);
+    // No manual rescheduling needed - repeating tasks auto-reschedule
 }
 
-void firmware_upgrade_check(Scheduler *scheduler,
-                            DeviceInfo *device_info,
-                            Registration *registration,
-                            AccessToken *access_token) {
+FirmwareUpgradeTaskContext *firmware_upgrade_check(DeviceInfo *device_info,
+                                                    Registration *registration,
+                                                    AccessToken *access_token) {
     FirmwareUpgradeTaskContext *context = (FirmwareUpgradeTaskContext *)malloc(sizeof(FirmwareUpgradeTaskContext));
     if (context == NULL) {
         console_error(&csl, "failed to allocate memory for firmware upgrade task context");
-        return;
+        return NULL;
     }
 
     context->device_info = device_info;
     context->registration = registration;
     context->access_token = access_token;
+    context->task_id = 0;
 
-    console_debug(&csl, "scheduling firmware upgrade check");
-    firmware_upgrade_task(scheduler, context);
+    // Convert seconds to milliseconds for scheduler
+    uint32_t interval_ms = config.firmware_update_interval * 1000;
+    uint32_t initial_delay_ms = config.firmware_update_interval * 1000;  // Start after one interval
+
+    console_info(&csl, "Starting firmware upgrade service with interval %u ms", interval_ms);
+    
+    // Schedule repeating task
+    context->task_id = schedule_repeating(initial_delay_ms, interval_ms, firmware_upgrade_task, context);
+    
+    if (context->task_id == 0) {
+        console_error(&csl, "failed to schedule firmware upgrade task");
+        free(context);
+        return NULL;
+    }
+
+    console_debug(&csl, "Successfully scheduled firmware upgrade task with ID %u", context->task_id);
+    return context;
+}
+
+void clean_firmware_upgrade_context(FirmwareUpgradeTaskContext *context) {
+    console_debug(&csl, "clean_firmware_upgrade_context called with context: %p", context);
+    if (context != NULL) {
+        if (context->task_id != 0) {
+            console_debug(&csl, "Cancelling firmware upgrade task %u", context->task_id);
+            cancel_task(context->task_id);
+        }
+        console_debug(&csl, "Freeing firmware upgrade context %p", context);
+        free(context);
+    }
 }
 
 void clean_firmware_upgrade_service() {

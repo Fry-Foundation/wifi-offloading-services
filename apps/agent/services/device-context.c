@@ -1,6 +1,6 @@
 #include "device-context.h"
 #include "core/console.h"
-#include "core/scheduler.h"
+#include "core/uloop_scheduler.h"
 #include "http/http-requests.h"
 #include "services/access_token.h"
 #include "services/config/config.h"
@@ -17,11 +17,7 @@ static Console csl = {
     .topic = "device-context",
 };
 
-typedef struct {
-    DeviceContext *device_context;
-    Registration *registration;
-    AccessToken *access_token;
-} DeviceContextTaskContext;
+
 
 char *request_device_context(Registration *registration, AccessToken *access_token) {
     char url[256];
@@ -111,7 +107,7 @@ DeviceContext *init_device_context(Registration *registration, AccessToken *acce
     return device_context;
 }
 
-void device_context_task(Scheduler *sch, void *task_context) {
+void device_context_task(void *task_context) {
     DeviceContextTaskContext *context = (DeviceContextTaskContext *)task_context;
 
     char *device_context_json = request_device_context(context->registration, context->access_token);
@@ -122,24 +118,52 @@ void device_context_task(Scheduler *sch, void *task_context) {
 
     parse_and_update_device_context(context->device_context, device_context_json);
     console_info(&csl, "device context checked");
-    schedule_task(sch, time(NULL) + config.device_context_interval, device_context_task, "device context", context);
+    // No manual rescheduling needed - repeating tasks auto-reschedule
 }
 
-void device_context_service(Scheduler *sch,
-                            DeviceContext *device_context,
-                            Registration *registration,
-                            AccessToken *access_token) {
+DeviceContextTaskContext *device_context_service(DeviceContext *device_context,
+                                                  Registration *registration,
+                                                  AccessToken *access_token) {
     DeviceContextTaskContext *context = (DeviceContextTaskContext *)malloc(sizeof(DeviceContextTaskContext));
     if (context == NULL) {
         console_error(&csl, "failed to allocate memory for device context task context");
-        return;
+        return NULL;
     }
 
     context->device_context = device_context;
     context->registration = registration;
     context->access_token = access_token;
+    context->task_id = 0;
 
-    device_context_task(sch, context);
+    // Convert seconds to milliseconds for scheduler
+    uint32_t interval_ms = config.device_context_interval * 1000;
+    uint32_t initial_delay_ms = config.device_context_interval * 1000;  // Start after one interval
+
+    console_info(&csl, "Starting device context service with interval %u ms", interval_ms);
+    
+    // Schedule repeating task
+    context->task_id = schedule_repeating(initial_delay_ms, interval_ms, device_context_task, context);
+    
+    if (context->task_id == 0) {
+        console_error(&csl, "failed to schedule device context task");
+        free(context);
+        return NULL;
+    }
+
+    console_debug(&csl, "Successfully scheduled device context task with ID %u", context->task_id);
+    return context;
+}
+
+void clean_device_context_context(DeviceContextTaskContext *context) {
+    console_debug(&csl, "clean_device_context_context called with context: %p", context);
+    if (context != NULL) {
+        if (context->task_id != 0) {
+            console_debug(&csl, "Cancelling device context task %u", context->task_id);
+            cancel_task(context->task_id);
+        }
+        console_debug(&csl, "Freeing device context context %p", context);
+        free(context);
+    }
 }
 
 void clean_device_context(DeviceContext *device_context) {

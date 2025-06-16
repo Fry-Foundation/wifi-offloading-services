@@ -31,7 +31,7 @@
 #include "diagnostic.h"
 #include "core/console.h"
 #include "core/retry.h"
-#include "core/scheduler.h"
+#include "core/uloop_scheduler.h"
 #include "http/http-requests.h"
 #include "services/access_token.h"
 #include "services/config/config.h"
@@ -56,9 +56,7 @@ static Console csl = {
     .topic = "diagnostic",
 };
 
-typedef struct {
-    AccessToken *access_token;
-} DiagnosticTaskContext;
+
 
 static DeviceInfo *diagnostic_device_info;
 
@@ -433,7 +431,7 @@ void update_led_status(bool ok, const char *context) {
 }
 
 // Diagnostic task to check internet and update LED status
-void diagnostic_task(Scheduler *sch, void *task_context) {
+void diagnostic_task(void *task_context) {
     console_info(&csl, "Running periodic diagnostic task");
 
     // Check critical DNS resolution (subset for performance)
@@ -483,23 +481,47 @@ void diagnostic_task(Scheduler *sch, void *task_context) {
     update_led_status(true, "Diagnostic task - All checks passed");
     console_info(&csl, "All periodic diagnostic checks passed successfully");
 
-    // Reschedule the task for the next interval
-    console_debug(&csl, "Rescheduling diagnostic task for next interval");
-    schedule_task(sch, time(NULL) + config.diagnostic_interval, diagnostic_task, "diagnostic_task", context);
+    // No manual rescheduling needed - repeating tasks auto-reschedule
 }
 
 // Start diagnostic service
-void start_diagnostic_service(Scheduler *scheduler, AccessToken *access_token) {
+DiagnosticTaskContext *start_diagnostic_service(AccessToken *access_token) {
     DiagnosticTaskContext *context = (DiagnosticTaskContext *)malloc(sizeof(DiagnosticTaskContext));
     if (context == NULL) {
         console_error(&csl, "Failed to allocate memory for diagnostic task context");
-        return;
+        return NULL;
     }
 
     context->access_token = access_token;
+    context->task_id = 0;
 
-    console_debug(&csl, "Scheduling diagnostic service");
+    // Convert seconds to milliseconds for scheduler
+    uint32_t interval_ms = config.diagnostic_interval * 1000;
+    uint32_t initial_delay_ms = config.diagnostic_interval * 1000;  // Start after one interval
 
-    // Schedule the first execution of the diagnostic task
-    diagnostic_task(scheduler, context);
+    console_info(&csl, "Starting diagnostic service with interval %u ms", interval_ms);
+    
+    // Schedule repeating task
+    context->task_id = schedule_repeating(initial_delay_ms, interval_ms, diagnostic_task, context);
+    
+    if (context->task_id == 0) {
+        console_error(&csl, "failed to schedule diagnostic task");
+        free(context);
+        return NULL;
+    }
+
+    console_debug(&csl, "Successfully scheduled diagnostic task with ID %u", context->task_id);
+    return context;
+}
+
+void clean_diagnostic_context(DiagnosticTaskContext *context) {
+    console_debug(&csl, "clean_diagnostic_context called with context: %p", context);
+    if (context != NULL) {
+        if (context->task_id != 0) {
+            console_debug(&csl, "Cancelling diagnostic task %u", context->task_id);
+            cancel_task(context->task_id);
+        }
+        console_debug(&csl, "Freeing diagnostic context %p", context);
+        free(context);
+    }
 }

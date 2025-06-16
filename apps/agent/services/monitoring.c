@@ -1,5 +1,6 @@
+#include "monitoring.h"
 #include "core/console.h"
-#include "core/scheduler.h"
+#include "core/uloop_scheduler.h"
 #include "core/script_runner.h"
 #include "services/config/config.h"
 #include "services/device_info.h"
@@ -16,14 +17,7 @@ static Console csl = {
     .topic = "monitoring",
 };
 
-typedef struct {
-    struct mosquitto *mosq;
-    Registration *registration;
-    char *os_name;
-    char *os_version;
-    char *os_services_version;
-    char *public_ip;
-} MonitoringTaskContext;
+
 
 typedef struct {
     int wifi_clients;
@@ -113,7 +107,7 @@ json_object *createjson(DeviceData *device_data,
     return jobj;
 }
 
-void monitoring_task(Scheduler *sch, void *task_context) {
+void monitoring_task(void *task_context) {
     MonitoringTaskContext *context = (MonitoringTaskContext *)task_context;
 
     time_t now;
@@ -148,34 +142,78 @@ void monitoring_task(Scheduler *sch, void *task_context) {
     publish_mqtt(context->mosq, "monitoring/device-data", device_data_str, 0);
 
     json_object_put(json_device_data);
+    
+    // Free the dynamically allocated strings from this task execution
     free(context->os_name);
     free(context->os_version);
     free(context->os_services_version);
     free(context->public_ip);
+    
+    // Reset pointers to avoid double-free in cleanup
+    context->os_name = NULL;
+    context->os_version = NULL;
+    context->os_services_version = NULL;
+    context->public_ip = NULL;
 
-    unsigned int seed = time(0);
-    const int random_monitoring_interval =
-        rand_r(&seed) % (config.monitoring_maximum_interval - config.monitoring_minimum_interval + 1) +
-        config.monitoring_minimum_interval;
-
-    // Schedule monitoring_task to rerun later
-    schedule_task(sch, time(NULL) + random_monitoring_interval, monitoring_task, "monitoring", context);
+    // No manual rescheduling needed - repeating tasks auto-reschedule
 }
 
-void monitoring_service(Scheduler *sch, struct mosquitto *mosq, Registration *registration) {
+MonitoringTaskContext *monitoring_service(struct mosquitto *mosq, Registration *registration) {
     if (config.monitoring_enabled == 0) {
         console_info(&csl, "monitoring service is disabled by config param");
-        return;
+        return NULL;
     }
 
     MonitoringTaskContext *context = (MonitoringTaskContext *)malloc(sizeof(MonitoringTaskContext));
     if (context == NULL) {
         console_error(&csl, "failed to allocate memory for monitoring task context");
-        return;
+        return NULL;
     }
 
     context->mosq = mosq;
     context->registration = registration;
+    context->os_name = NULL;
+    context->os_version = NULL;
+    context->os_services_version = NULL;
+    context->public_ip = NULL;
+    context->task_id = 0;
 
-    monitoring_task(sch, context);
+    // Use a random interval between 5-10 minutes as before
+    uint32_t min_interval = 5 * 60 * 1000;  // 5 minutes in ms
+    uint32_t max_interval = 10 * 60 * 1000; // 10 minutes in ms
+    uint32_t interval_ms = min_interval + (rand() % (max_interval - min_interval));
+    uint32_t initial_delay_ms = interval_ms;
+
+    console_info(&csl, "Starting monitoring service with interval %u ms", interval_ms);
+    
+    // Schedule repeating task
+    context->task_id = schedule_repeating(initial_delay_ms, interval_ms, monitoring_task, context);
+    
+    if (context->task_id == 0) {
+        console_error(&csl, "failed to schedule monitoring task");
+        free(context);
+        return NULL;
+    }
+
+    console_debug(&csl, "Successfully scheduled monitoring task with ID %u", context->task_id);
+    return context;
+}
+
+void clean_monitoring_context(MonitoringTaskContext *context) {
+    console_debug(&csl, "clean_monitoring_context called with context: %p", context);
+    if (context != NULL) {
+        if (context->task_id != 0) {
+            console_debug(&csl, "Cancelling monitoring task %u", context->task_id);
+            cancel_task(context->task_id);
+        }
+        
+        // Free any remaining allocated strings (in case task was cancelled mid-execution)
+        if (context->os_name) free(context->os_name);
+        if (context->os_version) free(context->os_version);
+        if (context->os_services_version) free(context->os_services_version);
+        if (context->public_ip) free(context->public_ip);
+        
+        console_debug(&csl, "Freeing monitoring context %p", context);
+        free(context);
+    }
 }

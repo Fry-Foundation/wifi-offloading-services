@@ -38,7 +38,23 @@ func main() {
 		log.Fatal("Please provide an architecture as an argument")
 	}
 
-	archArg := os.Args[1]
+	// Parse arguments
+	var debugMode bool
+	var archArg string
+
+	// Check for --debug flag
+	for _, arg := range os.Args[1:] {
+		if arg == "--debug" {
+			debugMode = true
+		} else if archArg == "" {
+			archArg = arg
+		}
+	}
+
+	if archArg == "" {
+		log.Fatal("Please provide an architecture as an argument")
+	}
+
 	requestedArch := archArg
 	requestedSubtarget := ""
 
@@ -219,6 +235,7 @@ func main() {
 		archOutputDir,
 		selectedBuild.FeedsName,
 		feedDir,
+		debugMode,
 	)
 	if err != nil {
 		log.Fatalf("Container build failed: %v", err)
@@ -340,6 +357,7 @@ func runDockerContainerFromImage(
 	outputHostPath string,
 	feedsName string,
 	feedDir string,
+	debugMode bool,
 ) error {
 	ctx := context.Background()
 
@@ -348,6 +366,13 @@ func runDockerContainerFromImage(
 		return fmt.Errorf("Error creating Docker client: %w", err)
 	}
 	defer cli.Close()
+
+	// Prepare make command options
+	makeOpts := ""
+	if debugMode {
+		makeOpts = " -j1 V=s"
+		fmt.Println("Debug mode enabled: using -j1 V=s make options")
+	}
 
 	containerConfig := &container.Config{
 		Image: imageName,
@@ -367,17 +392,17 @@ func runDockerContainerFromImage(
 			echo "# CONFIG_ALL_KMODS is not set" >> .config
 			echo "# CONFIG_ALL is not set" >> .config
 			echo "CONFIG_PACKAGE_wayru-os-services=y" >> .config
-			make defconfig
-			make package/wayru-os-services/download
-			make package/wayru-os-services/prepare
-			make package/wayru-os-services/compile
+			make%[2]s defconfig
+			make%[2]s package/wayru-os-services/download
+			make%[2]s package/wayru-os-services/prepare
+			make%[2]s package/wayru-os-services/compile
 
 			echo "Moving compiled package to /output"
 			mkdir -p /output
 			find bin/packages -type f -name 'wayru-os-services_*.ipk' -exec cp {} /output/ \;
 
-			make package/wayru-os-services/clean
-		`, feedsName)},
+			make%[2]s package/wayru-os-services/clean
+		`, feedsName, makeOpts)},
 		Tty: true,
 	}
 

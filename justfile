@@ -19,9 +19,16 @@ compdb:
 format:
     cd tools/format && ./format.sh
 
-# Compile for specific architecture
-compile arch:
-    cd tools/compile && go run compile.go {{arch}}
+# Compile for specific architecture (optional: add 'debug' as second parameter)
+compile arch debug="":
+    #!/usr/bin/env bash
+    cd tools/compile
+    if [ "{{debug}}" = "debug" ]; then
+        echo "Running in debug mode with -j1 V=s"
+        go run compile.go {{arch}} --debug
+    else
+        go run compile.go {{arch}}
+    fi
 
 # Upload IPK release package
 release arch:

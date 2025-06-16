@@ -5,21 +5,26 @@
 #include <stdint.h>
 #include <time.h>
 
-// Single-core optimized configuration
-#define MAX_LOG_ENTRY_SIZE 512       // Reduced from 1024
-#define MAX_BATCH_SIZE 50            // Reduced from 100
-#define MAX_QUEUE_SIZE 500           // Reduced from 1000
-#define MAX_PROGRAM_SIZE 32          // Reduced from 64
-#define MAX_FACILITY_SIZE 16         // Reduced from 32
-#define MAX_PRIORITY_SIZE 8          // Reduced from 16
+// Forward declarations for configuration functions
+uint32_t config_get_batch_size(void);
+uint32_t config_get_queue_size(void);
+uint32_t config_get_batch_timeout_ms(void);
 
-// Timing configuration for single-core
-#define BATCH_TIMEOUT_MS 10000       // 10 seconds (longer than multi-core)
-#define URGENT_THRESHOLD 400         // 80% of MAX_QUEUE_SIZE
-#define HTTP_RETRY_DELAY_MS 2000     // Base retry delay
+// Static configuration (data structure sizes)
+#define MAX_LOG_ENTRY_SIZE 512       // Fixed for memory layout
+#define MAX_PROGRAM_SIZE 32          // Fixed for memory layout
+#define MAX_FACILITY_SIZE 16         // Fixed for memory layout
+#define MAX_PRIORITY_SIZE 8          // Fixed for memory layout
+
+// Dynamic configuration macros (use configuration functions)
+#define MAX_BATCH_SIZE config_get_batch_size()
+#define MAX_QUEUE_SIZE config_get_queue_size()
+#define BATCH_TIMEOUT_MS config_get_batch_timeout_ms()
+#define URGENT_THRESHOLD (config_get_queue_size() * 80 / 100)
+#define HTTP_RETRY_DELAY_MS 2000     // TODO: Add to config
 
 // Entry pool for memory optimization
-#define ENTRY_POOL_SIZE MAX_QUEUE_SIZE
+#define ENTRY_POOL_SIZE config_get_queue_size()
 
 /**
  * Compact log entry structure optimized for memory usage
@@ -36,9 +41,10 @@ typedef struct compact_log_entry {
 
 /**
  * Simple circular queue for single-threaded access
+ * Note: MAX_QUEUE_SIZE is now dynamic, so we use a pointer to entries array
  */
 typedef struct simple_log_queue {
-    compact_log_entry_t *entries[MAX_QUEUE_SIZE];
+    compact_log_entry_t **entries;  // Dynamic array based on config
     uint32_t head;
     uint32_t tail;
     uint32_t count;
@@ -58,10 +64,12 @@ typedef enum {
 
 /**
  * Batch processing context
+ * Note: MAX_BATCH_SIZE is now dynamic, so we use a pointer to entries array
  */
 typedef struct batch_context {
-    compact_log_entry_t *entries[MAX_BATCH_SIZE];
+    compact_log_entry_t **entries;  // Dynamic array based on config
     int count;
+    int max_count;                   // Store the configured batch size
     time_t created_time;
     int retry_count;
     http_state_t state;

@@ -126,6 +126,7 @@ add_executable(wayru-collector
     apps/collector/main.c
     apps/collector/ubus.c
     apps/collector/collect.c
+    apps/collector/config.c
 )
 target_include_directories(wayru-collector PRIVATE
     apps/collector

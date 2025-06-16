@@ -4,36 +4,53 @@ This guide helps you quickly set up and test the Wayru OS Collector in a local d
 
 ## Quick Start
 
-### 1. Build and Run Collector
+### 1. Configure the Collector
+
+The collector uses configuration files to control its behavior. The `just run collector` command automatically copies the development configuration:
 
 ```bash
-# From project root
-just dev collector
+# The configuration is automatically set up when you run:
+just run collector
 
-# Or manually:
-just cmake
-mkdir -p dev/collector
-cp build/collector dev/collector
-cd dev/collector && ./collector --dev
+# To manually edit the configuration:
+# 1. First run the collector once to set up the environment
+# 2. Edit the configuration file in the run directory
+vim run/collector/wayru-collector.config
+
+# 3. Restart the collector to apply changes
 ```
 
-### 2. Start Mock Backend (Optional)
+### 2. Build and Run Collector
+
+```bash
+# From project root (this handles everything automatically)
+just run collector
+
+# The command will:
+# - Build the collector with cmake
+# - Set up the run/collector directory
+# - Copy the executable and configuration files
+# - Copy development scripts
+# - Start the collector in development mode
+```
+
+### 3. Start Mock Backend (Optional)
 
 In a separate terminal:
 
 ```bash
-cd dev/collector/scripts
+cd run/collector/scripts
 python3 mock-backend.py --verbose
 ```
 
-The mock backend will start on `http://localhost:8080` and accept log submissions.
+The mock backend will start on `http://localhost:8080` and accept log submissions. The development configuration is already set to use this endpoint.
 
-### 3. Generate Test Logs
+### 4. Generate Test Logs
 
 In another terminal:
 
 ```bash
-cd dev/collector/scripts
+cd run/collector/scripts
 
 # Generate 10 normal test logs
 ./test-logs.sh 10 1 normal
@@ -48,24 +65,71 @@ cd dev/collector/scripts
 ./test-logs.sh 50 0 batch
 ```
 
+Note: The development configuration uses small batch sizes (5 logs) so you'll see batches processed quickly.
+
 ## Development Files
 
-- **`collector.conf`** - Development configuration settings
+- **`wayru-collector.config`** - UCI-style configuration file
 - **`test-logs.sh`** - Script to generate test syslog messages
 - **`mock-backend.py`** - Local HTTP server for testing
 - **`README.md`** - This guide
+
+## Configuration
+
+The collector reads configuration from UCI-style config files in this order:
+
+1. `/etc/config/wayru-collector` (OpenWrt production)
+2. `./wayru-collector.config` (local development)
+3. `/tmp/wayru-collector.config` (fallback)
+
+### Configuration Options
+
+```bash
+config wayru_collector 'wayru_collector'
+    option enabled '1'                    # Enable/disable collector
+    option logs_endpoint 'http://...'     # Backend URL
+    option batch_size '10'                # Logs per batch
+    option batch_timeout_ms '5000'        # Batch timeout
+    option queue_size '100'               # Internal queue size
+    option http_timeout '15'              # HTTP timeout (seconds)
+    option http_retries '2'               # HTTP retry attempts
+    option reconnect_delay_ms '3000'      # UBUS reconnect delay
+    option dev_mode '1'                   # Development mode
+    option verbose_logging '1'            # Verbose output
+```
+
+### Development vs Production Settings
+
+**Development** (small values for faster testing):
+- `batch_size`: 5-10 logs
+- `batch_timeout_ms`: 3000-5000ms
+- `queue_size`: 50-100 entries
+- `logs_endpoint`: `http://localhost:8080/v1/logs`
+
+**Production** (optimized for efficiency):
+- `batch_size`: 50 logs
+- `batch_timeout_ms`: 10000ms
+- `queue_size`: 500 entries
+- `logs_endpoint`: `https://devices.wayru.tech/logs`
 
 ## What You'll See
 
 ### Collector Output (--dev mode)
 ```
 [collector] Collector service started in development mode (single-core optimized)
+[config] Configuration loaded from: ./wayru-collector.config
+[config] Current Configuration:
+[config]   enabled: true
+[config]   logs_endpoint: http://localhost:8080/v1/logs
+[config]   batch_size: 10
+[config]   batch_timeout_ms: 5000
+[config]   queue_size: 100
 [collector] Detected 4 CPU core(s) - using single-threaded event loop
 [ubus] UBUS initialization complete (single-core mode)
-[collect] Single-core collection system initialized (max_queue_size=500, max_batch_size=50)
-[collector] Status: queue_size=12, dropped=0, ubus_connected=yes
-[collect] Starting batch: reached max size (50)
-[collect] Successfully sent batch of 50 logs
+[collect] Single-core collection system initialized (max_queue_size=100, max_batch_size=10)
+[collector] Status: queue_size=8, dropped=0, ubus_connected=yes
+[collect] Starting batch: reached max size (10)
+[collect] Successfully sent batch of 10 logs
 ```
 
 ### Mock Backend Output
@@ -118,25 +182,7 @@ cd dev/collector/scripts
 - Tests system under stress
 - Monitors queue overflow protection
 
-## Configuration Options
 
-Edit `collector.conf` to modify behavior:
-
-```bash
-# Backend settings
-BACKEND_URL="http://localhost:8080/v1/logs"
-BATCH_SIZE=10                    # Smaller batches for testing
-BATCH_TIMEOUT_MS=5000           # 5-second timeout
-
-# Development settings
-DEV_MODE=true
-VERBOSE_LOGGING=true
-STATUS_INTERVAL=10              # Status every 10 seconds
-
-# Testing features
-USE_MOCK_BACKEND=true
-SIMULATE_BACKEND_FAILURES=false
-```
 
 ## Mock Backend Options
 
@@ -179,14 +225,18 @@ curl http://localhost:8080/health
 ## Troubleshooting
 
 ### Collector Not Receiving Logs
-1. Check if `logd` service is running
-2. Verify UBUS connection: `ubus list | grep log`
-3. Check collector logs for UBUS connection errors
+1. Check if collector is enabled: `option enabled '1'` in config
+2. Check if `logd` service is running
+3. Verify UBUS connection: `ubus list | grep log`
+4. Check collector logs for UBUS connection errors
+5. Verify configuration is loaded correctly (check config output in --dev mode)
 
 ### No Logs Reaching Backend
-1. Verify mock backend is running on correct port
-2. Check collector HTTP state machine logs
-3. Test backend manually with curl
+1. Check `logs_endpoint` in configuration matches backend URL
+2. Verify mock backend is running on correct port
+3. Check collector HTTP state machine logs
+4. Test backend manually with curl
+5. Verify `http_timeout` and `http_retries` settings
 
 ### High Memory Usage
 1. Check queue size in status messages
@@ -194,9 +244,11 @@ curl http://localhost:8080/health
 3. Check for backend connectivity issues
 
 ### Queue Overflows
-1. Reduce log generation rate
-2. Increase batch processing frequency
-3. Check backend response times
+1. Increase `queue_size` in configuration
+2. Reduce `batch_size` for more frequent processing
+3. Reduce `batch_timeout_ms` for faster batching
+4. Check backend response times
+5. Increase `http_retries` if backend is unreliable
 
 ## Advanced Testing
 
@@ -246,12 +298,14 @@ netstat -tp | grep collector
 
 ## Development Tips
 
-1. **Use smaller batch sizes** for faster testing feedback
-2. **Enable verbose logging** to see internal operations
+1. **Use smaller batch sizes** (`batch_size: 5-10`) for faster testing feedback
+2. **Enable verbose logging** (`verbose_logging: 1`) to see internal operations
 3. **Use mock backend** to avoid external dependencies
 4. **Test different log volumes** to verify scalability
 5. **Monitor queue statistics** to understand behavior
 6. **Test network failures** by stopping mock backend
+7. **Modify configuration** without recompiling to test different settings
+8. **Use development configuration** optimized for local testing
 
 ## Integration Testing
 

@@ -50,13 +50,31 @@ case "$APP" in
         cp apps/collector/scripts/dev/* $APP_DIR/scripts/
         chmod +x $APP_DIR/scripts/*
 
+        # Copy the collector development configuration file to the working directory
+        echo "Copying collector development configuration file..."
+        cp apps/collector/scripts/dev/wayru-collector.config $APP_DIR/
+        echo "Configuration file: wayru-collector.config (optimized for local development)"
+
         cp VERSION $RUN_DIR/VERSION
 
         # Run the collector program
         echo "Starting wayru-os-services collector in development mode..."
-        echo "Available development scripts in dev/collector/scripts/:"
+        echo ""
+        echo "Configuration:"
+        echo "  - wayru-collector.config: UCI-style configuration (local development settings)"
+        echo "  - Endpoint: http://localhost:8080/v1/logs (for mock backend)"
+        echo "  - Batch size: 5 logs (fast testing)"
+        echo "  - Queue size: 50 entries (small memory footprint)"
+        echo ""
+        echo "Available development scripts in run/collector/scripts/:"
         echo "  - test-logs.sh: Generate test syslog messages"
-        echo "  - collector.conf: Development configuration"
+        echo "  - mock-backend.py: Local HTTP server for testing"
+        echo "  - README.md: Development guide and documentation"
+        echo ""
+        echo "Quick start:"
+        echo "  1. Start mock backend: python3 scripts/mock-backend.py --verbose"
+        echo "  2. Generate test logs: ./scripts/test-logs.sh 10 1 normal"
+        echo "  3. Monitor collector output for batch processing"
         echo ""
         cd $APP_DIR && ./collector --dev
         ;;

@@ -12,6 +12,7 @@
 // Default configuration values
 #define DEFAULT_ENABLED true
 #define DEFAULT_LOGS_ENDPOINT "https://devices.wayru.tech/logs"
+#define DEFAULT_CONSOLE_LOG_LEVEL 1
 #define DEFAULT_BATCH_SIZE 50
 #define DEFAULT_BATCH_TIMEOUT_MS 10000
 #define DEFAULT_QUEUE_SIZE 500
@@ -26,21 +27,21 @@ typedef struct collector_config {
     // Basic settings
     bool enabled;
     char logs_endpoint[256];
-    
+    int console_log_level;
+
     // Batching configuration
     uint32_t batch_size;
     uint32_t batch_timeout_ms;
     uint32_t queue_size;
-    
+
     // HTTP configuration
     uint32_t http_timeout;
     uint32_t http_retries;
     uint32_t reconnect_delay_ms;
-    
+
     // Development settings
     bool dev_mode;
-    bool verbose_logging;
-    
+
     // Internal state
     bool config_loaded;
     char config_file_path[256];

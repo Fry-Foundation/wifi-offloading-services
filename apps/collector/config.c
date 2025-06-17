@@ -52,8 +52,8 @@ static void trim_whitespace(char *str) {
  */
 static bool parse_bool(const char *value) {
     if (!value) return false;
-    
-    return (strcmp(value, "1") == 0 || 
+
+    return (strcmp(value, "1") == 0 ||
             strcasecmp(value, "true") == 0 ||
             strcasecmp(value, "yes") == 0 ||
             strcasecmp(value, "on") == 0);
@@ -64,14 +64,14 @@ static bool parse_bool(const char *value) {
  */
 static uint32_t parse_uint32(const char *value, uint32_t default_value) {
     if (!value) return default_value;
-    
+
     char *endptr;
     unsigned long parsed = strtoul(value, &endptr, 10);
-    
+
     if (*endptr != '\0' || parsed > UINT32_MAX) {
         return default_value;
     }
-    
+
     return (uint32_t)parsed;
 }
 
@@ -80,7 +80,7 @@ static uint32_t parse_uint32(const char *value, uint32_t default_value) {
  */
 static void remove_quotes(char *str) {
     size_t len = strlen(str);
-    
+
     if (len >= 2 && str[0] == '\'' && str[len-1] == '\'') {
         memmove(str, str + 1, len - 2);
         str[len - 2] = '\0';
@@ -97,37 +97,37 @@ static int parse_config_option(collector_config_t *config, const char *line) {
     char line_copy[512];
     strncpy(line_copy, line, sizeof(line_copy) - 1);
     line_copy[sizeof(line_copy) - 1] = '\0';
-    
+
     // Trim whitespace
     trim_whitespace(line_copy);
-    
+
     // Skip empty lines and comments
     if (line_copy[0] == '\0' || line_copy[0] == '#') {
         return 0;
     }
-    
+
     // Look for "option" keyword
     if (strncmp(line_copy, "option", 6) != 0) {
         return 0; // Not an option line
     }
-    
+
     // Find the option name and value
     char *token = strtok(line_copy + 6, " \t");
     if (!token) return 0;
-    
+
     char option_name[64];
     strncpy(option_name, token, sizeof(option_name) - 1);
     option_name[sizeof(option_name) - 1] = '\0';
-    
+
     token = strtok(NULL, "");
     if (!token) return 0;
-    
+
     char option_value[256];
     strncpy(option_value, token, sizeof(option_value) - 1);
     option_value[sizeof(option_value) - 1] = '\0';
     trim_whitespace(option_value);
     remove_quotes(option_value);
-    
+
     // Parse specific options
     if (strcmp(option_name, "enabled") == 0) {
         config->enabled = parse_bool(option_value);
@@ -157,37 +157,37 @@ static int parse_config_option(collector_config_t *config, const char *line) {
     } else if (strcmp(option_name, "dev_mode") == 0) {
         config->dev_mode = parse_bool(option_value);
         console_debug(&csl, "Parsed dev_mode: %s", config->dev_mode ? "true" : "false");
-    } else if (strcmp(option_name, "verbose_logging") == 0) {
-        config->verbose_logging = parse_bool(option_value);
-        console_debug(&csl, "Parsed verbose_logging: %s", config->verbose_logging ? "true" : "false");
+    } else if (strcmp(option_name, "console_log_level") == 0) {
+        config->console_log_level = parse_uint32(option_value, DEFAULT_CONSOLE_LOG_LEVEL);
+        console_debug(&csl, "Parsed console_log_level: %u", config->console_log_level);
     } else {
         console_debug(&csl, "Unknown configuration option: %s", option_name);
     }
-    
+
     return 0;
 }
 
 void config_init_defaults(collector_config_t *config) {
     memset(config, 0, sizeof(collector_config_t));
-    
+
     config->enabled = DEFAULT_ENABLED;
     strncpy(config->logs_endpoint, DEFAULT_LOGS_ENDPOINT, sizeof(config->logs_endpoint) - 1);
     config->logs_endpoint[sizeof(config->logs_endpoint) - 1] = '\0';
-    
+
     config->batch_size = DEFAULT_BATCH_SIZE;
     config->batch_timeout_ms = DEFAULT_BATCH_TIMEOUT_MS;
     config->queue_size = DEFAULT_QUEUE_SIZE;
-    
+
     config->http_timeout = DEFAULT_HTTP_TIMEOUT;
     config->http_retries = DEFAULT_HTTP_RETRIES;
     config->reconnect_delay_ms = DEFAULT_RECONNECT_DELAY_MS;
-    
+
     config->dev_mode = false;
-    config->verbose_logging = false;
-    
+    config->console_log_level = DEFAULT_CONSOLE_LOG_LEVEL;
+
     config->config_loaded = false;
     config->config_file_path[0] = '\0';
-    
+
     console_debug(&csl, "Configuration initialized with defaults");
 }
 
@@ -196,41 +196,41 @@ int config_load_from_file(collector_config_t *config, const char *file_path) {
     char line[512];
     int line_number = 0;
     bool in_collector_section = false;
-    
+
     if (!config || !file_path) {
         return -EINVAL;
     }
-    
+
     console_debug(&csl, "Attempting to load configuration from: %s", file_path);
-    
+
     file = fopen(file_path, "r");
     if (!file) {
         console_debug(&csl, "Could not open config file %s: %s", file_path, strerror(errno));
         return -errno;
     }
-    
+
     while (fgets(line, sizeof(line), file)) {
         line_number++;
         trim_whitespace(line);
-        
+
         // Skip empty lines and comments
         if (line[0] == '\0' || line[0] == '#') {
             continue;
         }
-        
+
         // Check for section header
         if (strncmp(line, "config wayru_collector", 22) == 0) {
             in_collector_section = true;
             console_debug(&csl, "Found wayru_collector section at line %d", line_number);
             continue;
         }
-        
+
         // Check for new section (end of our section)
         if (strncmp(line, "config ", 7) == 0 && strncmp(line, "config wayru_collector", 22) != 0) {
             in_collector_section = false;
             continue;
         }
-        
+
         // Parse options only if we're in the collector section
         if (in_collector_section) {
             int ret = parse_config_option(config, line);
@@ -239,14 +239,14 @@ int config_load_from_file(collector_config_t *config, const char *file_path) {
             }
         }
     }
-    
+
     fclose(file);
-    
+
     // Store the config file path
     strncpy(config->config_file_path, file_path, sizeof(config->config_file_path) - 1);
     config->config_file_path[sizeof(config->config_file_path) - 1] = '\0';
     config->config_loaded = true;
-    
+
     console_info(&csl, "Configuration loaded from: %s", file_path);
     return 0;
 }
@@ -258,14 +258,14 @@ int config_load(collector_config_t *config) {
         CONFIG_FILE_FALLBACK,
         NULL
     };
-    
+
     if (!config) {
         return -EINVAL;
     }
-    
+
     // Initialize with defaults first
     config_init_defaults(config);
-    
+
     // Try to load from each path in order
     for (int i = 0; config_paths[i] != NULL; i++) {
         if (access(config_paths[i], R_OK) == 0) {
@@ -276,7 +276,7 @@ int config_load(collector_config_t *config) {
             }
         }
     }
-    
+
     console_warn(&csl, "No configuration file found, using defaults");
     config->config_loaded = false;
     return -ENOENT;
@@ -286,43 +286,43 @@ int config_validate(const collector_config_t *config) {
     if (!config) {
         return -EINVAL;
     }
-    
+
     // Validate logs endpoint
     if (strlen(config->logs_endpoint) == 0) {
         console_error(&csl, "Invalid configuration: logs_endpoint is empty");
         return -EINVAL;
     }
-    
-    if (strncmp(config->logs_endpoint, "http://", 7) != 0 && 
+
+    if (strncmp(config->logs_endpoint, "http://", 7) != 0 &&
         strncmp(config->logs_endpoint, "https://", 8) != 0) {
         console_error(&csl, "Invalid configuration: logs_endpoint must start with http:// or https://");
         return -EINVAL;
     }
-    
+
     // Validate batch size
     if (config->batch_size == 0 || config->batch_size > 1000) {
         console_error(&csl, "Invalid configuration: batch_size must be between 1 and 1000");
         return -EINVAL;
     }
-    
+
     // Validate queue size
     if (config->queue_size == 0 || config->queue_size > 10000) {
         console_error(&csl, "Invalid configuration: queue_size must be between 1 and 10000");
         return -EINVAL;
     }
-    
+
     // Validate batch timeout
     if (config->batch_timeout_ms < 1000 || config->batch_timeout_ms > 300000) {
         console_error(&csl, "Invalid configuration: batch_timeout_ms must be between 1000 and 300000");
         return -EINVAL;
     }
-    
+
     // Validate HTTP timeout
     if (config->http_timeout == 0 || config->http_timeout > 300) {
         console_error(&csl, "Invalid configuration: http_timeout must be between 1 and 300 seconds");
         return -EINVAL;
     }
-    
+
     console_debug(&csl, "Configuration validation passed");
     return 0;
 }
@@ -333,7 +333,7 @@ const collector_config_t* config_get_current(void) {
         config_load(&g_config);
         g_config_initialized = true;
     }
-    
+
     return &g_config;
 }
 
@@ -374,12 +374,12 @@ uint32_t config_get_http_retries(void) {
 
 void config_print_current(void) {
     const collector_config_t *config = config_get_current();
-    
+
     if (!config) {
         console_info(&csl, "No configuration loaded");
         return;
     }
-    
+
     console_info(&csl, "Current Configuration:");
     console_info(&csl, "  enabled: %s", config->enabled ? "true" : "false");
     console_info(&csl, "  logs_endpoint: %s", config->logs_endpoint);
@@ -390,8 +390,8 @@ void config_print_current(void) {
     console_info(&csl, "  http_retries: %u", config->http_retries);
     console_info(&csl, "  reconnect_delay_ms: %u", config->reconnect_delay_ms);
     console_info(&csl, "  dev_mode: %s", config->dev_mode ? "true" : "false");
-    console_info(&csl, "  verbose_logging: %s", config->verbose_logging ? "true" : "false");
-    
+    console_info(&csl, "  console_log_level: %u", config->console_log_level);
+
     if (config->config_loaded) {
         console_info(&csl, "  config_file: %s", config->config_file_path);
     } else {

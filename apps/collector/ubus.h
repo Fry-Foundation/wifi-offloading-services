@@ -3,6 +3,7 @@
 
 #include <libubus.h>
 #include <stdbool.h>
+#include <time.h>
 
 /**
  * Initialize UBUS connection and subscribe to syslog events
@@ -27,5 +28,26 @@ void ubus_cleanup(void);
  * @return true if connected, false otherwise
  */
 bool ubus_is_connected(void);
+
+/**
+ * Retrieve access token from wayru-agent via UBUS
+ * @param token_buf Buffer to store the token (should be at least 256 bytes)
+ * @param token_size Size of the token buffer
+ * @param expiry Pointer to store token expiry time
+ * @return 0 on success, negative error code on failure
+ */
+int ubus_get_access_token(char *token_buf, size_t token_size, time_t *expiry);
+
+/**
+ * Check if the cached access token is still valid
+ * @return true if valid, false if expired or not available
+ */
+bool ubus_is_access_token_valid(void);
+
+/**
+ * Force refresh of the cached access token from wayru-agent
+ * @return 0 on success, negative error code on failure
+ */
+int ubus_refresh_access_token(void);
 
 #endif // UBUS_H

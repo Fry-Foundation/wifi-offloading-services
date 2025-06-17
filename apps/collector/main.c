@@ -19,6 +19,7 @@ static bool dev_env = false;
 // Timer for batch processing
 static struct uloop_timeout batch_timer;
 static struct uloop_timeout status_timer;
+static struct uloop_timeout token_refresh_timer;
 
 /**
  * Signal handler for graceful shutdown
@@ -34,10 +35,10 @@ static void signal_handler(int sig) {
  */
 static void batch_timer_cb(struct uloop_timeout *timeout) {
     if (!running) return;
-    
+
     // Process any pending batches
     collect_process_pending_batches();
-    
+
     // Schedule next batch check
     uloop_timeout_set(&batch_timer, 1000); // Check every second
 }
@@ -47,64 +48,97 @@ static void batch_timer_cb(struct uloop_timeout *timeout) {
  */
 static void status_timer_cb(struct uloop_timeout *timeout) {
     if (!running) return;
-    
+
     uint32_t queue_size, dropped_count;
     if (collect_get_stats(&queue_size, &dropped_count) == 0) {
         if (dev_env) {
-            console_info(&csl, "Status: queue_size=%u, dropped=%u, ubus_connected=%s", 
-                       queue_size, dropped_count, 
+            console_info(&csl, "Status: queue_size=%u, dropped=%u, ubus_connected=%s",
+                       queue_size, dropped_count,
                        ubus_is_connected() ? "yes" : "no");
         }
-        
+
         // Warn if queue is getting full
         uint32_t urgent_threshold = config_get_queue_size() * 80 / 100;
         if (queue_size > urgent_threshold) {
             console_warn(&csl, "Log queue getting full: %u entries (threshold: %u)", queue_size, urgent_threshold);
         }
-        
+
         // Warn about dropped logs
         if (dropped_count > 0) {
             console_warn(&csl, "Dropped %u log entries due to full queue", dropped_count);
         }
     }
-    
+
     // Schedule next status check
     uloop_timeout_set(&status_timer, 30000); // Every 30 seconds
+}
+
+/**
+ * Access token refresh timer callback
+ */
+static void token_refresh_timer_cb(struct uloop_timeout *timeout) {
+    // Defensive check - should not happen but prevents crashes
+    if (!timeout) {
+        console_error(&csl, "Token refresh timer callback called with null timeout");
+        return;
+    }
+
+    if (!running) {
+        console_debug(&csl, "Service not running, skipping token refresh");
+        return;
+    }
+
+    // Check if UBUS is available before attempting token operations
+    if (!ubus_is_connected()) {
+        console_warn(&csl, "UBUS not connected, skipping token refresh");
+        // Schedule next check with shorter interval to retry sooner
+        uloop_timeout_set(&token_refresh_timer, 60000); // 1 minute retry
+        return;
+    }
+
+    // Check if current token is still valid
+    bool token_valid = ubus_is_access_token_valid();
+
+    if (!token_valid) {
+        console_info(&csl, "Access token expired or invalid, refreshing...");
+
+        // Attempt token refresh with error handling
+        int ret = ubus_refresh_access_token();
+        if (ret < 0) {
+            console_warn(&csl, "Failed to refresh access token: %d", ret);
+
+            // On failure, schedule shorter retry interval
+            uint32_t retry_interval = 60000; // 1 minute retry on failure
+            console_info(&csl, "Scheduling token refresh retry in %u ms", retry_interval);
+            uloop_timeout_set(&token_refresh_timer, retry_interval);
+            return;
+        } else {
+            console_info(&csl, "Access token refreshed successfully");
+        }
+    } else if (dev_env) {
+        console_debug(&csl, "Access token still valid");
+    }
+
+    // Schedule next token check (every 5 minutes for normal operation)
+    uint32_t normal_interval = 300000; // 5 minutes
+    if (dev_env) {
+        console_debug(&csl, "Scheduling next token check in %u ms", normal_interval);
+    }
+    uloop_timeout_set(&token_refresh_timer, normal_interval);
 }
 
 /**
  * Process command line arguments
  */
 static bool process_command_line_args(int argc, char *argv[]) {
+    dev_env = false;
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--dev") == 0) {
             dev_env = true;
-        } else if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
-            printf("Usage: %s [OPTIONS]\n", argv[0]);
-            printf("Options:\n");
-            printf("  --dev     Run in development mode (overrides config)\n");
-            printf("  --help    Show this help message\n");
-            printf("\nConfiguration file locations (in order of preference):\n");
-            printf("  /etc/config/wayru-collector\n");
-            printf("  ./wayru-collector.config\n");
-            printf("  /tmp/wayru-collector.config\n");
-            return false;
         }
     }
 
     return true;
-}
-
-/**
- * Detect system capabilities
- */
-static void detect_system_info(void) {
-    int num_cores = get_nprocs();
-    console_info(&csl, "Detected %d CPU core(s) - using single-threaded event loop", num_cores);
-    
-    if (num_cores > 1) {
-        console_info(&csl, "Multi-core system detected but using optimized single-core architecture");
-    }
 }
 
 int main(int argc, char *argv[]) {
@@ -135,24 +169,8 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    // Set dev_env from config if not overridden by command line
-    if (!dev_env) {
-        dev_env = config->dev_mode || config->verbose_logging;
-    }
-
-    if (dev_env) {
-        console_info(&csl, "Collector service started in development mode (single-core optimized)");
-    } else {
-        console_info(&csl, "Collector service started (single-core optimized)");
-    }
-
-    // Print configuration in dev mode
-    if (dev_env) {
-        config_print_current();
-    }
-
-    // Detect system information
-    detect_system_info();
+    // Initialize console logging
+    console_set_level(config->console_log_level);
 
     // Set up signal handlers for graceful shutdown
     signal(SIGINT, signal_handler);
@@ -176,7 +194,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    console_info(&csl, "Starting single-threaded event loop...");
+    console_info(&csl, "Starting event loop");
 
     // Set up batch processing timer
     batch_timer.cb = batch_timer_cb;
@@ -186,7 +204,11 @@ int main(int argc, char *argv[]) {
     status_timer.cb = status_timer_cb;
     uloop_timeout_set(&status_timer, 30000); // First status check in 30 seconds
 
-    console_info(&csl, "Collector service running with event-driven architecture");
+    // Set up access token refresh timer
+    token_refresh_timer.cb = token_refresh_timer_cb;
+    uloop_timeout_set(&token_refresh_timer, 60000); // First token check in 1 minute
+
+    console_info(&csl, "Collector service running with event-driven architecture and log streaming");
 
     // Run the main event loop
     uloop_run();
@@ -196,6 +218,7 @@ int main(int argc, char *argv[]) {
     // Cancel timers
     uloop_timeout_cancel(&batch_timer);
     uloop_timeout_cancel(&status_timer);
+    uloop_timeout_cancel(&token_refresh_timer);
 
     // Process any final batches
     collect_process_pending_batches();

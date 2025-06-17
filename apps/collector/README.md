@@ -7,9 +7,11 @@ The collector app is a standalone service optimized for single-core embedded dev
 The collector uses a **single-threaded event-driven architecture** optimized for resource-constrained devices:
 
 1. **Main Event Loop (uloop)**: Handles all events including UBUS messages, timers, and HTTP operations
-2. **Memory Pool**: Pre-allocated entry pool to avoid malloc/free overhead
-3. **State Machine**: HTTP operations managed through a simple state machine
-4. **Circular Queue**: Lock-free queue for log entries (single-threaded access)
+2. **UBUS Integration**: Communicates with wayru-agent for access token retrieval and log event subscription
+3. **Memory Pool**: Pre-allocated entry pool to avoid malloc/free overhead
+4. **State Machine**: HTTP operations managed through a simple state machine
+5. **Circular Queue**: Lock-free queue for log entries (single-threaded access)
+6. **Token Management**: Automatic access token caching and refresh mechanism
 
 ## Key Optimizations for Single-Core Devices
 
@@ -40,6 +42,8 @@ The collector uses a **single-threaded event-driven architecture** optimized for
 - **Intelligent batching**: Adaptive batching based on queue load and timeouts
 - **HTTP state machine**: Non-blocking HTTP operations with retry logic
 - **Automatic reconnection**: UBUS and HTTP connection recovery
+- **Access token authentication**: Retrieves Bearer tokens from wayru-agent via UBUS
+- **Token refresh management**: Automatic token validation and refresh cycles
 - **Memory pool management**: Efficient memory usage with entry recycling
 - **Queue overflow protection**: Graceful handling of high log volumes
 - **Dynamic configuration**: UCI-style configuration files with runtime validation
@@ -120,6 +124,53 @@ wayru-collector --dev
 # Show help and configuration file locations
 wayru-collector --help
 ```
+
+## Authentication
+
+The collector authenticates with the Wayru backend using Bearer tokens obtained from the wayru-agent service via UBUS.
+
+### Token Retrieval Process
+
+1. **UBUS Communication**: Collector calls `wayru-agent.get_access_token` method
+2. **Token Caching**: Valid tokens are cached locally with expiration tracking
+3. **Automatic Refresh**: Tokens are refreshed automatically before expiration
+4. **HTTP Authorization**: Cached tokens are included as `Authorization: Bearer <token>` headers
+5. **Error Handling**: 401 responses trigger immediate token refresh attempts
+
+### Token Management Features
+
+- **Intelligent Caching**: Tokens are cached with 60-second expiration buffer
+- **Periodic Refresh**: Timer-based token validation every 5 minutes
+- **Fallback Behavior**: Continues operation without tokens in development mode
+- **Connection Recovery**: Handles wayru-agent service restarts gracefully
+
+### Authentication Flow
+
+```c
+// Get token from wayru-agent
+int ret = ubus_get_access_token(token_buffer, sizeof(token_buffer));
+
+// Add Bearer token to HTTP headers
+snprintf(auth_header, sizeof(auth_header), "Authorization: Bearer %s", token);
+request_headers = curl_slist_append(request_headers, auth_header);
+
+// Handle authentication failures
+if (response_code == 401) {
+    ubus_refresh_access_token(); // Refresh for next request
+}
+```
+
+### UBUS Methods Used
+
+- `wayru-agent.get_access_token`: Retrieve current access token with expiration info
+- Response includes: `token`, `expires_at`, `valid` fields
+
+### Error Scenarios
+
+- **Agent Unavailable**: Logs warning and attempts requests without authentication
+- **Token Expired**: Automatic refresh before next batch submission
+- **Invalid Token**: Immediate refresh on 401 HTTP response
+- **UBUS Disconnected**: Continues with cached token until reconnection
 
 ## Testing
 
@@ -221,14 +272,16 @@ Logs are sent to the backend as compact JSON batches:
 3. **Pool Allocation**: Get entry from pre-allocated pool
 4. **Queue Enqueue**: Add to circular queue (lock-free)
 5. **Batch Timer**: Periodic timer checks for batch processing
-6. **State Machine**: HTTP state machine processes batches
-7. **Backend Submit**: JSON payload sent with retry logic
-8. **Pool Return**: Entry returned to pool for reuse
+6. **Token Retrieval**: Get valid access token from wayru-agent via UBUS
+7. **State Machine**: HTTP state machine processes batches with authentication
+8. **Backend Submit**: JSON payload sent with Bearer token and retry logic
+9. **Pool Return**: Entry returned to pool for reuse
 
 ## Dependencies
 
 - `wayru-core`: Console logging and utilities
 - `wayru-http`: HTTP client functionality
+- `wayru-agent`: Access token provider (via UBUS communication)
 - `libubus`: UBUS communication and event handling
 - `libubox`: Event loop (uloop) and message handling
 - `json-c`: Compact JSON serialization
@@ -254,12 +307,15 @@ Logs are sent to the backend as compact JSON batches:
 ### Runtime Statistics (--dev mode)
 ```
 Status: queue_size=45, dropped=0, ubus_connected=yes
+Access token refreshed successfully (expires in 3540 seconds)
 ```
 
 ### Available Statistics
 - Current queue size and utilization
 - Number of dropped log entries
 - UBUS connection status
+- Access token validity and expiration
+- Authentication success/failure rates
 - Batch processing state
 - HTTP operation status
 - Memory pool utilization

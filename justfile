@@ -2,13 +2,18 @@
 default:
     @just --list
 
+# Build with CMake
+build:
+    mkdir -p build
+    cd build && cmake .. && make
+
 # Development environment setup for specific app
 # Available apps: agent, health, collector
 run app="agent":
-    just cmake
-    @if [ ! -f "build/{{app}}" ]; then echo "Error: App '{{app}}' not found in build directory."; exit 1; fi
-    mkdir -p run/{{app}}
-    cp build/{{app}} run/{{app}}
+    just build
+    @if [ ! -f "build/wayru-{{app}}" ]; then echo "Error: App 'wayru-{{app}}' not found in build directory."; exit 1; fi
+    mkdir -p run/wayru-{{app}}
+    cp build/wayru-{{app}} run/wayru-{{app}}
     bash tools/run.sh {{app}}
 
 # Generate compilation database (compile_commands.json)
@@ -34,7 +39,13 @@ compile arch debug="":
 release arch:
     bash tools/compile/release.sh {{arch}}
 
-# Build with CMake
-cmake:
-    mkdir -p build
-    cd build && cmake .. && make
+# Delete the ./build and ./run folder
+clean:
+    rm -rf ./build
+    rm -rf ./run
+
+# Delete the ./build, ./run, ./output folders
+clean-full:
+    rm -rf ./build
+    rm -rf ./run
+    rm -rf ./output

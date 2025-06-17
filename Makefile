@@ -59,10 +59,10 @@ define Package/wayru-os-services/install
 	# Install init script and config
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/apps/agent/scripts/openwrt/wayru-agent.init $(1)/etc/init.d/wayru-agent
 	$(INSTALL_CONF) $(PKG_BUILD_DIR)/apps/agent/scripts/openwrt/wayru-agent.config $(1)/etc/config/wayru-agent
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/apps/agent/scripts/openwrt/wayru-agent.config $(1)/etc/wayru-agent/config.uci
 
-	# Install collector init script
+	# Install collector init script and config
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/apps/collector/scripts/openwrt/wayru-collector.init $(1)/etc/init.d/wayru-collector
+	$(INSTALL_CONF) $(PKG_BUILD_DIR)/apps/collector/scripts/openwrt/wayru-collector.config $(1)/etc/config/wayru-collector
 
 	# Install all scripts from the openwrt directory
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/apps/agent/scripts/openwrt/*.sh $(1)/etc/wayru-agent/scripts/

@@ -78,6 +78,17 @@ typedef struct batch_context {
 } batch_context_t;
 
 /**
+ * Log data structure for passing log entries
+ */
+typedef struct log_data {
+    uint64_t timestamp;      // Timestamp in seconds
+    uint16_t timestamp_ms;   // Milliseconds part
+    uint32_t priority;       // Syslog priority (facility | severity)
+    uint32_t source;         // Log source (klog, syslog, etc)
+    const char *message;     // Log message
+} log_data_t;
+
+/**
  * Initialize the log collection system
  * @return 0 on success, negative error code on failure
  */
@@ -97,14 +108,10 @@ void collect_cleanup(void);
 
 /**
  * Enqueue a log entry for processing (single-threaded, no locks needed)
- * @param program Program name that generated the log
- * @param message Log message content
- * @param facility Syslog facility
- * @param priority Syslog priority
+ * @param log_data Pointer to log data structure
  * @return 0 on success, negative error code on failure
  */
-int collect_enqueue_log(const char *program, const char *message, 
-                       const char *facility, const char *priority);
+int collect_enqueue_log(const log_data_t *log_data);
 
 /**
  * Get current queue statistics (single-threaded, no locks needed)

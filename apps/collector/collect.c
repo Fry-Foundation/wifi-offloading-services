@@ -1,10 +1,12 @@
 #include "collect.h"
 #include "config.h"
 #include "core/console.h"
+#include "ubus.h"
 #include <asm-generic/errno-base.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdio.h>
 
 #include <curl/curl.h>
 #include <json-c/json.h>
@@ -238,13 +240,40 @@ static int send_http_request(const char *payload, size_t payload_size) {
         return -1;
     }
 
+    // Get access token from wayru-agent
+    char access_token[512];
+    time_t token_expiry;
+    int token_ret = ubus_get_access_token(access_token, sizeof(access_token), &token_expiry);
+    if (token_ret < 0) {
+        console_warn(&csl, "Failed to get access token: %d, attempting without authentication", token_ret);
+        // Continue without token - backend might accept unauthenticated requests in dev mode
+    }
+
+    // Update headers with authorization if we have a token
+    struct curl_slist *request_headers = http_headers;
+    char auth_header[600]; // Token + "Authorization: Bearer " prefix
+    if (token_ret == 0 && access_token[0] != '\0') {
+        snprintf(auth_header, sizeof(auth_header), "Authorization: Bearer %s", access_token);
+        request_headers = curl_slist_append(request_headers, auth_header);
+        if (!request_headers) {
+            console_error(&csl, "Failed to add authorization header");
+            return -1;
+        }
+        console_debug(&csl, "Added Bearer token to request");
+    }
+
     const char *backend_url = config_get_logs_endpoint();
     curl_easy_setopt(curl_handle, CURLOPT_URL, backend_url);
     curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, payload);
     curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, payload_size);
-    curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, http_headers);
+    curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, request_headers);
 
     CURLcode res = curl_easy_perform(curl_handle);
+
+    // Clean up authorization header if we added it
+    if (request_headers != http_headers) {
+        curl_slist_free_all(request_headers);
+    }
 
     if (res != CURLE_OK) {
         console_warn(&csl, "HTTP request failed: %s", curl_error_buffer);
@@ -257,6 +286,11 @@ static int send_http_request(const char *payload, size_t payload_size) {
     if (response_code >= 200 && response_code < 300) {
         console_debug(&csl, "HTTP request successful (code: %ld)", response_code);
         return 0;
+    } else if (response_code == 401 && token_ret == 0) {
+        console_warn(&csl, "HTTP request failed with 401 Unauthorized, refreshing token");
+        // Try to refresh the token for next request
+        ubus_refresh_access_token();
+        return -1;
     } else {
         console_warn(&csl, "HTTP request failed with code: %ld", response_code);
         return -1;
@@ -530,9 +564,8 @@ void collect_cleanup(void) {
     console_info(&csl, "Single-core collection cleanup complete");
 }
 
-int collect_enqueue_log(const char *program, const char *message,
-                       const char *facility, const char *priority) {
-    if (!program || !message || !system_running) {
+int collect_enqueue_log(const log_data_t *log_data) {
+    if (!log_data || !log_data->message || !system_running) {
         return -EINVAL;
     }
 
@@ -540,32 +573,38 @@ int collect_enqueue_log(const char *program, const char *message,
     compact_log_entry_t *entry = collect_get_entry_from_pool();
     if (!entry) {
         dropped_count++;
-        console_debug(&csl, "Entry pool exhausted, dropping log from %s", program);
+        console_debug(&csl, "Entry pool exhausted, dropping log");
         return -ENOSPC;
     }
 
+    // Extract facility and severity from priority
+    int facility = (log_data->priority >> 3) & 0x1f;
+    int severity = log_data->priority & 0x07;
+
+    // Map source to program name
+    const char *program_name = "unknown";
+    if (log_data->source == 0) {
+        program_name = "kernel";
+    } else if (log_data->source == 1) {
+        program_name = "syslog";
+    }
+    // Could extract from message if it contains program info
+
     // Copy data with bounds checking
-    strncpy(entry->program, program, MAX_PROGRAM_SIZE - 1);
+    strncpy(entry->program, program_name, MAX_PROGRAM_SIZE - 1);
     entry->program[MAX_PROGRAM_SIZE - 1] = '\0';
 
-    strncpy(entry->message, message, MAX_LOG_ENTRY_SIZE - 1);
+    strncpy(entry->message, log_data->message, MAX_LOG_ENTRY_SIZE - 1);
     entry->message[MAX_LOG_ENTRY_SIZE - 1] = '\0';
 
-    if (facility) {
-        strncpy(entry->facility, facility, MAX_FACILITY_SIZE - 1);
-        entry->facility[MAX_FACILITY_SIZE - 1] = '\0';
-    } else {
-        entry->facility[0] = '\0';
-    }
+    // Convert facility number to string
+    snprintf(entry->facility, MAX_FACILITY_SIZE, "%d", facility);
 
-    if (priority) {
-        strncpy(entry->priority, priority, MAX_PRIORITY_SIZE - 1);
-        entry->priority[MAX_PRIORITY_SIZE - 1] = '\0';
-    } else {
-        entry->priority[0] = '\0';
-    }
+    // Convert severity number to string
+    snprintf(entry->priority, MAX_PRIORITY_SIZE, "%d", severity);
 
-    entry->timestamp = (uint32_t)time(NULL);
+    // Use provided timestamp
+    entry->timestamp = (uint32_t)log_data->timestamp;
 
     // Add to queue
     int result = enqueue_entry(&queue, entry);
@@ -573,7 +612,7 @@ int collect_enqueue_log(const char *program, const char *message,
         // Queue is full, drop the entry
         collect_return_entry_to_pool(entry);
         dropped_count++;
-        console_debug(&csl, "Queue full, dropping log from %s", program);
+        console_debug(&csl, "Queue full, dropping log");
         return -ENOSPC;
     }
 

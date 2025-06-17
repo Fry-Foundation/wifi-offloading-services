@@ -3,10 +3,10 @@
 #include "core/result.h"
 #include "core/retry.h"
 #include "core/script_runner.h"
-#include "crypto/csr.h"
-#include "http/http-requests.h"
 #include "crypto/cert_audit.h"
+#include "crypto/csr.h"
 #include "crypto/key_pair.h"
+#include "http/http-requests.h"
 #include "services/access_token.h"
 #include "services/config/config.h"
 #include "services/registration.h"
@@ -200,7 +200,7 @@ bool attempt_generate_and_sign_radsec(AccessToken *access_token, Registration *r
         return true;
     } else {
         console_error(&csl, "Failed to generate and sign RadSec certificate after %d attempts ... exiting",
-                    config.attempts);
+                      config.attempts);
         return false;
     }
 }

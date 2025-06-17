@@ -3,10 +3,10 @@
 #include "core/console.h"
 #include "ubus.h"
 #include <asm-generic/errno-base.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <stdio.h>
 
 #include <curl/curl.h>
 #include <json-c/json.h>
@@ -68,7 +68,7 @@ static int init_entry_pool(void) {
 /**
  * Get an entry from the pool
  */
-compact_log_entry_t* collect_get_entry_from_pool(void) {
+compact_log_entry_t *collect_get_entry_from_pool(void) {
     if (!entry_pool || !pool_used) {
         return NULL;
     }
@@ -105,7 +105,7 @@ void collect_return_entry_to_pool(compact_log_entry_t *entry) {
 static int init_simple_queue(simple_log_queue_t *q) {
     uint32_t queue_size = config_get_queue_size();
 
-    q->entries = calloc(queue_size, sizeof(compact_log_entry_t*));
+    q->entries = calloc(queue_size, sizeof(compact_log_entry_t *));
     if (!q->entries) {
         console_error(&csl, "Failed to allocate queue entries array");
         return -ENOMEM;
@@ -138,7 +138,7 @@ static int enqueue_entry(simple_log_queue_t *q, compact_log_entry_t *entry) {
 /**
  * Remove entry from queue (single-threaded, no locks)
  */
-static compact_log_entry_t* dequeue_entry(simple_log_queue_t *q) {
+static compact_log_entry_t *dequeue_entry(simple_log_queue_t *q) {
     if (q->count == 0) {
         return NULL;
     }
@@ -199,7 +199,7 @@ static void cleanup_http_client(void) {
 /**
  * Create JSON payload from batch entries
  */
-static char* create_json_payload(compact_log_entry_t **entries, int count, size_t *payload_size) {
+static char *create_json_payload(compact_log_entry_t **entries, int count, size_t *payload_size) {
     json_object *root = json_object_new_object();
     json_object *logs_array = json_object_new_array();
 
@@ -303,7 +303,7 @@ static int send_http_request(const char *payload, size_t payload_size) {
 static int init_batch_context(batch_context_t *ctx) {
     uint32_t batch_size = config_get_batch_size();
 
-    ctx->entries = calloc(batch_size, sizeof(compact_log_entry_t*));
+    ctx->entries = calloc(batch_size, sizeof(compact_log_entry_t *));
     if (!ctx->entries) {
         console_error(&csl, "Failed to allocate batch entries array");
         return -ENOMEM;
@@ -350,66 +350,64 @@ int collect_advance_http_state_machine(void) {
     time_t now = time(NULL);
 
     switch (current_batch.state) {
-        case HTTP_IDLE:
-            // Check if we should start a new batch
-            if (current_batch.count >= (int)config_get_batch_size()) {
-                console_debug(&csl, "Starting batch: reached max size (%d)", current_batch.count);
-                current_batch.state = HTTP_PREPARING;
-            } else if (current_batch.count > 0 &&
-                      (now - current_batch.created_time) >= (config_get_batch_timeout_ms() / 1000)) {
-                console_debug(&csl, "Starting batch: timeout reached (%d entries)", current_batch.count);
-                current_batch.state = HTTP_PREPARING;
-            }
-            break;
+    case HTTP_IDLE:
+        // Check if we should start a new batch
+        if (current_batch.count >= (int)config_get_batch_size()) {
+            console_debug(&csl, "Starting batch: reached max size (%d)", current_batch.count);
+            current_batch.state = HTTP_PREPARING;
+        } else if (current_batch.count > 0 &&
+                   (now - current_batch.created_time) >= (config_get_batch_timeout_ms() / 1000)) {
+            console_debug(&csl, "Starting batch: timeout reached (%d entries)", current_batch.count);
+            current_batch.state = HTTP_PREPARING;
+        }
+        break;
 
-        case HTTP_PREPARING:
-            // Create JSON payload
-            current_batch.json_payload = create_json_payload(
-                current_batch.entries, current_batch.count, &current_batch.payload_size);
+    case HTTP_PREPARING:
+        // Create JSON payload
+        current_batch.json_payload =
+            create_json_payload(current_batch.entries, current_batch.count, &current_batch.payload_size);
 
-            if (current_batch.json_payload) {
-                current_batch.state = HTTP_SENDING;
-                console_debug(&csl, "Prepared batch with %d entries (%zu bytes)",
-                             current_batch.count, current_batch.payload_size);
+        if (current_batch.json_payload) {
+            current_batch.state = HTTP_SENDING;
+            console_debug(&csl, "Prepared batch with %d entries (%zu bytes)", current_batch.count,
+                          current_batch.payload_size);
+        } else {
+            console_error(&csl, "Failed to create JSON payload");
+            current_batch.state = HTTP_FAILED;
+        }
+        break;
+
+    case HTTP_SENDING: {
+        int result = send_http_request(current_batch.json_payload, current_batch.payload_size);
+
+        if (result == 0) {
+            console_info(&csl, "Successfully sent batch of %d logs", current_batch.count);
+            clear_batch_context(&current_batch);
+            last_batch_time = now;
+            return 1; // Batch completed successfully
+        } else {
+            current_batch.retry_count++;
+            if (current_batch.retry_count < (int)config_get_http_retries()) {
+                console_warn(&csl, "HTTP send failed, retrying (%d/%u)", current_batch.retry_count,
+                             config_get_http_retries());
+                current_batch.state = HTTP_RETRY_WAIT;
             } else {
-                console_error(&csl, "Failed to create JSON payload");
+                console_error(&csl, "HTTP send failed after %u attempts", config_get_http_retries());
                 current_batch.state = HTTP_FAILED;
             }
-            break;
+        }
+    } break;
 
-        case HTTP_SENDING:
-            {
-                int result = send_http_request(current_batch.json_payload, current_batch.payload_size);
+    case HTTP_RETRY_WAIT:
+        // Simple delay before retry
+        sleep(HTTP_RETRY_DELAY_MS / 1000);
+        current_batch.state = HTTP_SENDING;
+        break;
 
-                if (result == 0) {
-                    console_info(&csl, "Successfully sent batch of %d logs", current_batch.count);
-                    clear_batch_context(&current_batch);
-                    last_batch_time = now;
-                    return 1; // Batch completed successfully
-                } else {
-                    current_batch.retry_count++;
-                    if (current_batch.retry_count < (int)config_get_http_retries()) {
-                        console_warn(&csl, "HTTP send failed, retrying (%d/%u)",
-                                   current_batch.retry_count, config_get_http_retries());
-                        current_batch.state = HTTP_RETRY_WAIT;
-                    } else {
-                        console_error(&csl, "HTTP send failed after %u attempts", config_get_http_retries());
-                        current_batch.state = HTTP_FAILED;
-                    }
-                }
-            }
-            break;
-
-        case HTTP_RETRY_WAIT:
-            // Simple delay before retry
-            sleep(HTTP_RETRY_DELAY_MS / 1000);
-            current_batch.state = HTTP_SENDING;
-            break;
-
-        case HTTP_FAILED:
-            console_error(&csl, "Batch processing failed, dropping %d entries", current_batch.count);
-            clear_batch_context(&current_batch);
-            return -1; // Failed
+    case HTTP_FAILED:
+        console_error(&csl, "Batch processing failed, dropping %d entries", current_batch.count);
+        clear_batch_context(&current_batch);
+        return -1; // Failed
     }
 
     return 0; // Continue processing
@@ -630,9 +628,7 @@ int collect_get_stats(uint32_t *queue_size, uint32_t *dropped_count_out) {
     return 0;
 }
 
-bool collect_is_running(void) {
-    return system_running;
-}
+bool collect_is_running(void) { return system_running; }
 
 int collect_force_batch_processing(void) {
     if (!system_running) {
@@ -648,6 +644,4 @@ int collect_force_batch_processing(void) {
     return 0;
 }
 
-batch_context_t* collect_get_current_batch(void) {
-    return &current_batch;
-}
+batch_context_t *collect_get_current_batch(void) { return &current_batch; }

@@ -1,10 +1,10 @@
 #include "reboot.h"
 #include "core/console.h"
-#include "core/uloop_scheduler.h"
 #include "core/script_runner.h"
+#include "core/uloop_scheduler.h"
 #include "services/config/config.h"
-#include <unistd.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 static Console csl = {
     .topic = "reboot",
@@ -48,13 +48,13 @@ RebootTaskContext *reboot_service(void) {
 
     // Convert seconds to milliseconds for scheduler
     uint32_t interval_ms = config.reboot_interval * 1000;
-    uint32_t initial_delay_ms = config.reboot_interval * 1000;  // Start after one interval
+    uint32_t initial_delay_ms = config.reboot_interval * 1000; // Start after one interval
 
     console_info(&csl, "Starting reboot service with interval %u ms", interval_ms);
-    
+
     // Schedule repeating task
     context->task_id = schedule_repeating(initial_delay_ms, interval_ms, reboot_task, context);
-    
+
     if (context->task_id == 0) {
         console_error(&csl, "failed to schedule reboot task");
         free(context);

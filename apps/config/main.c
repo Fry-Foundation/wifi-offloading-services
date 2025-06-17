@@ -1,6 +1,6 @@
 #include "core/console.h"
-#include <string.h>
 #include <stdbool.h>
+#include <string.h>
 #include <unistd.h>
 
 static Console csl = {

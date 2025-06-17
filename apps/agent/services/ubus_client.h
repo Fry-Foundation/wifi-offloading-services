@@ -1,10 +1,10 @@
 #ifndef UBUS_CLIENT_H
 #define UBUS_CLIENT_H
 
-#include <libubus.h>
-#include <libubox/blobmsg.h>
-#include <stdbool.h>
 #include <json-c/json.h>
+#include <libubox/blobmsg.h>
+#include <libubus.h>
+#include <stdbool.h>
 
 // Default timeout for UBUS calls (milliseconds)
 #define UBUS_CLIENT_DEFAULT_TIMEOUT 5000
@@ -59,8 +59,8 @@ bool ubus_client_is_connected(UbusClient *client);
  * @param args Arguments for the method (can be NULL for no args)
  * @return UbusResponse structure (caller must free with ubus_response_free)
  */
-UbusResponse *ubus_client_call(UbusClient *client, const char *service_name, 
-                              const char *method_name, struct blob_attr *args);
+UbusResponse *
+ubus_client_call(UbusClient *client, const char *service_name, const char *method_name, struct blob_attr *args);
 
 /**
  * Call a UBUS method with JSON arguments
@@ -70,8 +70,8 @@ UbusResponse *ubus_client_call(UbusClient *client, const char *service_name,
  * @param json_args JSON string with arguments (can be NULL)
  * @return UbusResponse structure (caller must free with ubus_response_free)
  */
-UbusResponse *ubus_client_call_json(UbusClient *client, const char *service_name,
-                                   const char *method_name, const char *json_args);
+UbusResponse *
+ubus_client_call_json(UbusClient *client, const char *service_name, const char *method_name, const char *json_args);
 
 /**
  * Call a UBUS method asynchronously
@@ -83,9 +83,12 @@ UbusResponse *ubus_client_call_json(UbusClient *client, const char *service_name
  * @param user_data User data to pass to callback
  * @return 0 on success, negative error code on failure
  */
-int ubus_client_call_async(UbusClient *client, const char *service_name,
-                          const char *method_name, struct blob_attr *args,
-                          UbusCallback callback, void *user_data);
+int ubus_client_call_async(UbusClient *client,
+                           const char *service_name,
+                           const char *method_name,
+                           struct blob_attr *args,
+                           UbusCallback callback,
+                           void *user_data);
 
 /**
  * List available UBUS services

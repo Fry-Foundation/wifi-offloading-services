@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
     // Initialize scheduler (includes uloop initialization)
     scheduler_init();
     console_info(&csl, "uloop scheduler initialized");
-    
+
     // Verify scheduler is ready
     console_debug(&csl, "Scheduler initialization complete, proceeding with service setup");
 
@@ -43,8 +43,6 @@ int main(int argc, char *argv[]) {
 
     // Config
     init_config(argc, argv);
-
-
 
     // DeviceInfo
     DeviceInfo *device_info = init_device_info();
@@ -157,7 +155,8 @@ int main(int argc, char *argv[]) {
     }
 
     // Device context service
-    DeviceContextTaskContext *device_context_context = device_context_service(device_context, registration, access_token);
+    DeviceContextTaskContext *device_context_context =
+        device_context_service(device_context, registration, access_token);
     if (device_context_context != NULL) {
         console_info(&csl, "Device context service started successfully");
         register_cleanup((cleanup_callback)clean_device_context_context, device_context_context);
@@ -167,7 +166,8 @@ int main(int argc, char *argv[]) {
     }
 
     // Device status service
-    DeviceStatusTaskContext *device_status_context = device_status_service(device_info, registration->wayru_device_id, access_token);
+    DeviceStatusTaskContext *device_status_context =
+        device_status_service(device_info, registration->wayru_device_id, access_token);
     if (device_status_context != NULL) {
         console_info(&csl, "Device status service started successfully");
         register_cleanup((cleanup_callback)clean_device_status_context, device_status_context);
@@ -255,7 +255,7 @@ int main(int argc, char *argv[]) {
         console_error(&csl, "Failed to start UBUS server service");
         cleanup_and_exit(1, "Failed to initialize UBUS server service");
     }
-    
+
     console_debug(&csl, "All services initialized, about to start scheduler main loop");
 
     console_info(&csl, "Services scheduled, starting scheduler main loop");

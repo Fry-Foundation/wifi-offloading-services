@@ -21,8 +21,6 @@ DeviceStatus device_status = Unknown;
 
 bool on_boot = true;
 
-
-
 DeviceStatus request_device_status(void *task_context) {
     DeviceStatusTaskContext *context = (DeviceStatusTaskContext *)task_context;
     // Url
@@ -110,7 +108,8 @@ void device_status_task(void *task_context) {
     // No manual rescheduling needed - repeating tasks auto-reschedule
 }
 
-DeviceStatusTaskContext *device_status_service(DeviceInfo *device_info, char *wayru_device_id, AccessToken *access_token) {
+DeviceStatusTaskContext *
+device_status_service(DeviceInfo *device_info, char *wayru_device_id, AccessToken *access_token) {
     DeviceStatusTaskContext *context = (DeviceStatusTaskContext *)malloc(sizeof(DeviceStatusTaskContext));
     if (context == NULL) {
         console_error(&csl, "failed to allocate memory for device status task context");
@@ -124,13 +123,13 @@ DeviceStatusTaskContext *device_status_service(DeviceInfo *device_info, char *wa
 
     // Convert seconds to milliseconds for scheduler
     uint32_t interval_ms = config.device_status_interval * 1000;
-    uint32_t initial_delay_ms = config.device_status_interval * 1000;  // Start after one interval
+    uint32_t initial_delay_ms = config.device_status_interval * 1000; // Start after one interval
 
     console_info(&csl, "Starting device status service with interval %u ms", interval_ms);
-    
+
     // Schedule repeating task
     context->task_id = schedule_repeating(initial_delay_ms, interval_ms, device_status_task, context);
-    
+
     if (context->task_id == 0) {
         console_error(&csl, "failed to schedule device status task");
         free(context);

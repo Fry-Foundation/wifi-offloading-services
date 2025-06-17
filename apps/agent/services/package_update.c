@@ -18,8 +18,6 @@ static Console csl = {
     .topic = "package-update",
 };
 
-
-
 typedef struct {
     bool update_available;
     const char *download_link;
@@ -469,9 +467,8 @@ void package_update_task(void *task_context) {
  * @return void. If memory allocation for the context fails, an error is logged and the function returns without
  * scheduling.
  */
-PackageUpdateTaskContext *package_update_service(DeviceInfo *device_info,
-                                                  Registration *registration,
-                                                  AccessToken *access_token) {
+PackageUpdateTaskContext *
+package_update_service(DeviceInfo *device_info, Registration *registration, AccessToken *access_token) {
     PackageUpdateTaskContext *ctx = (PackageUpdateTaskContext *)malloc(sizeof(PackageUpdateTaskContext));
     if (ctx == NULL) {
         console_error(&csl, "failed to allocate memory for package update task context");
@@ -485,13 +482,13 @@ PackageUpdateTaskContext *package_update_service(DeviceInfo *device_info,
 
     // Convert seconds to milliseconds for scheduler
     uint32_t interval_ms = config.package_update_interval * 1000;
-    uint32_t initial_delay_ms = config.package_update_interval * 1000;  // Start after one interval
+    uint32_t initial_delay_ms = config.package_update_interval * 1000; // Start after one interval
 
     console_info(&csl, "Starting package update service with interval %u ms", interval_ms);
-    
+
     // Schedule repeating task
     ctx->task_id = schedule_repeating(initial_delay_ms, interval_ms, package_update_task, ctx);
-    
+
     if (ctx->task_id == 0) {
         console_error(&csl, "failed to schedule package update task");
         free(ctx);

@@ -1,7 +1,7 @@
 #include "monitoring.h"
 #include "core/console.h"
-#include "core/uloop_scheduler.h"
 #include "core/script_runner.h"
+#include "core/uloop_scheduler.h"
 #include "services/config/config.h"
 #include "services/device_info.h"
 #include "services/gen_id.h"
@@ -16,8 +16,6 @@
 static Console csl = {
     .topic = "monitoring",
 };
-
-
 
 typedef struct {
     int wifi_clients;
@@ -142,13 +140,13 @@ void monitoring_task(void *task_context) {
     publish_mqtt(context->mosq, "monitoring/device-data", device_data_str, 0);
 
     json_object_put(json_device_data);
-    
+
     // Free the dynamically allocated strings from this task execution
     free(context->os_name);
     free(context->os_version);
     free(context->os_services_version);
     free(context->public_ip);
-    
+
     // Reset pointers to avoid double-free in cleanup
     context->os_name = NULL;
     context->os_version = NULL;
@@ -185,10 +183,10 @@ MonitoringTaskContext *monitoring_service(struct mosquitto *mosq, Registration *
     uint32_t initial_delay_ms = interval_ms;
 
     console_info(&csl, "Starting monitoring service with interval %u ms", interval_ms);
-    
+
     // Schedule repeating task
     context->task_id = schedule_repeating(initial_delay_ms, interval_ms, monitoring_task, context);
-    
+
     if (context->task_id == 0) {
         console_error(&csl, "failed to schedule monitoring task");
         free(context);
@@ -206,13 +204,13 @@ void clean_monitoring_context(MonitoringTaskContext *context) {
             console_debug(&csl, "Cancelling monitoring task %u", context->task_id);
             cancel_task(context->task_id);
         }
-        
+
         // Free any remaining allocated strings (in case task was cancelled mid-execution)
         if (context->os_name) free(context->os_name);
         if (context->os_version) free(context->os_version);
         if (context->os_services_version) free(context->os_services_version);
         if (context->public_ip) free(context->public_ip);
-        
+
         console_debug(&csl, "Freeing monitoring context %p", context);
         free(context);
     }

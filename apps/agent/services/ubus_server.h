@@ -12,9 +12,11 @@
 #define WAYRU_AGENT_SERVICE_NAME "wayru-agent"
 
 // UBUS method handler function type
-typedef int (*UbusMethodHandler)(struct ubus_context *ctx, struct ubus_object *obj,
-                                struct ubus_request_data *req, const char *method,
-                                struct blob_attr *msg);
+typedef int (*UbusMethodHandler)(struct ubus_context *ctx,
+                                 struct ubus_object *obj,
+                                 struct ubus_request_data *req,
+                                 const char *method,
+                                 struct blob_attr *msg);
 
 // Context structure for UBUS server - extensible for future services
 typedef struct {
@@ -29,7 +31,7 @@ typedef struct {
 typedef struct {
     UbusServerContext *server_context;
     struct ubus_context *ubus_ctx;
-    task_id_t task_id;  // Store current task ID for cleanup
+    task_id_t task_id; // Store current task ID for cleanup
 } UbusServerTaskContext;
 
 /**
@@ -48,8 +50,8 @@ int ubus_server_init(AccessToken *access_token, DeviceInfo *device_info, Registr
  * @param registration Pointer to registration
  * @return Pointer to task context for cleanup, NULL on failure
  */
-UbusServerTaskContext *ubus_server_service(AccessToken *access_token, 
-                                           DeviceInfo *device_info, Registration *registration);
+UbusServerTaskContext *
+ubus_server_service(AccessToken *access_token, DeviceInfo *device_info, Registration *registration);
 
 /**
  * UBUS server task function for scheduler

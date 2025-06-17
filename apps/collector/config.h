@@ -80,7 +80,7 @@ int config_validate(const collector_config_t *config);
  * Get current configuration
  * @return Pointer to current configuration or NULL if not loaded
  */
-const collector_config_t* config_get_current(void);
+const collector_config_t *config_get_current(void);
 
 /**
  * Check if collector is enabled in configuration
@@ -92,7 +92,7 @@ bool config_is_enabled(void);
  * Get logs endpoint URL
  * @return Pointer to endpoint URL string
  */
-const char* config_get_logs_endpoint(void);
+const char *config_get_logs_endpoint(void);
 
 /**
  * Get batch size

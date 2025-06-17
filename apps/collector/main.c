@@ -1,13 +1,13 @@
-#include "core/console.h"
-#include "config.h"
-#include "ubus.h"
 #include "collect.h"
-#include <string.h>
-#include <stdbool.h>
-#include <unistd.h>
-#include <signal.h>
+#include "config.h"
+#include "core/console.h"
+#include "ubus.h"
 #include <libubox/uloop.h>
+#include <signal.h>
+#include <stdbool.h>
+#include <string.h>
 #include <sys/sysinfo.h>
+#include <unistd.h>
 
 static Console csl = {
     .topic = "collector",
@@ -52,9 +52,8 @@ static void status_timer_cb(struct uloop_timeout *timeout) {
     uint32_t queue_size, dropped_count;
     if (collect_get_stats(&queue_size, &dropped_count) == 0) {
         if (dev_env) {
-            console_info(&csl, "Status: queue_size=%u, dropped=%u, ubus_connected=%s",
-                       queue_size, dropped_count,
-                       ubus_is_connected() ? "yes" : "no");
+            console_info(&csl, "Status: queue_size=%u, dropped=%u, ubus_connected=%s", queue_size, dropped_count,
+                         ubus_is_connected() ? "yes" : "no");
         }
 
         // Warn if queue is getting full

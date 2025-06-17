@@ -4,8 +4,8 @@
 #include "services/diagnostic/diagnostic.h"
 #include "services/exit_handler.h"
 #include "services/mqtt/cert.h"
-#include <mosquitto.h>
 #include <errno.h>
+#include <mosquitto.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,7 +40,7 @@ struct MqttTaskContext {
     int protocol_error_count;
     int memory_error_count;
     int unknown_error_count;
-    task_id_t task_id;  // Store current task ID for rescheduling
+    task_id_t task_id; // Store current task ID for rescheduling
 };
 
 typedef struct {
@@ -194,7 +194,7 @@ void resubscribe_mqtt(Mosq *mosq) {
         int rc = mosquitto_subscribe(mosq, NULL, topic_callbacks[i].topic, topic_callbacks[i].qos);
         if (rc != MOSQ_ERR_SUCCESS) {
             console_error(&csl, "unable to resubscribe to the topic '%s'. %s", topic_callbacks[i].topic,
-                        mosquitto_strerror(rc));
+                          mosquitto_strerror(rc));
         } else {
             console_info(&csl, "resubscribed to the topic %s successfully", topic_callbacks[i].topic);
         }
@@ -223,8 +223,8 @@ static bool mqtt_recover(MqttTaskContext *context, bool force_full_reinit) {
         int delay = MQTT_RECONNECT_BASE_DELAY_SECONDS * (1 << (reconnect_attempt - 1));
         if (delay > MQTT_RECONNECT_MAX_DELAY_SECONDS) delay = MQTT_RECONNECT_MAX_DELAY_SECONDS;
 
-        console_info(&csl, "Attempting reconnection (attempt %d/%d) in %d seconds",
-                   reconnect_attempt, MQTT_RECONNECT_MAX_ATTEMPTS, delay);
+        console_info(&csl, "Attempting reconnection (attempt %d/%d) in %d seconds", reconnect_attempt,
+                     MQTT_RECONNECT_MAX_ATTEMPTS, delay);
         sleep(delay);
 
         // Strategy 1: Try lightweight reconnect first (unless forced to skip)
@@ -375,12 +375,11 @@ void mqtt_task(void *task_context) {
         }
         break;
 
-    case MOSQ_ERR_ERRNO:
-        {
-            char error_buf[256];
-            strerror_r(errno, error_buf, sizeof(error_buf));
-            console_error(&csl, "MQTT error: System error occurred (errno: %d, %s)", errno, error_buf);
-        }
+    case MOSQ_ERR_ERRNO: {
+        char error_buf[256];
+        strerror_r(errno, error_buf, sizeof(error_buf));
+        console_error(&csl, "MQTT error: System error occurred (errno: %d, %s)", errno, error_buf);
+    }
         // System call failures can corrupt internal client state - force full reinitialization
         if (!mqtt_recover(context, true)) {
             should_reschedule = false;
@@ -400,8 +399,9 @@ void mqtt_task(void *task_context) {
         context->invalid_state_count++;
 
         if (context->invalid_state_count <= MQTT_INVALID_PARAM_MAX_ATTEMPTS) {
-            console_info(&csl, "Invalid parameter error count: %d/%d, forcing full recovery due to potential state corruption",
-                       context->invalid_state_count, MQTT_INVALID_PARAM_MAX_ATTEMPTS);
+            console_info(
+                &csl, "Invalid parameter error count: %d/%d, forcing full recovery due to potential state corruption",
+                context->invalid_state_count, MQTT_INVALID_PARAM_MAX_ATTEMPTS);
         }
 
         // Force full reinitialization for invalid parameters as they may indicate corrupted state
@@ -418,7 +418,7 @@ void mqtt_task(void *task_context) {
 
         if (context->memory_error_count <= MQTT_MEMORY_ERROR_MAX_ATTEMPTS) {
             console_info(&csl, "Memory error count: %d/%d, waiting %d seconds before full recovery",
-                       context->memory_error_count, MQTT_MEMORY_ERROR_MAX_ATTEMPTS, MQTT_MEMORY_ERROR_DELAY_SECONDS);
+                         context->memory_error_count, MQTT_MEMORY_ERROR_MAX_ATTEMPTS, MQTT_MEMORY_ERROR_DELAY_SECONDS);
             // For memory errors, wait a bit longer before attempting recovery
             sleep(MQTT_MEMORY_ERROR_DELAY_SECONDS);
         }
@@ -436,8 +436,8 @@ void mqtt_task(void *task_context) {
         context->unknown_error_count++;
 
         if (context->unknown_error_count <= MQTT_UNKNOWN_ERROR_MAX_ATTEMPTS) {
-            console_info(&csl, "Unknown error count: %d/%d, attempting full recovery",
-                       context->unknown_error_count, MQTT_UNKNOWN_ERROR_MAX_ATTEMPTS);
+            console_info(&csl, "Unknown error count: %d/%d, attempting full recovery", context->unknown_error_count,
+                         MQTT_UNKNOWN_ERROR_MAX_ATTEMPTS);
         }
 
         if (!mqtt_recover(context, false)) {
@@ -450,7 +450,8 @@ void mqtt_task(void *task_context) {
 
     // Connection health monitoring
     if (last_successful_loop > 0 && time(NULL) - last_successful_loop > LAST_SUCCESSFUL_LOOP_TIMEOUT) {
-        console_error(&csl, "No successful MQTT operations for %d seconds, forcing reconnection", LAST_SUCCESSFUL_LOOP_TIMEOUT);
+        console_error(&csl, "No successful MQTT operations for %d seconds, forcing reconnection",
+                      LAST_SUCCESSFUL_LOOP_TIMEOUT);
         // Force full reinitialization after extended period of failures to clear any accumulated issues
         if (!mqtt_recover(context, true)) {
             should_reschedule = false;
@@ -486,7 +487,7 @@ MqttTaskContext *mqtt_service(Mosq *mosq, const MqttConfig *config) {
     // Schedule immediate execution
     console_info(&csl, "Starting MQTT service");
     context->task_id = schedule_once(0, mqtt_task, context);
-    
+
     if (context->task_id == 0) {
         console_error(&csl, "Failed to schedule MQTT task");
         free(context);
@@ -541,6 +542,4 @@ AccessTokenCallbacks create_mqtt_token_callbacks(MqttClient *client) {
     return callbacks;
 }
 
-Mosq *init_mqtt(const MqttConfig *config) {
-    return init_mosquitto(config);
-}
+Mosq *init_mqtt(const MqttConfig *config) { return init_mosquitto(config); }

@@ -20,8 +20,6 @@
 
 #define SPEEDTEST_ENDPOINT "monitoring/speedtest"
 
-
-
 typedef struct {
     bool is_error;
     double upload_speed_mbps;
@@ -126,17 +124,17 @@ SpeedTestTaskContext *speedtest_service(struct mosquitto *mosq, Registration *re
 
     // Use a random interval between configured min/max
     unsigned int seed = time(0);
-    uint32_t random_interval = 
+    uint32_t random_interval =
         rand_r(&seed) % (config.speed_test_maximum_interval - config.speed_test_minimum_interval + 1) +
         config.speed_test_minimum_interval;
-    uint32_t interval_ms = random_interval * 1000;  // Convert to milliseconds
+    uint32_t interval_ms = random_interval * 1000; // Convert to milliseconds
     uint32_t initial_delay_ms = interval_ms;
 
     console_info(&csl, "Starting speedtest service with interval %u ms", interval_ms);
-    
+
     // Schedule repeating task
     context->task_id = schedule_repeating(initial_delay_ms, interval_ms, speedtest_task, context);
-    
+
     if (context->task_id == 0) {
         console_error(&csl, "failed to schedule speedtest task");
         free(context);

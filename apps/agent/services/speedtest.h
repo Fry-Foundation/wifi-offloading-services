@@ -10,7 +10,7 @@ typedef struct {
     struct mosquitto *mosq;
     Registration *registration;
     AccessToken *access_token;
-    task_id_t task_id;  // Store current task ID for cleanup
+    task_id_t task_id; // Store current task ID for cleanup
 } SpeedTestTaskContext;
 
 SpeedTestTaskContext *speedtest_service(struct mosquitto *mosq, Registration *registration, AccessToken *access_token);

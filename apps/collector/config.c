@@ -1,9 +1,9 @@
 #include "config.h"
 #include "core/console.h"
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 #include <unistd.h>
 
 static Console csl = {
@@ -53,9 +53,7 @@ static void trim_whitespace(char *str) {
 static bool parse_bool(const char *value) {
     if (!value) return false;
 
-    return (strcmp(value, "1") == 0 ||
-            strcasecmp(value, "true") == 0 ||
-            strcasecmp(value, "yes") == 0 ||
+    return (strcmp(value, "1") == 0 || strcasecmp(value, "true") == 0 || strcasecmp(value, "yes") == 0 ||
             strcasecmp(value, "on") == 0);
 }
 
@@ -81,10 +79,10 @@ static uint32_t parse_uint32(const char *value, uint32_t default_value) {
 static void remove_quotes(char *str) {
     size_t len = strlen(str);
 
-    if (len >= 2 && str[0] == '\'' && str[len-1] == '\'') {
+    if (len >= 2 && str[0] == '\'' && str[len - 1] == '\'') {
         memmove(str, str + 1, len - 2);
         str[len - 2] = '\0';
-    } else if (len >= 2 && str[0] == '"' && str[len-1] == '"') {
+    } else if (len >= 2 && str[0] == '"' && str[len - 1] == '"') {
         memmove(str, str + 1, len - 2);
         str[len - 2] = '\0';
     }
@@ -252,12 +250,7 @@ int config_load_from_file(collector_config_t *config, const char *file_path) {
 }
 
 int config_load(collector_config_t *config) {
-    const char *config_paths[] = {
-        CONFIG_FILE_OPENWRT,
-        CONFIG_FILE_DEV,
-        CONFIG_FILE_FALLBACK,
-        NULL
-    };
+    const char *config_paths[] = {CONFIG_FILE_OPENWRT, CONFIG_FILE_DEV, CONFIG_FILE_FALLBACK, NULL};
 
     if (!config) {
         return -EINVAL;
@@ -293,8 +286,7 @@ int config_validate(const collector_config_t *config) {
         return -EINVAL;
     }
 
-    if (strncmp(config->logs_endpoint, "http://", 7) != 0 &&
-        strncmp(config->logs_endpoint, "https://", 8) != 0) {
+    if (strncmp(config->logs_endpoint, "http://", 7) != 0 && strncmp(config->logs_endpoint, "https://", 8) != 0) {
         console_error(&csl, "Invalid configuration: logs_endpoint must start with http:// or https://");
         return -EINVAL;
     }
@@ -327,7 +319,7 @@ int config_validate(const collector_config_t *config) {
     return 0;
 }
 
-const collector_config_t* config_get_current(void) {
+const collector_config_t *config_get_current(void) {
     if (!g_config_initialized) {
         // Lazy initialization
         config_load(&g_config);
@@ -342,7 +334,7 @@ bool config_is_enabled(void) {
     return config ? config->enabled : DEFAULT_ENABLED;
 }
 
-const char* config_get_logs_endpoint(void) {
+const char *config_get_logs_endpoint(void) {
     const collector_config_t *config = config_get_current();
     return config ? config->logs_endpoint : DEFAULT_LOGS_ENDPOINT;
 }

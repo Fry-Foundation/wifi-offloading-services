@@ -20,7 +20,7 @@ bool dns_resolve_check(const char *host);
 
 typedef struct {
     AccessToken *access_token;
-    task_id_t task_id;  // Store current task ID for cleanup
+    task_id_t task_id; // Store current task ID for cleanup
 } DiagnosticTaskContext;
 
 // Start the diagnostic service for periodic checks

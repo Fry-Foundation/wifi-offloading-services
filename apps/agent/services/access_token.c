@@ -18,8 +18,6 @@ static Console csl = {
     .topic = "access token",
 };
 
-
-
 bool save_access_token(char *access_token_json) {
     char access_token_file_path[256];
     snprintf(access_token_file_path, sizeof(access_token_file_path), "%s/%s", config.data_path, ACCESS_TOKEN_FILE);
@@ -210,17 +208,17 @@ uint32_t calculate_next_delay_ms(time_t expires_at_seconds, time_t access_interv
     time_t next_run = expires_at_seconds - ACCESS_TOKEN_EXPIRATION_MARGIN;
 
     // Check if the token has already expired or is about to expire
-    if (next_run <= now) return 0;  // Schedule immediately
+    if (next_run <= now) return 0; // Schedule immediately
 
     // Check if the next access interval is sooner than the expiration time
     time_t next_interval = now + access_interval;
     if (next_interval < next_run) {
-        return (uint32_t)(access_interval * 1000);  // Convert seconds to milliseconds
+        return (uint32_t)(access_interval * 1000); // Convert seconds to milliseconds
     }
 
     // Default to the expiration time
     time_t delay_seconds = next_run - now;
-    return (uint32_t)(delay_seconds * 1000);  // Convert seconds to milliseconds
+    return (uint32_t)(delay_seconds * 1000); // Convert seconds to milliseconds
 }
 
 AccessToken *init_access_token(Registration *registration) {
@@ -275,17 +273,17 @@ AccessToken *init_access_token(Registration *registration) {
 
 void access_token_task(void *task_context) {
     console_debug(&csl, "access_token_task called with context: %p", task_context);
-    
+
     if (task_context == NULL) {
         console_error(&csl, "access_token_task called with NULL context");
         return;
     }
-    
+
     AccessTokenTaskContext *context = (AccessTokenTaskContext *)task_context;
-    
-    console_debug(&csl, "Context values - access_token: %p, registration: %p, callbacks: %p", 
-                  context->access_token, context->registration, context->callbacks);
-    
+
+    console_debug(&csl, "Context values - access_token: %p, registration: %p, callbacks: %p", context->access_token,
+                  context->registration, context->callbacks);
+
     if (context->access_token == NULL || context->registration == NULL) {
         console_error(&csl, "Invalid context - access_token or registration is NULL");
         return;
@@ -336,45 +334,44 @@ void access_token_task(void *task_context) {
     context->task_id = schedule_once(next_delay_ms, access_token_task, context);
 }
 
-AccessTokenTaskContext *access_token_service(AccessToken *access_token,
-                                             Registration *registration,
-                                             AccessTokenCallbacks *callbacks) {
+AccessTokenTaskContext *
+access_token_service(AccessToken *access_token, Registration *registration, AccessTokenCallbacks *callbacks) {
     console_debug(&csl, "access_token_service called with access_token: %p, registration: %p, callbacks: %p",
                   access_token, registration, callbacks);
-    
+
     if (access_token == NULL || registration == NULL) {
         console_error(&csl, "Invalid parameters - access_token or registration is NULL");
         return NULL;
     }
-    
+
     AccessTokenTaskContext *context = (AccessTokenTaskContext *)malloc(sizeof(AccessTokenTaskContext));
     if (context == NULL) {
         console_error(&csl, "failed to allocate memory for access token task context");
         return NULL;
     }
-    
+
     console_debug(&csl, "Allocated context at %p", context);
 
     context->access_token = access_token;
     context->registration = registration;
     context->callbacks = callbacks;
-    context->task_id = 0;  // Initialize task ID
+    context->task_id = 0; // Initialize task ID
 
     // Schedule the initial task
     uint32_t initial_delay_ms = calculate_next_delay_ms(access_token->expires_at_seconds, config.access_interval);
     console_info(&csl, "Starting access token service with initial delay of %u ms", initial_delay_ms);
-    console_debug(&csl, "About to call schedule_once with delay %u ms, callback %p, context %p", 
-                  initial_delay_ms, (void*)access_token_task, context);
-    
+    console_debug(&csl, "About to call schedule_once with delay %u ms, callback %p, context %p", initial_delay_ms,
+                  (void *)access_token_task, context);
+
     context->task_id = schedule_once(initial_delay_ms, access_token_task, context);
     console_debug(&csl, "schedule_once returned task_id: %u", context->task_id);
-    
+
     if (context->task_id == 0) {
         console_error(&csl, "failed to schedule access token task");
         free(context);
         return NULL;
     }
-    
+
     console_debug(&csl, "Successfully scheduled access token task, returning context %p", context);
     return context;
 }

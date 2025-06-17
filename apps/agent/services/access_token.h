@@ -16,13 +16,12 @@ typedef struct {
     AccessToken *access_token;
     Registration *registration;
     AccessTokenCallbacks *callbacks;
-    task_id_t task_id;  // Store current task ID for rescheduling
+    task_id_t task_id; // Store current task ID for rescheduling
 } AccessTokenTaskContext;
 
 AccessToken *init_access_token(Registration *registration);
-AccessTokenTaskContext *access_token_service(AccessToken *access_token,
-                                             Registration *registration,
-                                             AccessTokenCallbacks *callbacks);
+AccessTokenTaskContext *
+access_token_service(AccessToken *access_token, Registration *registration, AccessTokenCallbacks *callbacks);
 void clean_access_token(AccessToken *access_token);
 void clean_access_token_context(AccessTokenTaskContext *context);
 bool is_token_valid(AccessToken *access_token);

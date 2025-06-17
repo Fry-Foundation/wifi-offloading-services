@@ -12,9 +12,7 @@ static ConsoleCallback console_callback = NULL;
 
 void console_set_level(ConsoleLevel level) { console_level = level; }
 
-void console_set_callback(ConsoleCallback callback) {
-    console_callback = callback;
-}
+void console_set_callback(ConsoleCallback callback) { console_callback = callback; }
 
 void print_log(const char *topic, const char *label, const char *format, va_list args) {
     // Format the message first

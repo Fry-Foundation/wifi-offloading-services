@@ -11,17 +11,17 @@ uint32_t config_get_queue_size(void);
 uint32_t config_get_batch_timeout_ms(void);
 
 // Static configuration (data structure sizes)
-#define MAX_LOG_ENTRY_SIZE 512       // Fixed for memory layout
-#define MAX_PROGRAM_SIZE 32          // Fixed for memory layout
-#define MAX_FACILITY_SIZE 16         // Fixed for memory layout
-#define MAX_PRIORITY_SIZE 8          // Fixed for memory layout
+#define MAX_LOG_ENTRY_SIZE 512 // Fixed for memory layout
+#define MAX_PROGRAM_SIZE 32    // Fixed for memory layout
+#define MAX_FACILITY_SIZE 16   // Fixed for memory layout
+#define MAX_PRIORITY_SIZE 8    // Fixed for memory layout
 
 // Dynamic configuration macros (use configuration functions)
 #define MAX_BATCH_SIZE config_get_batch_size()
 #define MAX_QUEUE_SIZE config_get_queue_size()
 #define BATCH_TIMEOUT_MS config_get_batch_timeout_ms()
 #define URGENT_THRESHOLD (config_get_queue_size() * 80 / 100)
-#define HTTP_RETRY_DELAY_MS 2000     // TODO: Add to config
+#define HTTP_RETRY_DELAY_MS 2000 // TODO: Add to config
 
 // Entry pool for memory optimization
 #define ENTRY_POOL_SIZE config_get_queue_size()
@@ -34,9 +34,9 @@ typedef struct compact_log_entry {
     char program[MAX_PROGRAM_SIZE];
     char facility[MAX_FACILITY_SIZE];
     char priority[MAX_PRIORITY_SIZE];
-    uint32_t timestamp;              // 32-bit timestamp instead of time_t
-    uint16_t pool_index;             // Index in entry pool
-    bool in_use;                     // Pool management flag
+    uint32_t timestamp;  // 32-bit timestamp instead of time_t
+    uint16_t pool_index; // Index in entry pool
+    bool in_use;         // Pool management flag
 } compact_log_entry_t;
 
 /**
@@ -44,7 +44,7 @@ typedef struct compact_log_entry {
  * Note: MAX_QUEUE_SIZE is now dynamic, so we use a pointer to entries array
  */
 typedef struct simple_log_queue {
-    compact_log_entry_t **entries;  // Dynamic array based on config
+    compact_log_entry_t **entries; // Dynamic array based on config
     uint32_t head;
     uint32_t tail;
     uint32_t count;
@@ -54,22 +54,16 @@ typedef struct simple_log_queue {
 /**
  * HTTP state machine states
  */
-typedef enum {
-    HTTP_IDLE,
-    HTTP_PREPARING,
-    HTTP_SENDING,
-    HTTP_RETRY_WAIT,
-    HTTP_FAILED
-} http_state_t;
+typedef enum { HTTP_IDLE, HTTP_PREPARING, HTTP_SENDING, HTTP_RETRY_WAIT, HTTP_FAILED } http_state_t;
 
 /**
  * Batch processing context
  * Note: MAX_BATCH_SIZE is now dynamic, so we use a pointer to entries array
  */
 typedef struct batch_context {
-    compact_log_entry_t **entries;  // Dynamic array based on config
+    compact_log_entry_t **entries; // Dynamic array based on config
     int count;
-    int max_count;                   // Store the configured batch size
+    int max_count; // Store the configured batch size
     time_t created_time;
     int retry_count;
     http_state_t state;
@@ -81,11 +75,11 @@ typedef struct batch_context {
  * Log data structure for passing log entries
  */
 typedef struct log_data {
-    uint64_t timestamp;      // Timestamp in seconds
-    uint16_t timestamp_ms;   // Milliseconds part
-    uint32_t priority;       // Syslog priority (facility | severity)
-    uint32_t source;         // Log source (klog, syslog, etc)
-    const char *message;     // Log message
+    uint64_t timestamp;    // Timestamp in seconds
+    uint16_t timestamp_ms; // Milliseconds part
+    uint32_t priority;     // Syslog priority (facility | severity)
+    uint32_t source;       // Log source (klog, syslog, etc)
+    const char *message;   // Log message
 } log_data_t;
 
 /**
@@ -137,7 +131,7 @@ int collect_force_batch_processing(void);
  * Get entry from pool (memory optimization)
  * @return pointer to available entry or NULL if pool exhausted
  */
-compact_log_entry_t* collect_get_entry_from_pool(void);
+compact_log_entry_t *collect_get_entry_from_pool(void);
 
 /**
  * Return entry to pool (memory optimization)
@@ -149,7 +143,7 @@ void collect_return_entry_to_pool(compact_log_entry_t *entry);
  * Get current batch context for state machine processing
  * @return pointer to current batch context
  */
-batch_context_t* collect_get_current_batch(void);
+batch_context_t *collect_get_current_batch(void);
 
 /**
  * Advance the HTTP state machine

@@ -19,45 +19,45 @@ typedef struct {
 // Function to get signal name and description
 static const char *get_signal_name_and_description(int signal_num, char *buffer, size_t buffer_size) {
     switch (signal_num) {
-        case SIGINT:
-            snprintf(buffer, buffer_size, "SIGINT (Interrupt from keyboard/Ctrl+C)");
-            break;
-        case SIGTERM:
-            snprintf(buffer, buffer_size, "SIGTERM (Termination request)");
-            break;
-        case SIGQUIT:
-            snprintf(buffer, buffer_size, "SIGQUIT (Quit from keyboard/Ctrl+\\)");
-            break;
-        case SIGKILL:
-            snprintf(buffer, buffer_size, "SIGKILL (Kill signal - cannot be caught)");
-            break;
-        case SIGHUP:
-            snprintf(buffer, buffer_size, "SIGHUP (Hangup detected on controlling terminal)");
-            break;
-        case SIGABRT:
-            snprintf(buffer, buffer_size, "SIGABRT (Abort signal from abort())");
-            break;
-        case SIGFPE:
-            snprintf(buffer, buffer_size, "SIGFPE (Floating point exception)");
-            break;
-        case SIGSEGV:
-            snprintf(buffer, buffer_size, "SIGSEGV (Segmentation fault)");
-            break;
-        case SIGPIPE:
-            snprintf(buffer, buffer_size, "SIGPIPE (Broken pipe)");
-            break;
-        case SIGALRM:
-            snprintf(buffer, buffer_size, "SIGALRM (Timer alarm)");
-            break;
-        case SIGUSR1:
-            snprintf(buffer, buffer_size, "SIGUSR1 (User-defined signal 1)");
-            break;
-        case SIGUSR2:
-            snprintf(buffer, buffer_size, "SIGUSR2 (User-defined signal 2)");
-            break;
-        default:
-            snprintf(buffer, buffer_size, "Signal %d (Unknown or uncommon signal)", signal_num);
-            break;
+    case SIGINT:
+        snprintf(buffer, buffer_size, "SIGINT (Interrupt from keyboard/Ctrl+C)");
+        break;
+    case SIGTERM:
+        snprintf(buffer, buffer_size, "SIGTERM (Termination request)");
+        break;
+    case SIGQUIT:
+        snprintf(buffer, buffer_size, "SIGQUIT (Quit from keyboard/Ctrl+\\)");
+        break;
+    case SIGKILL:
+        snprintf(buffer, buffer_size, "SIGKILL (Kill signal - cannot be caught)");
+        break;
+    case SIGHUP:
+        snprintf(buffer, buffer_size, "SIGHUP (Hangup detected on controlling terminal)");
+        break;
+    case SIGABRT:
+        snprintf(buffer, buffer_size, "SIGABRT (Abort signal from abort())");
+        break;
+    case SIGFPE:
+        snprintf(buffer, buffer_size, "SIGFPE (Floating point exception)");
+        break;
+    case SIGSEGV:
+        snprintf(buffer, buffer_size, "SIGSEGV (Segmentation fault)");
+        break;
+    case SIGPIPE:
+        snprintf(buffer, buffer_size, "SIGPIPE (Broken pipe)");
+        break;
+    case SIGALRM:
+        snprintf(buffer, buffer_size, "SIGALRM (Timer alarm)");
+        break;
+    case SIGUSR1:
+        snprintf(buffer, buffer_size, "SIGUSR1 (User-defined signal 1)");
+        break;
+    case SIGUSR2:
+        snprintf(buffer, buffer_size, "SIGUSR2 (User-defined signal 2)");
+        break;
+    default:
+        snprintf(buffer, buffer_size, "Signal %d (Unknown or uncommon signal)", signal_num);
+        break;
     }
     return buffer;
 }

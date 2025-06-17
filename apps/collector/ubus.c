@@ -1,14 +1,14 @@
 #include "ubus.h"
-#include "config.h"
 #include "collect.h"
+#include "config.h"
 #include "core/console.h"
 #include <libubox/blobmsg.h>
 #include <libubox/blobmsg_json.h>
 #include <libubox/ustream.h>
-#include <string.h>
-#include <time.h>
 #include <stdlib.h>
+#include <string.h>
 #include <syslog.h>
+#include <time.h>
 
 #define UBUS_RECONNECT_DELAY_MS 1000
 #define UBUS_RECONNECT_MAX_TRIES 10
@@ -32,21 +32,14 @@ static struct uloop_timeout reconnect_timer;
 static struct uloop_timeout token_refresh_timer;
 
 // Log policy
-enum {
-    LOG_MSG,
-    LOG_ID,
-    LOG_PRIO,
-    LOG_SOURCE,
-    LOG_TIME,
-    __LOG_MAX
-};
+enum { LOG_MSG, LOG_ID, LOG_PRIO, LOG_SOURCE, LOG_TIME, __LOG_MAX };
 
 static const struct blobmsg_policy log_policy[] = {
-    [LOG_MSG] = { .name = "msg", .type = BLOBMSG_TYPE_STRING },
-    [LOG_ID] = { .name = "id", .type = BLOBMSG_TYPE_INT32 },
-    [LOG_PRIO] = { .name = "priority", .type = BLOBMSG_TYPE_INT32 },
-    [LOG_SOURCE] = { .name = "source", .type = BLOBMSG_TYPE_INT32 },
-    [LOG_TIME] = { .name = "time", .type = BLOBMSG_TYPE_INT64 },
+    [LOG_MSG] = {.name = "msg", .type = BLOBMSG_TYPE_STRING},
+    [LOG_ID] = {.name = "id", .type = BLOBMSG_TYPE_INT32},
+    [LOG_PRIO] = {.name = "priority", .type = BLOBMSG_TYPE_INT32},
+    [LOG_SOURCE] = {.name = "source", .type = BLOBMSG_TYPE_INT32},
+    [LOG_TIME] = {.name = "time", .type = BLOBMSG_TYPE_INT64},
 };
 
 // Access token management
@@ -94,13 +87,11 @@ static void process_log_entry(struct blob_attr *tb[__LOG_MAX]) {
     }
 
     // Create log structure for collection
-    log_data_t log_data = {
-        .timestamp = timestamp / 1000, // Convert to seconds
-        .timestamp_ms = timestamp % 1000,
-        .priority = priority,
-        .source = source,
-        .message = msg
-    };
+    log_data_t log_data = {.timestamp = timestamp / 1000, // Convert to seconds
+                           .timestamp_ms = timestamp % 1000,
+                           .priority = priority,
+                           .source = source,
+                           .message = msg};
 
     // Enqueue the log
     int ret = collect_enqueue_log(&log_data);
@@ -119,21 +110,17 @@ static void log_stream_data_cb(struct ustream *s, int bytes) {
         int len, cur_len;
 
         // Get available data
-        a = (void*) ustream_get_read_buf(s, &len);
-        if (len < (int)sizeof(*a))
-            break;
+        a = (void *)ustream_get_read_buf(s, &len);
+        if (len < (int)sizeof(*a)) break;
 
         // Check if we have a complete message
         cur_len = blob_len(a) + sizeof(*a);
-        if (len < cur_len)
-            break;
+        if (len < cur_len) break;
 
         // Parse the log entry
-        if (blobmsg_parse(log_policy, ARRAY_SIZE(log_policy), tb,
-                         blob_data(a), blob_len(a)) == 0) {
+        if (blobmsg_parse(log_policy, ARRAY_SIZE(log_policy), tb, blob_data(a), blob_len(a)) == 0) {
             // Verify all required fields are present
-            if (tb[LOG_ID] && tb[LOG_PRIO] && tb[LOG_SOURCE] &&
-                tb[LOG_TIME] && tb[LOG_MSG]) {
+            if (tb[LOG_ID] && tb[LOG_PRIO] && tb[LOG_SOURCE] && tb[LOG_TIME] && tb[LOG_MSG]) {
                 process_log_entry(tb);
             }
         }
@@ -222,9 +209,9 @@ static void start_log_streaming(void) {
 
     // Prepare request
     blob_buf_init(&b, 0);
-    blobmsg_add_u8(&b, "stream", 1);      // Enable streaming
-    blobmsg_add_u8(&b, "oneshot", 0);     // Continuous streaming (like -f)
-    blobmsg_add_u32(&b, "lines", 0);      // Start from current position
+    blobmsg_add_u8(&b, "stream", 1);  // Enable streaming
+    blobmsg_add_u8(&b, "oneshot", 0); // Continuous streaming (like -f)
+    blobmsg_add_u32(&b, "lines", 0);  // Start from current position
 
     // Make async request
     memset(&log_request, 0, sizeof(log_request));
@@ -352,9 +339,7 @@ void ubus_cleanup(void) {
 /**
  * Check if UBUS is connected
  */
-bool ubus_is_connected(void) {
-    return ubus_connected && ctx != NULL;
-}
+bool ubus_is_connected(void) { return ubus_connected && ctx != NULL; }
 
 /**
  * Structure to hold response data
@@ -369,9 +354,9 @@ struct token_response_data {
  */
 static void ubus_sync_response_cb(struct ubus_request *req, int type, struct blob_attr *msg) {
     struct token_response_data *data = (struct token_response_data *)req->priv;
-    
+
     console_debug(&csl, "Sync response callback: type=%d, msg=%p, data=%p", type, msg, data);
-    
+
     if (type == UBUS_MSG_DATA && msg && data) {
         blob_buf_init(&data->buf, 0);
         blob_put_raw(&data->buf, blob_data(msg), blob_len(msg));
@@ -386,92 +371,85 @@ static void ubus_sync_response_cb(struct ubus_request *req, int type, struct blo
 int ubus_get_access_token(char *token_buf, size_t token_size, time_t *expiry) {
     uint32_t id;
     struct blob_buf b = {};
-    struct token_response_data response_data = { .received = false };
+    struct token_response_data response_data = {.received = false};
     int ret;
-    
+
     if (!ctx || !ubus_connected) {
         console_error(&csl, "UBUS not connected");
         return -1;
     }
-    
+
     if (!token_buf || token_size < 2 || !expiry) {
         console_error(&csl, "Invalid parameters");
         return -1;
     }
-    
+
     // Look up wayru-agent object
     ret = ubus_lookup_id(ctx, "wayru-agent", &id);
     if (ret != 0) {
         console_error(&csl, "Failed to find wayru-agent object: %s", ubus_strerror(ret));
         return -1;
     }
-    
+
     console_debug(&csl, "Found wayru-agent object with id: %u", id);
-    
+
     // Prepare request
     blob_buf_init(&b, 0);
-    
+
     // Invoke get_access_token method
-    ret = ubus_invoke(ctx, id, "get_access_token", b.head, 
-                      ubus_sync_response_cb, &response_data, 5000);
-    
+    ret = ubus_invoke(ctx, id, "get_access_token", b.head, ubus_sync_response_cb, &response_data, 5000);
+
     blob_buf_free(&b);
-    
+
     if (ret != 0) {
         console_error(&csl, "Failed to get access token: %s", ubus_strerror(ret));
         return -1;
     }
-    
+
     if (!response_data.received || !response_data.buf.head) {
         console_error(&csl, "No response received from wayru-agent");
         return -1;
     }
-    
+
     // Log the raw response for debugging
     char *json_str = blobmsg_format_json(response_data.buf.head, true);
     if (json_str) {
         console_debug(&csl, "Raw token response: %s", json_str);
         free(json_str);
     }
-    
+
     // Parse the response
-    enum {
-        TOKEN_FIELD,
-        ISSUED_AT_FIELD,
-        EXPIRES_AT_FIELD,
-        VALID_FIELD,
-        __TOKEN_MAX
-    };
-    
+    enum { TOKEN_FIELD, ISSUED_AT_FIELD, EXPIRES_AT_FIELD, VALID_FIELD, __TOKEN_MAX };
+
     static const struct blobmsg_policy token_policy[__TOKEN_MAX] = {
-        [TOKEN_FIELD] = { .name = "token", .type = BLOBMSG_TYPE_STRING },
-        [ISSUED_AT_FIELD] = { .name = "issued_at", .type = BLOBMSG_TYPE_INT64 },
-        [EXPIRES_AT_FIELD] = { .name = "expires_at", .type = BLOBMSG_TYPE_INT64 },
-        [VALID_FIELD] = { .name = "valid", .type = BLOBMSG_TYPE_INT8 },
+        [TOKEN_FIELD] = {.name = "token", .type = BLOBMSG_TYPE_STRING},
+        [ISSUED_AT_FIELD] = {.name = "issued_at", .type = BLOBMSG_TYPE_INT64},
+        [EXPIRES_AT_FIELD] = {.name = "expires_at", .type = BLOBMSG_TYPE_INT64},
+        [VALID_FIELD] = {.name = "valid", .type = BLOBMSG_TYPE_INT8},
     };
-    
+
     struct blob_attr *tb[__TOKEN_MAX];
-    
-    if (blobmsg_parse(token_policy, __TOKEN_MAX, tb, 
-                      blobmsg_data(response_data.buf.head), blobmsg_len(response_data.buf.head)) != 0) {
+
+    if (blobmsg_parse(token_policy, __TOKEN_MAX, tb, blobmsg_data(response_data.buf.head),
+                      blobmsg_len(response_data.buf.head)) != 0) {
         console_error(&csl, "Failed to parse token response");
         blob_buf_free(&response_data.buf);
         return -1;
     }
-    
+
     // Log which fields were found
     console_debug(&csl, "Token field present: %s", tb[TOKEN_FIELD] ? "yes" : "no");
     console_debug(&csl, "Issued_at field present: %s", tb[ISSUED_AT_FIELD] ? "yes" : "no");
     console_debug(&csl, "Expires_at field present: %s", tb[EXPIRES_AT_FIELD] ? "yes" : "no");
     console_debug(&csl, "Valid field present: %s", tb[VALID_FIELD] ? "yes" : "no");
-    
+
     // Check if all required fields are present
     if (!tb[TOKEN_FIELD] || !tb[EXPIRES_AT_FIELD] || !tb[VALID_FIELD]) {
         console_error(&csl, "Missing required fields in token response");
         blob_buf_free(&response_data.buf);
         return -1;
     }
-    
+
     // Check if token is valid
     uint8_t valid = blobmsg_get_u8(tb[VALID_FIELD]);
     console_debug(&csl, "Token valid field: %s", valid ? "true" : "false");
@@ -480,7 +458,7 @@ int ubus_get_access_token(char *token_buf, size_t token_size, time_t *expiry) {
         blob_buf_free(&response_data.buf);
         return -1;
     }
-    
+
     // Extract token
     const char *token = blobmsg_get_string(tb[TOKEN_FIELD]);
     if (!token || strlen(token) == 0) {
@@ -488,9 +466,9 @@ int ubus_get_access_token(char *token_buf, size_t token_size, time_t *expiry) {
         blob_buf_free(&response_data.buf);
         return -1;
     }
-    
+
     console_debug(&csl, "Token length: %zu", strlen(token));
-    
+
     // Copy token to buffer
     size_t token_len = strlen(token);
     if (token_len >= token_size) {
@@ -498,18 +476,18 @@ int ubus_get_access_token(char *token_buf, size_t token_size, time_t *expiry) {
         blob_buf_free(&response_data.buf);
         return -1;
     }
-    
+
     strncpy(token_buf, token, token_size - 1);
     token_buf[token_size - 1] = '\0';
-    
+
     // Extract expiry time
     *expiry = (time_t)blobmsg_get_u64(tb[EXPIRES_AT_FIELD]);
-    
+
     console_info(&csl, "Successfully retrieved access token, expires at %ld", *expiry);
-    
+
     // Clean up
     blob_buf_free(&response_data.buf);
-    
+
     return 0;
 }
 

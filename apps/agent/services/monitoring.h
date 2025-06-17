@@ -12,7 +12,7 @@ typedef struct {
     char *os_version;
     char *os_services_version;
     char *public_ip;
-    task_id_t task_id;  // Store current task ID for cleanup
+    task_id_t task_id; // Store current task ID for cleanup
 } MonitoringTaskContext;
 
 MonitoringTaskContext *monitoring_service(struct mosquitto *mosq, Registration *registration);

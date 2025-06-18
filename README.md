@@ -1,5 +1,6 @@
 # wayru-os-services
 Set of services for OpenWrt-based firmware.
+![Services diagram](./docs/firmware_services_diagram.png)
 
 **wayru-agent**
 - registration

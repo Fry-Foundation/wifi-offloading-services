@@ -29,6 +29,10 @@ static Console csl = {
 };
 
 int main(int argc, char *argv[]) {
+    console_set_syslog_facility(CONSOLE_FACILITY_DAEMON);
+    console_set_channels(CONSOLE_CHANNEL_SYSLOG);
+    console_set_identity("wayru-agent");
+
     console_info(&csl, "starting wayru-agent");
 
     // Initialize scheduler (includes uloop initialization)

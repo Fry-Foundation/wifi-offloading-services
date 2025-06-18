@@ -1,4 +1,4 @@
-# ubox
+# libubox
 ubox is a set of C utilities for OpenWrt.
 
 This guide describes how to clone the code, build and install the ubox utilities.
@@ -9,7 +9,7 @@ These instructions are for an Arch Linux system, but they can be adapted for oth
 
 ### Clone, build, install
 ```bash
-git clone https://git.openwrt.org/project/ubox.git
+git clone https://git.openwrt.org/project/libubox.git
 
 cd ubox
 

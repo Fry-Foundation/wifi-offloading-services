@@ -1,5 +1,5 @@
-# ubus
-> Make sure you install the `ubox` utilities first.
+# libubus and ubus
+> Make sure you install the `libubox` utilities first.
 
 The OpenWrt `ubusd` and `libubus` are needed for communication between the services.
 

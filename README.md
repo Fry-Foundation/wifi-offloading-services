@@ -31,8 +31,8 @@ Also:
 - libmosquitto
 - libssl
 - liblua
-- libubox, see [docs/dependency_ubox](./docs/dependency_ubox.md)
-- libubus, see [docs/dependency_ubus](./docs/dependency_ubus.md)
+- libubox, see [docs/dependency_libubox](./docs/dependency_libubox.md)
+- libubus, see [docs/dependency_libubus_and_ubus](./docs/dependency_libubus_and_ubus.md)
 
 ## Development
 This project is written in C with supporting shell and Lua scripts.

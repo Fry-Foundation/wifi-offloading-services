@@ -45,6 +45,12 @@ static const struct blobmsg_policy log_policy[] = {
 // Access token management
 static char access_token[256] = {0};
 static time_t token_expiry = 0;
+static bool token_initialized = false;
+
+// Log acceptance control
+static bool accept_logs = false;
+static int consecutive_network_failures = 0;
+static const int MAX_NETWORK_FAILURES = 3;
 
 // Forward declarations
 static void start_log_streaming(void);
@@ -75,6 +81,11 @@ static void process_log_entry(struct blob_attr *tb[__LOG_MAX]) {
     const char *msg;
     uint32_t priority, source;
     uint64_t timestamp;
+
+    // Short circuit: Don't accept logs if token is not available or network issues
+    if (!accept_logs) {
+        return;
+    }
 
     msg = blobmsg_get_string(tb[LOG_MSG]);
     priority = blobmsg_get_u32(tb[LOG_PRIO]);
@@ -200,6 +211,12 @@ static void start_log_streaming(void) {
         return;
     }
 
+    // Only start streaming if we should accept logs
+    if (!accept_logs) {
+        console_info(&csl, "Not starting log streaming - log acceptance disabled");
+        return;
+    }
+
     // Look up the log object
     ret = ubus_lookup_id(ctx, "log", &id);
     if (ret != 0) {
@@ -299,8 +316,8 @@ int ubus_init(void) {
 
     console_info(&csl, "UBUS initialized successfully");
 
-    // Start log streaming
-    start_log_streaming();
+    // Don't start log streaming yet - wait for token initialization
+    console_info(&csl, "Waiting for access token before starting log streaming");
 
     return 0;
 }
@@ -340,6 +357,56 @@ void ubus_cleanup(void) {
  * Check if UBUS is connected
  */
 bool ubus_is_connected(void) { return ubus_connected && ctx != NULL; }
+
+/**
+ * Check if the collector should accept new logs
+ */
+bool ubus_should_accept_logs(void) {
+    return accept_logs;
+}
+
+/**
+ * Set whether the collector should accept new logs
+ */
+void ubus_set_log_acceptance(bool accept) {
+    if (accept_logs != accept) {
+        console_info(&csl, "Log acceptance %s", accept ? "enabled" : "disabled");
+        accept_logs = accept;
+        
+        if (accept && !log_streaming) {
+            // Start streaming if enabling acceptance
+            start_log_streaming();
+        } else if (!accept && log_streaming) {
+            // Stop streaming if disabling acceptance
+            stop_log_streaming();
+        }
+    }
+}
+
+/**
+ * Get current access token for HTTP requests
+ */
+const char *ubus_get_current_token(void) {
+    if (!token_initialized || !ubus_is_access_token_valid()) {
+        return NULL;
+    }
+    return access_token;
+}
+
+/**
+ * Report network connectivity issues to stop log acceptance
+ */
+void ubus_report_network_failure(int consecutive_failures) {
+    consecutive_network_failures = consecutive_failures;
+    
+    if (consecutive_failures >= MAX_NETWORK_FAILURES && accept_logs) {
+        console_warn(&csl, "Too many network failures (%d), disabling log acceptance", consecutive_failures);
+        ubus_set_log_acceptance(false);
+    } else if (consecutive_failures == 0 && !accept_logs && token_initialized && ubus_is_access_token_valid()) {
+        console_info(&csl, "Network recovered and token available, enabling log acceptance");
+        ubus_set_log_acceptance(true);
+    }
+}
 
 /**
  * Structure to hold response data
@@ -518,6 +585,21 @@ int ubus_refresh_access_token(void) {
     // Update global token
     strncpy(access_token, new_token, sizeof(access_token));
     token_expiry = new_expiry;
+    token_initialized = true;
+
+    // Reset network failure counter on successful token refresh
+    consecutive_network_failures = 0;
+
+    // Enable log acceptance if token is valid and no network issues
+    bool should_accept = (consecutive_network_failures < MAX_NETWORK_FAILURES);
+    if (should_accept) {
+        if (!accept_logs) {
+            console_info(&csl, "Enabling log acceptance - token available and network healthy");
+            ubus_set_log_acceptance(true);
+        }
+    } else {
+        console_warn(&csl, "Token available but network issues detected, keeping log acceptance disabled");
+    }
 
     console_info(&csl, "Access token refreshed successfully");
     return 0;

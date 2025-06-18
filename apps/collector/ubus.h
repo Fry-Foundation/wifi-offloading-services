@@ -50,4 +50,28 @@ bool ubus_is_access_token_valid(void);
  */
 int ubus_refresh_access_token(void);
 
+/**
+ * Check if the collector should accept new logs
+ * @return true if logs should be accepted, false otherwise
+ */
+bool ubus_should_accept_logs(void);
+
+/**
+ * Set whether the collector should accept new logs
+ * @param accept true to accept logs, false to reject them
+ */
+void ubus_set_log_acceptance(bool accept);
+
+/**
+ * Get current access token for HTTP requests
+ * @return pointer to current token string, or NULL if not available
+ */
+const char *ubus_get_current_token(void);
+
+/**
+ * Report network connectivity issues to stop log acceptance
+ * @param consecutive_failures Number of consecutive HTTP failures
+ */
+void ubus_report_network_failure(int consecutive_failures);
+
 #endif // UBUS_H

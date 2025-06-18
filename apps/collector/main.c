@@ -91,12 +91,13 @@ static void token_refresh_timer_cb(struct uloop_timeout *timeout) {
     if (!ubus_is_connected()) {
         console_warn(&csl, "UBUS not connected, skipping token refresh");
         // Schedule next check with shorter interval to retry sooner
-        uloop_timeout_set(&token_refresh_timer, 60000); // 1 minute retry
+        uloop_timeout_set(&token_refresh_timer, 10000); // 10 second retry when UBUS down
         return;
     }
 
     // Check if current token is still valid
     bool token_valid = ubus_is_access_token_valid();
+    bool currently_accepting = ubus_should_accept_logs();
 
     if (!token_valid) {
         console_info(&csl, "Access token expired or invalid, refreshing...");
@@ -106,13 +107,20 @@ static void token_refresh_timer_cb(struct uloop_timeout *timeout) {
         if (ret < 0) {
             console_warn(&csl, "Failed to refresh access token: %d", ret);
 
-            // On failure, schedule shorter retry interval
-            uint32_t retry_interval = 60000; // 1 minute retry on failure
+            // Disable log acceptance if token refresh fails
+            if (currently_accepting) {
+                console_warn(&csl, "Disabling log acceptance due to token refresh failure");
+                ubus_set_log_acceptance(false);
+            }
+
+            // On failure, schedule shorter retry interval based on whether we had a token before
+            uint32_t retry_interval = currently_accepting ? 60000 : 10000; // 1 minute if we had token, 10 seconds for initial acquisition
             console_info(&csl, "Scheduling token refresh retry in %u ms", retry_interval);
             uloop_timeout_set(&token_refresh_timer, retry_interval);
             return;
         } else {
             console_info(&csl, "Access token refreshed successfully");
+            // Token refresh function handles enabling log acceptance
         }
     } else if (dev_env) {
         console_debug(&csl, "Access token still valid");
@@ -145,7 +153,7 @@ int main(int argc, char *argv[]) {
 
     // Process command line arguments first
     if (!process_command_line_args(argc, argv)) {
-        return 0; // Help was shown, exit normally
+        return 0;
     }
 
     // Initialize configuration
@@ -203,11 +211,12 @@ int main(int argc, char *argv[]) {
     status_timer.cb = status_timer_cb;
     uloop_timeout_set(&status_timer, 30000); // First status check in 30 seconds
 
-    // Set up access token refresh timer
+    // Set up access token refresh timer - try to get initial token immediately
     token_refresh_timer.cb = token_refresh_timer_cb;
-    uloop_timeout_set(&token_refresh_timer, 60000); // First token check in 1 minute
+    uloop_timeout_set(&token_refresh_timer, 1000); // First token check in 1 second
 
-    console_info(&csl, "Collector service running with event-driven architecture and log streaming");
+    console_info(&csl, "Collector service running with event-driven architecture");
+    console_info(&csl, "Log streaming will start once access token is acquired");
 
     // Run the main event loop
     uloop_run();

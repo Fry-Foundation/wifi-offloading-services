@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 #include <curl/curl.h>
@@ -32,6 +33,9 @@ static time_t last_batch_time = 0;
 static CURL *curl_handle = NULL;
 static struct curl_slist *http_headers = NULL;
 static char curl_error_buffer[CURL_ERROR_SIZE];
+
+// Network failure tracking
+static int consecutive_http_failures = 0;
 
 // Configuration values are now obtained from config functions
 
@@ -239,28 +243,30 @@ static int send_http_request(const char *payload, size_t payload_size) {
     if (!curl_handle || !payload) {
         return -1;
     }
+    
+    // Track request start time
+    struct timespec start_time;
+    clock_gettime(CLOCK_MONOTONIC, &start_time);
 
-    // Get access token from wayru-agent
-    char access_token[512];
-    time_t token_expiry;
-    int token_ret = ubus_get_access_token(access_token, sizeof(access_token), &token_expiry);
-    if (token_ret < 0) {
-        console_warn(&csl, "Failed to get access token: %d, attempting without authentication", token_ret);
-        // Continue without token - backend might accept unauthenticated requests in dev mode
+    // Get cached access token
+    const char *access_token = ubus_get_current_token();
+    if (!access_token) {
+        console_warn(&csl, "No valid access token available, aborting HTTP request");
+        collect_report_http_failure(-1);
+        return -1;
     }
 
-    // Update headers with authorization if we have a token
+    // Update headers with authorization
     struct curl_slist *request_headers = http_headers;
     char auth_header[600]; // Token + "Authorization: Bearer " prefix
-    if (token_ret == 0 && access_token[0] != '\0') {
-        snprintf(auth_header, sizeof(auth_header), "Authorization: Bearer %s", access_token);
-        request_headers = curl_slist_append(request_headers, auth_header);
-        if (!request_headers) {
-            console_error(&csl, "Failed to add authorization header");
-            return -1;
-        }
-        console_debug(&csl, "Added Bearer token to request");
+    snprintf(auth_header, sizeof(auth_header), "Authorization: Bearer %s", access_token);
+    request_headers = curl_slist_append(request_headers, auth_header);
+    if (!request_headers) {
+        console_error(&csl, "Failed to add authorization header");
+        collect_report_http_failure(-1);
+        return -1;
     }
+    console_debug(&csl, "Added Bearer token to request");
 
     const char *backend_url = config_get_logs_endpoint();
     curl_easy_setopt(curl_handle, CURLOPT_URL, backend_url);
@@ -276,23 +282,43 @@ static int send_http_request(const char *payload, size_t payload_size) {
     }
 
     if (res != CURLE_OK) {
-        console_warn(&csl, "HTTP request failed: %s", curl_error_buffer);
+        // Calculate duration for curl errors too
+        struct timespec error_time;
+        clock_gettime(CLOCK_MONOTONIC, &error_time);
+        double error_duration_ms = (error_time.tv_sec - start_time.tv_sec) * 1000.0 + 
+                                (error_time.tv_nsec - start_time.tv_nsec) / 1000000.0;
+        
+        console_warn(&csl, "HTTP request failed: %s - took %.2f ms", 
+                    curl_error_buffer, error_duration_ms);
+        collect_report_http_failure(-res);
         return -1;
     }
 
     long response_code;
     curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE, &response_code);
 
+    // Calculate request duration
+    struct timespec end_time;
+    clock_gettime(CLOCK_MONOTONIC, &end_time);
+    double duration_ms = (end_time.tv_sec - start_time.tv_sec) * 1000.0 + 
+                        (end_time.tv_nsec - start_time.tv_nsec) / 1000000.0;
+    
     if (response_code >= 200 && response_code < 300) {
-        console_debug(&csl, "HTTP request successful (code: %ld)", response_code);
+        console_info(&csl, "HTTP request successful (code: %ld) - took %.2f ms", 
+                    response_code, duration_ms);
+        collect_report_http_success();
         return 0;
-    } else if (response_code == 401 && token_ret == 0) {
-        console_warn(&csl, "HTTP request failed with 401 Unauthorized, refreshing token");
+    } else if (response_code == 401) {
+        console_warn(&csl, "HTTP request failed with 401 Unauthorized, refreshing token - took %.2f ms", 
+                    duration_ms);
         // Try to refresh the token for next request
         ubus_refresh_access_token();
+        collect_report_http_failure(response_code);
         return -1;
     } else {
-        console_warn(&csl, "HTTP request failed with code: %ld", response_code);
+        console_warn(&csl, "HTTP request failed with code: %ld - took %.2f ms", 
+                    response_code, duration_ms);
+        collect_report_http_failure(response_code);
         return -1;
     }
 }
@@ -378,6 +404,8 @@ int collect_advance_http_state_machine(void) {
         break;
 
     case HTTP_SENDING: {
+        console_debug(&csl, "Starting HTTP request for batch with %d logs (%zu bytes)", 
+                     current_batch.count, current_batch.payload_size);
         int result = send_http_request(current_batch.json_payload, current_batch.payload_size);
 
         if (result == 0) {
@@ -439,7 +467,7 @@ static void collect_entries_for_batch(void) {
 // Public API implementations
 
 int collect_init(void) {
-    console_info(&csl, "Initializing single-core log collection system");
+    console_info(&csl, "Initializing log collection system");
 
     // Load and validate configuration
     const collector_config_t *config = config_get_current();
@@ -567,6 +595,12 @@ int collect_enqueue_log(const log_data_t *log_data) {
         return -EINVAL;
     }
 
+    // Check if we should accept logs (short circuit logic)
+    if (!ubus_should_accept_logs()) {
+        console_debug(&csl, "Rejecting log - log acceptance disabled");
+        return -EPERM;
+    }
+
     // Get entry from pool
     compact_log_entry_t *entry = collect_get_entry_from_pool();
     if (!entry) {
@@ -645,3 +679,34 @@ int collect_force_batch_processing(void) {
 }
 
 batch_context_t *collect_get_current_batch(void) { return &current_batch; }
+
+/**
+ * Report HTTP request failure for network monitoring
+ */
+void collect_report_http_failure(int error_code) {
+    consecutive_http_failures++;
+    console_warn(&csl, "HTTP failure reported (code: %d), consecutive failures: %d", error_code, consecutive_http_failures);
+    
+    // Report to UBUS module to potentially stop log acceptance
+    ubus_report_network_failure(consecutive_http_failures);
+}
+
+/**
+ * Report successful HTTP request to reset failure counter
+ */
+void collect_report_http_success(void) {
+    if (consecutive_http_failures > 0) {
+        console_info(&csl, "HTTP request successful, resetting failure counter (was: %d)", consecutive_http_failures);
+        consecutive_http_failures = 0;
+        
+        // Report success to UBUS module
+        ubus_report_network_failure(0);
+    }
+}
+
+/**
+ * Get current consecutive HTTP failure count
+ */
+int collect_get_consecutive_failures(void) {
+    return consecutive_http_failures;
+}

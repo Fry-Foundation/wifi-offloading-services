@@ -151,4 +151,21 @@ batch_context_t *collect_get_current_batch(void);
  */
 int collect_advance_http_state_machine(void);
 
+/**
+ * Report HTTP request failure for network monitoring
+ * @param error_code The HTTP error code or negative system error
+ */
+void collect_report_http_failure(int error_code);
+
+/**
+ * Report successful HTTP request to reset failure counter
+ */
+void collect_report_http_success(void);
+
+/**
+ * Get current consecutive HTTP failure count
+ * @return number of consecutive failures
+ */
+int collect_get_consecutive_failures(void);
+
 #endif // COLLECT_H

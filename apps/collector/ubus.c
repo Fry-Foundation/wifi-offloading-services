@@ -97,12 +97,11 @@ static void process_log_entry(struct blob_attr *tb[__LOG_MAX]) {
         return;
     }
 
-    // Create log structure for collection
-    log_data_t log_data = {.timestamp = timestamp / 1000, // Convert to seconds
-                           .timestamp_ms = timestamp % 1000,
+    // Create log structure for collection with raw fields
+    log_data_t log_data = {.time = timestamp,
                            .priority = priority,
                            .source = source,
-                           .message = msg};
+                           .msg = msg};
 
     // Enqueue the log
     int ret = collect_enqueue_log(&log_data);

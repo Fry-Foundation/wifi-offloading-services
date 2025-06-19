@@ -12,9 +12,6 @@ uint32_t config_get_batch_timeout_ms(void);
 
 // Static configuration (data structure sizes)
 #define MAX_LOG_ENTRY_SIZE 512 // Fixed for memory layout
-#define MAX_PROGRAM_SIZE 32    // Fixed for memory layout
-#define MAX_FACILITY_SIZE 16   // Fixed for memory layout
-#define MAX_PRIORITY_SIZE 8    // Fixed for memory layout
 
 // Dynamic configuration macros (use configuration functions)
 #define MAX_BATCH_SIZE config_get_batch_size()
@@ -28,13 +25,13 @@ uint32_t config_get_batch_timeout_ms(void);
 
 /**
  * Compact log entry structure optimized for memory usage
+ * Now stores raw log fields for backend processing
  */
 typedef struct compact_log_entry {
-    char message[MAX_LOG_ENTRY_SIZE];
-    char program[MAX_PROGRAM_SIZE];
-    char facility[MAX_FACILITY_SIZE];
-    char priority[MAX_PRIORITY_SIZE];
-    uint32_t timestamp;  // 32-bit timestamp instead of time_t
+    char msg[MAX_LOG_ENTRY_SIZE];
+    uint32_t priority;   // Raw syslog priority (facility | severity)
+    uint32_t source;     // Raw log source (klog, syslog, etc)
+    uint64_t time;       // Raw timestamp from log system
     uint16_t pool_index; // Index in entry pool
     bool in_use;         // Pool management flag
 } compact_log_entry_t;
@@ -75,11 +72,10 @@ typedef struct batch_context {
  * Log data structure for passing log entries
  */
 typedef struct log_data {
-    uint64_t timestamp;    // Timestamp in seconds
-    uint16_t timestamp_ms; // Milliseconds part
-    uint32_t priority;     // Syslog priority (facility | severity)
-    uint32_t source;       // Log source (klog, syslog, etc)
-    const char *message;   // Log message
+    uint64_t time;         // Raw timestamp from log system
+    uint32_t priority;     // Raw syslog priority (facility | severity)
+    uint32_t source;       // Raw log source (klog, syslog, etc)
+    const char *msg;       // Raw log message
 } log_data_t;
 
 /**

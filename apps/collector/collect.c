@@ -97,10 +97,10 @@ void collect_return_entry_to_pool(compact_log_entry_t *entry) {
 
     pool_used[entry->pool_index] = false;
     entry->in_use = false;
-    memset(entry->message, 0, sizeof(entry->message));
-    memset(entry->program, 0, sizeof(entry->program));
-    memset(entry->facility, 0, sizeof(entry->facility));
-    memset(entry->priority, 0, sizeof(entry->priority));
+    memset(entry->msg, 0, sizeof(entry->msg));
+    entry->priority = 0;
+    entry->source = 0;
+    entry->time = 0;
 }
 
 /**
@@ -211,18 +211,17 @@ static char *create_json_payload(compact_log_entry_t **entries, int count, size_
         compact_log_entry_t *entry = entries[i];
 
         json_object *log_obj = json_object_new_object();
-        json_object_object_add(log_obj, "program", json_object_new_string(entry->program));
-        json_object_object_add(log_obj, "message", json_object_new_string(entry->message));
-        json_object_object_add(log_obj, "facility", json_object_new_string(entry->facility));
-        json_object_object_add(log_obj, "priority", json_object_new_string(entry->priority));
-        json_object_object_add(log_obj, "timestamp", json_object_new_int64(entry->timestamp));
+        json_object_object_add(log_obj, "msg", json_object_new_string(entry->msg));
+        json_object_object_add(log_obj, "priority", json_object_new_int64(entry->priority));
+        json_object_object_add(log_obj, "source", json_object_new_int64(entry->source));
+        json_object_object_add(log_obj, "time", json_object_new_int64(entry->time));
 
         json_object_array_add(logs_array, log_obj);
     }
 
     json_object_object_add(root, "logs", logs_array);
     json_object_object_add(root, "count", json_object_new_int(count));
-    json_object_object_add(root, "collector_version", json_object_new_string("1.0.0-single-core"));
+    json_object_object_add(root, "collector_version", json_object_new_string("1.0.0-raw-logs"));
 
     const char *json_string = json_object_to_json_string(root);
     *payload_size = strlen(json_string);
@@ -591,7 +590,7 @@ void collect_cleanup(void) {
 }
 
 int collect_enqueue_log(const log_data_t *log_data) {
-    if (!log_data || !log_data->message || !system_running) {
+    if (!log_data || !log_data->msg || !system_running) {
         return -EINVAL;
     }
 
@@ -609,34 +608,13 @@ int collect_enqueue_log(const log_data_t *log_data) {
         return -ENOSPC;
     }
 
-    // Extract facility and severity from priority
-    int facility = (log_data->priority >> 3) & 0x1f;
-    int severity = log_data->priority & 0x07;
-
-    // Map source to program name
-    const char *program_name = "unknown";
-    if (log_data->source == 0) {
-        program_name = "kernel";
-    } else if (log_data->source == 1) {
-        program_name = "syslog";
-    }
-    // Could extract from message if it contains program info
-
-    // Copy data with bounds checking
-    strncpy(entry->program, program_name, MAX_PROGRAM_SIZE - 1);
-    entry->program[MAX_PROGRAM_SIZE - 1] = '\0';
-
-    strncpy(entry->message, log_data->message, MAX_LOG_ENTRY_SIZE - 1);
-    entry->message[MAX_LOG_ENTRY_SIZE - 1] = '\0';
-
-    // Convert facility number to string
-    snprintf(entry->facility, MAX_FACILITY_SIZE, "%d", facility);
-
-    // Convert severity number to string
-    snprintf(entry->priority, MAX_PRIORITY_SIZE, "%d", severity);
-
-    // Use provided timestamp
-    entry->timestamp = (uint32_t)log_data->timestamp;
+    // Store raw log fields without processing
+    strncpy(entry->msg, log_data->msg, MAX_LOG_ENTRY_SIZE - 1);
+    entry->msg[MAX_LOG_ENTRY_SIZE - 1] = '\0';
+    
+    entry->priority = log_data->priority;
+    entry->source = log_data->source;
+    entry->time = log_data->time;
 
     // Add to queue
     int result = enqueue_entry(&queue, entry);

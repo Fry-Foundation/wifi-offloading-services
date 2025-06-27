@@ -12,7 +12,7 @@ typedef struct {
 // Memory statistics (in KB)
 typedef struct {
     unsigned long total_kb;
-    unsigned long available_kb;  
+    unsigned long available_kb;
     unsigned long used_kb;
     unsigned long free_kb;
     unsigned long shared_kb;
@@ -31,7 +31,7 @@ DiskStats get_disk_stats(const char *path);
 
 /**
  * Get memory statistics from /proc/meminfo
- * @return MemoryStats structure with memory information, or zeros on error  
+ * @return MemoryStats structure with memory information, or zeros on error
  */
 MemoryStats get_memory_stats(void);
 
@@ -59,10 +59,10 @@ long get_total_disk_space_mb(const char *path);
 unsigned long get_total_memory_kb(void);
 
 /**
- * Get available memory in KB  
+ * Get available memory in KB
  * Convenience function that returns just the available memory
  * @return Available memory in KB, or -1 on error
  */
 unsigned long get_available_memory_kb(void);
 
-#endif // STATS_H 
+#endif // STATS_H

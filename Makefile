@@ -63,7 +63,6 @@ define Package/wayru-os-services/install
 	# Install init script and config
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/apps/agent/scripts/openwrt/wayru-agent.init $(1)/etc/init.d/wayru-agent
 	$(INSTALL_CONF) $(PKG_BUILD_DIR)/apps/agent/scripts/openwrt/wayru-agent.config $(1)/etc/config/wayru-agent
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/apps/agent/scripts/openwrt/wayru-agent.config $(1)/etc/wayru-agent/config.uci
 
 	# Install wayru-config init script and config
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/apps/config/scripts/openwrt/wayru-config.init $(1)/etc/init.d/wayru-config

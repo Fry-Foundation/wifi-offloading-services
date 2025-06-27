@@ -1,11 +1,11 @@
 #include "ubus_server.h"
 #include "core/console.h"
-#include <libubus.h>
+#include <json-c/json.h>
 #include <libubox/blobmsg.h>
 #include <libubox/uloop.h>
-#include <json-c/json.h>
-#include <string.h>
+#include <libubus.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 // Polling interval for UBUS events (milliseconds)
@@ -23,25 +23,35 @@ static UbusServerContext *server_context = NULL;
 static bool server_running = false;
 
 // Method handlers
-static int method_get_access_token(struct ubus_context *ctx, struct ubus_object *obj,
-                                  struct ubus_request_data *req, const char *method,
+static int method_get_access_token(struct ubus_context *ctx,
+                                   struct ubus_object *obj,
+                                   struct ubus_request_data *req,
+                                   const char *method,
+                                   struct blob_attr *msg);
+
+static int method_get_device_info(struct ubus_context *ctx,
+                                  struct ubus_object *obj,
+                                  struct ubus_request_data *req,
+                                  const char *method,
                                   struct blob_attr *msg);
 
-static int method_get_device_info(struct ubus_context *ctx, struct ubus_object *obj,
-                                 struct ubus_request_data *req, const char *method,
-                                 struct blob_attr *msg);
+static int method_get_status(struct ubus_context *ctx,
+                             struct ubus_object *obj,
+                             struct ubus_request_data *req,
+                             const char *method,
+                             struct blob_attr *msg);
 
-static int method_get_status(struct ubus_context *ctx, struct ubus_object *obj,
-                            struct ubus_request_data *req, const char *method,
-                            struct blob_attr *msg);
+static int method_get_registration(struct ubus_context *ctx,
+                                   struct ubus_object *obj,
+                                   struct ubus_request_data *req,
+                                   const char *method,
+                                   struct blob_attr *msg);
 
-static int method_get_registration(struct ubus_context *ctx, struct ubus_object *obj,
-                                  struct ubus_request_data *req, const char *method,
-                                  struct blob_attr *msg);
-
-static int method_ping(struct ubus_context *ctx, struct ubus_object *obj,
-                      struct ubus_request_data *req, const char *method,
-                      struct blob_attr *msg);
+static int method_ping(struct ubus_context *ctx,
+                       struct ubus_object *obj,
+                       struct ubus_request_data *req,
+                       const char *method,
+                       struct blob_attr *msg);
 
 // UBUS method definitions - extensible for future methods
 static const struct ubus_method wayru_methods[] = {
@@ -52,8 +62,7 @@ static const struct ubus_method wayru_methods[] = {
     UBUS_METHOD_NOARG("ping", method_ping),
 };
 
-static struct ubus_object_type wayru_object_type =
-    UBUS_OBJECT_TYPE(WAYRU_AGENT_SERVICE_NAME, wayru_methods);
+static struct ubus_object_type wayru_object_type = UBUS_OBJECT_TYPE(WAYRU_AGENT_SERVICE_NAME, wayru_methods);
 
 static struct ubus_object wayru_object = {
     .name = WAYRU_AGENT_SERVICE_NAME,
@@ -63,8 +72,8 @@ static struct ubus_object wayru_object = {
 };
 
 // Helper function to send JSON error response
-static void send_error_response(struct ubus_context *ctx, struct ubus_request_data *req,
-                               const char *error_msg, int error_code) {
+static void
+send_error_response(struct ubus_context *ctx, struct ubus_request_data *req, const char *error_msg, int error_code) {
     struct blob_buf response = {0};
     blob_buf_init(&response, 0);
     blobmsg_add_string(&response, "error", error_msg);
@@ -74,11 +83,13 @@ static void send_error_response(struct ubus_context *ctx, struct ubus_request_da
 }
 
 // Method: get_access_token
-static int method_get_access_token(struct ubus_context *ctx, struct ubus_object *obj,
-                                  struct ubus_request_data *req, const char *method,
-                                  struct blob_attr *msg) {
+static int method_get_access_token(struct ubus_context *ctx,
+                                   struct ubus_object *obj,
+                                   struct ubus_request_data *req,
+                                   const char *method,
+                                   struct blob_attr *msg) {
     console_debug(&csl, "UBUS method called: %s", method);
-    
+
     if (!server_context || !server_context->access_token) {
         send_error_response(ctx, req, "Access token not available", -ENODATA);
         return -ENODATA;
@@ -103,11 +114,13 @@ static int method_get_access_token(struct ubus_context *ctx, struct ubus_object 
 }
 
 // Method: get_device_info
-static int method_get_device_info(struct ubus_context *ctx, struct ubus_object *obj,
-                                 struct ubus_request_data *req, const char *method,
-                                 struct blob_attr *msg) {
+static int method_get_device_info(struct ubus_context *ctx,
+                                  struct ubus_object *obj,
+                                  struct ubus_request_data *req,
+                                  const char *method,
+                                  struct blob_attr *msg) {
     console_debug(&csl, "UBUS method called: %s", method);
-    
+
     if (!server_context || !server_context->device_info) {
         send_error_response(ctx, req, "Device info not available", -ENODATA);
         return -ENODATA;
@@ -135,28 +148,26 @@ static int method_get_device_info(struct ubus_context *ctx, struct ubus_object *
 }
 
 // Method: get_status
-static int method_get_status(struct ubus_context *ctx, struct ubus_object *obj,
-                            struct ubus_request_data *req, const char *method,
-                            struct blob_attr *msg) {
+static int method_get_status(struct ubus_context *ctx,
+                             struct ubus_object *obj,
+                             struct ubus_request_data *req,
+                             const char *method,
+                             struct blob_attr *msg) {
     console_debug(&csl, "UBUS method called: %s", method);
-    
+
     struct blob_buf response = {0};
     blob_buf_init(&response, 0);
 
     blobmsg_add_string(&response, "service", WAYRU_AGENT_SERVICE_NAME);
     blobmsg_add_u8(&response, "running", server_running ? 1 : 0);
-    
+
     if (server_context) {
-        blobmsg_add_u8(&response, "access_token_available", 
-                        server_context->access_token != NULL ? 1 : 0);
-        blobmsg_add_u8(&response, "device_info_available", 
-                        server_context->device_info != NULL ? 1 : 0);
-        blobmsg_add_u8(&response, "registration_available", 
-                        server_context->registration != NULL ? 1 : 0);
-        
+        blobmsg_add_u8(&response, "access_token_available", server_context->access_token != NULL ? 1 : 0);
+        blobmsg_add_u8(&response, "device_info_available", server_context->device_info != NULL ? 1 : 0);
+        blobmsg_add_u8(&response, "registration_available", server_context->registration != NULL ? 1 : 0);
+
         if (server_context->access_token) {
-            blobmsg_add_u8(&response, "token_valid", 
-                           is_token_valid(server_context->access_token) ? 1 : 0);
+            blobmsg_add_u8(&response, "token_valid", is_token_valid(server_context->access_token) ? 1 : 0);
         }
     }
 
@@ -166,11 +177,13 @@ static int method_get_status(struct ubus_context *ctx, struct ubus_object *obj,
 }
 
 // Method: get_registration
-static int method_get_registration(struct ubus_context *ctx, struct ubus_object *obj,
-                                  struct ubus_request_data *req, const char *method,
-                                  struct blob_attr *msg) {
+static int method_get_registration(struct ubus_context *ctx,
+                                   struct ubus_object *obj,
+                                   struct ubus_request_data *req,
+                                   const char *method,
+                                   struct blob_attr *msg) {
     console_debug(&csl, "UBUS method called: %s", method);
-    
+
     if (!server_context || !server_context->registration) {
         send_error_response(ctx, req, "Registration not available", -ENODATA);
         return -ENODATA;
@@ -189,14 +202,16 @@ static int method_get_registration(struct ubus_context *ctx, struct ubus_object 
 }
 
 // Method: ping
-static int method_ping(struct ubus_context *ctx, struct ubus_object *obj,
-                      struct ubus_request_data *req, const char *method,
-                      struct blob_attr *msg) {
+static int method_ping(struct ubus_context *ctx,
+                       struct ubus_object *obj,
+                       struct ubus_request_data *req,
+                       const char *method,
+                       struct blob_attr *msg) {
     console_debug(&csl, "UBUS method called: %s", method);
-    
+
     struct blob_buf response = {0};
     blob_buf_init(&response, 0);
-    
+
     blobmsg_add_string(&response, "response", "pong");
     blobmsg_add_string(&response, "service", WAYRU_AGENT_SERVICE_NAME);
     blobmsg_add_u64(&response, "timestamp", time(NULL));
@@ -209,7 +224,7 @@ static int method_ping(struct ubus_context *ctx, struct ubus_object *obj,
 // UBUS server task for scheduler integration
 void ubus_server_task(void *context) {
     UbusServerTaskContext *task_ctx = (UbusServerTaskContext *)context;
-    
+
     if (!task_ctx || !task_ctx->ubus_ctx) {
         console_error(&csl, "Invalid task context");
         return;
@@ -222,9 +237,8 @@ void ubus_server_task(void *context) {
         ubus_server_cleanup();
         // Reinitialize with current context
         if (server_context) {
-            int ret = ubus_server_init(server_context->access_token, 
-                                     server_context->device_info,
-                                     server_context->registration);
+            int ret = ubus_server_init(server_context->access_token, server_context->device_info,
+                                       server_context->registration);
             if (ret < 0) {
                 console_error(&csl, "Failed to reconnect UBUS server: %d", ret);
             }
@@ -281,13 +295,13 @@ int ubus_server_init(AccessToken *access_token, DeviceInfo *device_info, Registr
 
     server_running = true;
     console_info(&csl, "UBUS server initialized successfully");
-    
+
     return 0;
 }
 
 // Start UBUS server service with scheduler integration
-UbusServerTaskContext *ubus_server_service(AccessToken *access_token, 
-                                           DeviceInfo *device_info, Registration *registration) {
+UbusServerTaskContext *
+ubus_server_service(AccessToken *access_token, DeviceInfo *device_info, Registration *registration) {
     console_info(&csl, "Starting UBUS server service");
 
     // Initialize server if not already done
@@ -312,13 +326,13 @@ UbusServerTaskContext *ubus_server_service(AccessToken *access_token,
 
     // Convert seconds to milliseconds for scheduler
     uint32_t interval_ms = UBUS_TASK_INTERVAL_SECONDS * 1000;
-    uint32_t initial_delay_ms = UBUS_TASK_INTERVAL_SECONDS * 1000;  // Start after one interval
+    uint32_t initial_delay_ms = UBUS_TASK_INTERVAL_SECONDS * 1000; // Start after one interval
 
     console_info(&csl, "Starting UBUS server service with interval %u ms", interval_ms);
-    
+
     // Schedule repeating task
     task_ctx->task_id = schedule_repeating(initial_delay_ms, interval_ms, ubus_server_task, task_ctx);
-    
+
     if (task_ctx->task_id == 0) {
         console_error(&csl, "failed to schedule UBUS server task");
         free(task_ctx);
@@ -362,11 +376,7 @@ void ubus_server_cleanup(void) {
 }
 
 // Check if server is running
-bool ubus_server_is_running(void) {
-    return server_running && ubus_ctx != NULL;
-}
+bool ubus_server_is_running(void) { return server_running && ubus_ctx != NULL; }
 
 // Get UBUS context (for internal use)
-struct ubus_context *ubus_server_get_context(void) {
-    return ubus_ctx;
-}
+struct ubus_context *ubus_server_get_context(void) { return ubus_ctx; }

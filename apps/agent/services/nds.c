@@ -1,7 +1,7 @@
 #include "nds.h"
 #include "core/console.h"
-#include "core/uloop_scheduler.h"
 #include "core/script_runner.h"
+#include "core/uloop_scheduler.h"
 #include "services/config/config.h"
 #include "services/device-context.h"
 #include "services/mqtt/mqtt.h"
@@ -212,13 +212,13 @@ NdsTaskContext *nds_service(Mosq *mosq, Site *site, NdsClient *nds_client, Devic
 
     // Convert seconds to milliseconds for scheduler
     uint32_t interval_ms = config.nds_interval * 1000;
-    uint32_t initial_delay_ms = config.nds_interval * 1000;  // Start after one interval
+    uint32_t initial_delay_ms = config.nds_interval * 1000; // Start after one interval
 
     console_info(&csl, "Starting NDS service with interval %u ms", interval_ms);
-    
+
     // Schedule repeating task
     ctx->task_id = schedule_repeating(initial_delay_ms, interval_ms, nds_task, ctx);
-    
+
     if (ctx->task_id == 0) {
         console_error(&csl, "failed to schedule NDS task");
         free(ctx);

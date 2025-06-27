@@ -1,7 +1,7 @@
 #include "time_sync.h"
 #include "core/console.h"
-#include "core/uloop_scheduler.h"
 #include "core/script_runner.h"
+#include "core/uloop_scheduler.h"
 #include "services/config/config.h"
 #include <stdbool.h>
 #include <stdio.h>
@@ -12,10 +12,8 @@ static Console csl = {
     .topic = "time sync",
 };
 
-
-
 void time_sync_task(void *task_context) {
-    (void)task_context;  // Not used for this simple task
+    (void)task_context; // Not used for this simple task
 
     console_debug(&csl, "Executing time sync task");
 
@@ -62,13 +60,13 @@ TimeSyncTaskContext *time_sync_service(void) {
 
     // Convert seconds to milliseconds for scheduler
     uint32_t interval_ms = config.time_sync_interval * 1000;
-    uint32_t initial_delay_ms = config.time_sync_interval * 1000;  // Start after one interval
+    uint32_t initial_delay_ms = config.time_sync_interval * 1000; // Start after one interval
 
     console_info(&csl, "Starting time sync service with interval %u ms", interval_ms);
-    
+
     // Schedule repeating task
     context->task_id = schedule_repeating(initial_delay_ms, interval_ms, time_sync_task, context);
-    
+
     if (context->task_id == 0) {
         console_error(&csl, "failed to schedule time sync task");
         free(context);

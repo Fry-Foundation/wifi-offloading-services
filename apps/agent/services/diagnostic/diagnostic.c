@@ -56,8 +56,6 @@ static Console csl = {
     .topic = "diagnostic",
 };
 
-
-
 static DeviceInfo *diagnostic_device_info;
 
 // Utility function to extract domain from URL
@@ -497,13 +495,13 @@ DiagnosticTaskContext *start_diagnostic_service(AccessToken *access_token) {
 
     // Convert seconds to milliseconds for scheduler
     uint32_t interval_ms = config.diagnostic_interval * 1000;
-    uint32_t initial_delay_ms = config.diagnostic_interval * 1000;  // Start after one interval
+    uint32_t initial_delay_ms = config.diagnostic_interval * 1000; // Start after one interval
 
     console_info(&csl, "Starting diagnostic service with interval %u ms", interval_ms);
-    
+
     // Schedule repeating task
     context->task_id = schedule_repeating(initial_delay_ms, interval_ms, diagnostic_task, context);
-    
+
     if (context->task_id == 0) {
         console_error(&csl, "failed to schedule diagnostic task");
         free(context);

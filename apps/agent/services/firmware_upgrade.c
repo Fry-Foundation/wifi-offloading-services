@@ -1,7 +1,7 @@
 #include "firmware_upgrade.h"
 #include "core/console.h"
-#include "core/uloop_scheduler.h"
 #include "core/script_runner.h"
+#include "core/uloop_scheduler.h"
 #include "http/http-requests.h"
 #include "services/access_token.h"
 #include "services/config/config.h"
@@ -23,8 +23,6 @@
 static Console csl = {
     .topic = "firmware-upgrade",
 };
-
-
 
 int run_sysupgrade() {
 
@@ -403,9 +401,8 @@ void firmware_upgrade_task(void *task_context) {
     // No manual rescheduling needed - repeating tasks auto-reschedule
 }
 
-FirmwareUpgradeTaskContext *firmware_upgrade_check(DeviceInfo *device_info,
-                                                    Registration *registration,
-                                                    AccessToken *access_token) {
+FirmwareUpgradeTaskContext *
+firmware_upgrade_check(DeviceInfo *device_info, Registration *registration, AccessToken *access_token) {
     FirmwareUpgradeTaskContext *context = (FirmwareUpgradeTaskContext *)malloc(sizeof(FirmwareUpgradeTaskContext));
     if (context == NULL) {
         console_error(&csl, "failed to allocate memory for firmware upgrade task context");
@@ -419,13 +416,13 @@ FirmwareUpgradeTaskContext *firmware_upgrade_check(DeviceInfo *device_info,
 
     // Convert seconds to milliseconds for scheduler
     uint32_t interval_ms = config.firmware_update_interval * 1000;
-    uint32_t initial_delay_ms = config.firmware_update_interval * 1000;  // Start after one interval
+    uint32_t initial_delay_ms = config.firmware_update_interval * 1000; // Start after one interval
 
     console_info(&csl, "Starting firmware upgrade service with interval %u ms", interval_ms);
-    
+
     // Schedule repeating task
     context->task_id = schedule_repeating(initial_delay_ms, interval_ms, firmware_upgrade_task, context);
-    
+
     if (context->task_id == 0) {
         console_error(&csl, "failed to schedule firmware upgrade task");
         free(context);

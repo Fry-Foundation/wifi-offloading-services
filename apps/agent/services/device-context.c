@@ -17,8 +17,6 @@ static Console csl = {
     .topic = "device-context",
 };
 
-
-
 char *request_device_context(Registration *registration, AccessToken *access_token) {
     char url[256];
     snprintf(url, sizeof(url), "%s/%s/%s/%s", config.accounting_api, DEVICE_ENDPOINT, registration->wayru_device_id,
@@ -121,9 +119,8 @@ void device_context_task(void *task_context) {
     // No manual rescheduling needed - repeating tasks auto-reschedule
 }
 
-DeviceContextTaskContext *device_context_service(DeviceContext *device_context,
-                                                  Registration *registration,
-                                                  AccessToken *access_token) {
+DeviceContextTaskContext *
+device_context_service(DeviceContext *device_context, Registration *registration, AccessToken *access_token) {
     DeviceContextTaskContext *context = (DeviceContextTaskContext *)malloc(sizeof(DeviceContextTaskContext));
     if (context == NULL) {
         console_error(&csl, "failed to allocate memory for device context task context");
@@ -137,13 +134,13 @@ DeviceContextTaskContext *device_context_service(DeviceContext *device_context,
 
     // Convert seconds to milliseconds for scheduler
     uint32_t interval_ms = config.device_context_interval * 1000;
-    uint32_t initial_delay_ms = config.device_context_interval * 1000;  // Start after one interval
+    uint32_t initial_delay_ms = config.device_context_interval * 1000; // Start after one interval
 
     console_info(&csl, "Starting device context service with interval %u ms", interval_ms);
-    
+
     // Schedule repeating task
     context->task_id = schedule_repeating(initial_delay_ms, interval_ms, device_context_task, context);
-    
+
     if (context->task_id == 0) {
         console_error(&csl, "failed to schedule device context task");
         free(context);

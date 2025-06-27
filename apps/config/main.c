@@ -4,6 +4,7 @@
 #include "config.h"
 #include <string.h>
 #include <stdbool.h>
+#include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
 

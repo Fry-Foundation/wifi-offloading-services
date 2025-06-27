@@ -11,12 +11,11 @@ typedef struct {
     DeviceInfo *device_info;
     Registration *registration;
     AccessToken *access_token;
-    task_id_t task_id;  // Store current task ID for cleanup
+    task_id_t task_id; // Store current task ID for cleanup
 } FirmwareUpgradeTaskContext;
 
-FirmwareUpgradeTaskContext *firmware_upgrade_check(DeviceInfo *device_info,
-                                                    Registration *registration,
-                                                    AccessToken *access_token);
+FirmwareUpgradeTaskContext *
+firmware_upgrade_check(DeviceInfo *device_info, Registration *registration, AccessToken *access_token);
 void clean_firmware_upgrade_context(FirmwareUpgradeTaskContext *context);
 void send_firmware_check_request(const char *codename,
                                  const char *version,

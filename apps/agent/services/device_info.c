@@ -167,7 +167,7 @@ DeviceProfile get_device_profile() {
     json_object_put(parsed_json);
 
     console_debug(&csl, "device identifiers are: %s, %s, %s", device_profile.name, device_profile.brand,
-                device_profile.model);
+                  device_profile.model);
 
     return device_profile;
 }
@@ -303,8 +303,6 @@ char *get_arch() {
     snprintf(arch, sizeof(arch), "%s_%s", distrib_arch, subtarget);
     return arch;
 }
-
-
 
 DeviceInfo *init_device_info() {
     DeviceInfo *device_info = malloc(sizeof(DeviceInfo));

@@ -21,7 +21,7 @@ typedef struct {
     Mosq *mosq;
     Site *site;
     DeviceInfo *device_info;
-    task_id_t task_id;  // Store current task ID for cleanup
+    task_id_t task_id; // Store current task ID for cleanup
 } NdsTaskContext;
 
 NdsClient *init_nds_client();

@@ -4,7 +4,7 @@
 #include "core/uloop_scheduler.h"
 
 typedef struct {
-    task_id_t task_id;  // Store current task ID for cleanup
+    task_id_t task_id; // Store current task ID for cleanup
 } RebootTaskContext;
 
 void execute_reboot();

@@ -1,9 +1,12 @@
 #include "collect.h"
 #include "config.h"
 #include "core/console.h"
+#include "ubus.h"
 #include <asm-generic/errno-base.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 #include <curl/curl.h>
@@ -30,6 +33,9 @@ static time_t last_batch_time = 0;
 static CURL *curl_handle = NULL;
 static struct curl_slist *http_headers = NULL;
 static char curl_error_buffer[CURL_ERROR_SIZE];
+
+// Network failure tracking
+static int consecutive_http_failures = 0;
 
 // Configuration values are now obtained from config functions
 
@@ -66,7 +72,7 @@ static int init_entry_pool(void) {
 /**
  * Get an entry from the pool
  */
-compact_log_entry_t* collect_get_entry_from_pool(void) {
+compact_log_entry_t *collect_get_entry_from_pool(void) {
     if (!entry_pool || !pool_used) {
         return NULL;
     }
@@ -91,10 +97,10 @@ void collect_return_entry_to_pool(compact_log_entry_t *entry) {
 
     pool_used[entry->pool_index] = false;
     entry->in_use = false;
-    memset(entry->message, 0, sizeof(entry->message));
-    memset(entry->program, 0, sizeof(entry->program));
-    memset(entry->facility, 0, sizeof(entry->facility));
-    memset(entry->priority, 0, sizeof(entry->priority));
+    memset(entry->msg, 0, sizeof(entry->msg));
+    entry->priority = 0;
+    entry->source = 0;
+    entry->time = 0;
 }
 
 /**
@@ -103,7 +109,7 @@ void collect_return_entry_to_pool(compact_log_entry_t *entry) {
 static int init_simple_queue(simple_log_queue_t *q) {
     uint32_t queue_size = config_get_queue_size();
 
-    q->entries = calloc(queue_size, sizeof(compact_log_entry_t*));
+    q->entries = calloc(queue_size, sizeof(compact_log_entry_t *));
     if (!q->entries) {
         console_error(&csl, "Failed to allocate queue entries array");
         return -ENOMEM;
@@ -136,7 +142,7 @@ static int enqueue_entry(simple_log_queue_t *q, compact_log_entry_t *entry) {
 /**
  * Remove entry from queue (single-threaded, no locks)
  */
-static compact_log_entry_t* dequeue_entry(simple_log_queue_t *q) {
+static compact_log_entry_t *dequeue_entry(simple_log_queue_t *q) {
     if (q->count == 0) {
         return NULL;
     }
@@ -197,7 +203,7 @@ static void cleanup_http_client(void) {
 /**
  * Create JSON payload from batch entries
  */
-static char* create_json_payload(compact_log_entry_t **entries, int count, size_t *payload_size) {
+static char *create_json_payload(compact_log_entry_t **entries, int count, size_t *payload_size) {
     json_object *root = json_object_new_object();
     json_object *logs_array = json_object_new_array();
 
@@ -205,18 +211,17 @@ static char* create_json_payload(compact_log_entry_t **entries, int count, size_
         compact_log_entry_t *entry = entries[i];
 
         json_object *log_obj = json_object_new_object();
-        json_object_object_add(log_obj, "program", json_object_new_string(entry->program));
-        json_object_object_add(log_obj, "message", json_object_new_string(entry->message));
-        json_object_object_add(log_obj, "facility", json_object_new_string(entry->facility));
-        json_object_object_add(log_obj, "priority", json_object_new_string(entry->priority));
-        json_object_object_add(log_obj, "timestamp", json_object_new_int64(entry->timestamp));
+        json_object_object_add(log_obj, "msg", json_object_new_string(entry->msg));
+        json_object_object_add(log_obj, "priority", json_object_new_int64(entry->priority));
+        json_object_object_add(log_obj, "source", json_object_new_int64(entry->source));
+        json_object_object_add(log_obj, "time", json_object_new_int64(entry->time));
 
         json_object_array_add(logs_array, log_obj);
     }
 
     json_object_object_add(root, "logs", logs_array);
     json_object_object_add(root, "count", json_object_new_int(count));
-    json_object_object_add(root, "collector_version", json_object_new_string("1.0.0-single-core"));
+    json_object_object_add(root, "collector_version", json_object_new_string("1.0.0-raw-logs"));
 
     const char *json_string = json_object_to_json_string(root);
     *payload_size = strlen(json_string);
@@ -237,28 +242,82 @@ static int send_http_request(const char *payload, size_t payload_size) {
     if (!curl_handle || !payload) {
         return -1;
     }
+    
+    // Track request start time
+    struct timespec start_time;
+    clock_gettime(CLOCK_MONOTONIC, &start_time);
+
+    // Get cached access token
+    const char *access_token = ubus_get_current_token();
+    if (!access_token) {
+        console_warn(&csl, "No valid access token available, aborting HTTP request");
+        collect_report_http_failure(-1);
+        return -1;
+    }
+
+    // Update headers with authorization
+    struct curl_slist *request_headers = http_headers;
+    char auth_header[600]; // Token + "Authorization: Bearer " prefix
+    snprintf(auth_header, sizeof(auth_header), "Authorization: Bearer %s", access_token);
+    request_headers = curl_slist_append(request_headers, auth_header);
+    if (!request_headers) {
+        console_error(&csl, "Failed to add authorization header");
+        collect_report_http_failure(-1);
+        return -1;
+    }
+    console_debug(&csl, "Added Bearer token to request");
 
     const char *backend_url = config_get_logs_endpoint();
     curl_easy_setopt(curl_handle, CURLOPT_URL, backend_url);
     curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, payload);
     curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDSIZE, payload_size);
-    curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, http_headers);
+    curl_easy_setopt(curl_handle, CURLOPT_HTTPHEADER, request_headers);
 
     CURLcode res = curl_easy_perform(curl_handle);
 
+    // Clean up authorization header if we added it
+    if (request_headers != http_headers) {
+        curl_slist_free_all(request_headers);
+    }
+
     if (res != CURLE_OK) {
-        console_warn(&csl, "HTTP request failed: %s", curl_error_buffer);
+        // Calculate duration for curl errors too
+        struct timespec error_time;
+        clock_gettime(CLOCK_MONOTONIC, &error_time);
+        double error_duration_ms = (error_time.tv_sec - start_time.tv_sec) * 1000.0 + 
+                                (error_time.tv_nsec - start_time.tv_nsec) / 1000000.0;
+        
+        console_warn(&csl, "HTTP request failed: %s - took %.2f ms", 
+                    curl_error_buffer, error_duration_ms);
+        collect_report_http_failure(-res);
         return -1;
     }
 
     long response_code;
     curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE, &response_code);
 
+    // Calculate request duration
+    struct timespec end_time;
+    clock_gettime(CLOCK_MONOTONIC, &end_time);
+    double duration_ms = (end_time.tv_sec - start_time.tv_sec) * 1000.0 + 
+                        (end_time.tv_nsec - start_time.tv_nsec) / 1000000.0;
+    
     if (response_code >= 200 && response_code < 300) {
-        console_debug(&csl, "HTTP request successful (code: %ld)", response_code);
+        console_info(&csl, "HTTP request successful (code: %ld) - took %.2f ms", 
+                    response_code, duration_ms);
+        collect_report_http_success();
         return 0;
+    } else if (response_code == 401) {
+        console_warn(&csl, "HTTP request failed with 401 Unauthorized, refreshing token - took %.2f ms", 
+                    duration_ms);
+        // Try to refresh the token for next request
+        ubus_refresh_access_token();
+        collect_report_http_failure(response_code);
+        return -1;
     } else {
-        console_warn(&csl, "HTTP request failed with code: %ld", response_code);
+        console_warn(&csl, "HTTP request failed with code: %ld - took %.2f ms", 
+                    response_code, duration_ms);
+        collect_report_http_failure(response_code);
         return -1;
     }
 }
@@ -269,7 +328,7 @@ static int send_http_request(const char *payload, size_t payload_size) {
 static int init_batch_context(batch_context_t *ctx) {
     uint32_t batch_size = config_get_batch_size();
 
-    ctx->entries = calloc(batch_size, sizeof(compact_log_entry_t*));
+    ctx->entries = calloc(batch_size, sizeof(compact_log_entry_t *));
     if (!ctx->entries) {
         console_error(&csl, "Failed to allocate batch entries array");
         return -ENOMEM;
@@ -316,66 +375,66 @@ int collect_advance_http_state_machine(void) {
     time_t now = time(NULL);
 
     switch (current_batch.state) {
-        case HTTP_IDLE:
-            // Check if we should start a new batch
-            if (current_batch.count >= (int)config_get_batch_size()) {
-                console_debug(&csl, "Starting batch: reached max size (%d)", current_batch.count);
-                current_batch.state = HTTP_PREPARING;
-            } else if (current_batch.count > 0 &&
-                      (now - current_batch.created_time) >= (config_get_batch_timeout_ms() / 1000)) {
-                console_debug(&csl, "Starting batch: timeout reached (%d entries)", current_batch.count);
-                current_batch.state = HTTP_PREPARING;
-            }
-            break;
+    case HTTP_IDLE:
+        // Check if we should start a new batch
+        if (current_batch.count >= (int)config_get_batch_size()) {
+            console_debug(&csl, "Starting batch: reached max size (%d)", current_batch.count);
+            current_batch.state = HTTP_PREPARING;
+        } else if (current_batch.count > 0 &&
+                   (now - current_batch.created_time) >= (config_get_batch_timeout_ms() / 1000)) {
+            console_debug(&csl, "Starting batch: timeout reached (%d entries)", current_batch.count);
+            current_batch.state = HTTP_PREPARING;
+        }
+        break;
 
-        case HTTP_PREPARING:
-            // Create JSON payload
-            current_batch.json_payload = create_json_payload(
-                current_batch.entries, current_batch.count, &current_batch.payload_size);
+    case HTTP_PREPARING:
+        // Create JSON payload
+        current_batch.json_payload =
+            create_json_payload(current_batch.entries, current_batch.count, &current_batch.payload_size);
 
-            if (current_batch.json_payload) {
-                current_batch.state = HTTP_SENDING;
-                console_debug(&csl, "Prepared batch with %d entries (%zu bytes)",
-                             current_batch.count, current_batch.payload_size);
+        if (current_batch.json_payload) {
+            current_batch.state = HTTP_SENDING;
+            console_debug(&csl, "Prepared batch with %d entries (%zu bytes)", current_batch.count,
+                          current_batch.payload_size);
+        } else {
+            console_error(&csl, "Failed to create JSON payload");
+            current_batch.state = HTTP_FAILED;
+        }
+        break;
+
+    case HTTP_SENDING: {
+        console_debug(&csl, "Starting HTTP request for batch with %d logs (%zu bytes)", 
+                     current_batch.count, current_batch.payload_size);
+        int result = send_http_request(current_batch.json_payload, current_batch.payload_size);
+
+        if (result == 0) {
+            console_info(&csl, "Successfully sent batch of %d logs", current_batch.count);
+            clear_batch_context(&current_batch);
+            last_batch_time = now;
+            return 1; // Batch completed successfully
+        } else {
+            current_batch.retry_count++;
+            if (current_batch.retry_count < (int)config_get_http_retries()) {
+                console_warn(&csl, "HTTP send failed, retrying (%d/%u)", current_batch.retry_count,
+                             config_get_http_retries());
+                current_batch.state = HTTP_RETRY_WAIT;
             } else {
-                console_error(&csl, "Failed to create JSON payload");
+                console_error(&csl, "HTTP send failed after %u attempts", config_get_http_retries());
                 current_batch.state = HTTP_FAILED;
             }
-            break;
+        }
+    } break;
 
-        case HTTP_SENDING:
-            {
-                int result = send_http_request(current_batch.json_payload, current_batch.payload_size);
+    case HTTP_RETRY_WAIT:
+        // Simple delay before retry
+        sleep(HTTP_RETRY_DELAY_MS / 1000);
+        current_batch.state = HTTP_SENDING;
+        break;
 
-                if (result == 0) {
-                    console_info(&csl, "Successfully sent batch of %d logs", current_batch.count);
-                    clear_batch_context(&current_batch);
-                    last_batch_time = now;
-                    return 1; // Batch completed successfully
-                } else {
-                    current_batch.retry_count++;
-                    if (current_batch.retry_count < (int)config_get_http_retries()) {
-                        console_warn(&csl, "HTTP send failed, retrying (%d/%u)",
-                                   current_batch.retry_count, config_get_http_retries());
-                        current_batch.state = HTTP_RETRY_WAIT;
-                    } else {
-                        console_error(&csl, "HTTP send failed after %u attempts", config_get_http_retries());
-                        current_batch.state = HTTP_FAILED;
-                    }
-                }
-            }
-            break;
-
-        case HTTP_RETRY_WAIT:
-            // Simple delay before retry
-            sleep(HTTP_RETRY_DELAY_MS / 1000);
-            current_batch.state = HTTP_SENDING;
-            break;
-
-        case HTTP_FAILED:
-            console_error(&csl, "Batch processing failed, dropping %d entries", current_batch.count);
-            clear_batch_context(&current_batch);
-            return -1; // Failed
+    case HTTP_FAILED:
+        console_error(&csl, "Batch processing failed, dropping %d entries", current_batch.count);
+        clear_batch_context(&current_batch);
+        return -1; // Failed
     }
 
     return 0; // Continue processing
@@ -407,7 +466,7 @@ static void collect_entries_for_batch(void) {
 // Public API implementations
 
 int collect_init(void) {
-    console_info(&csl, "Initializing single-core log collection system");
+    console_info(&csl, "Initializing log collection system");
 
     // Load and validate configuration
     const collector_config_t *config = config_get_current();
@@ -530,42 +589,32 @@ void collect_cleanup(void) {
     console_info(&csl, "Single-core collection cleanup complete");
 }
 
-int collect_enqueue_log(const char *program, const char *message,
-                       const char *facility, const char *priority) {
-    if (!program || !message || !system_running) {
+int collect_enqueue_log(const log_data_t *log_data) {
+    if (!log_data || !log_data->msg || !system_running) {
         return -EINVAL;
+    }
+
+    // Check if we should accept logs (short circuit logic)
+    if (!ubus_should_accept_logs()) {
+        console_debug(&csl, "Rejecting log - log acceptance disabled");
+        return -EPERM;
     }
 
     // Get entry from pool
     compact_log_entry_t *entry = collect_get_entry_from_pool();
     if (!entry) {
         dropped_count++;
-        console_debug(&csl, "Entry pool exhausted, dropping log from %s", program);
+        console_debug(&csl, "Entry pool exhausted, dropping log");
         return -ENOSPC;
     }
 
-    // Copy data with bounds checking
-    strncpy(entry->program, program, MAX_PROGRAM_SIZE - 1);
-    entry->program[MAX_PROGRAM_SIZE - 1] = '\0';
-
-    strncpy(entry->message, message, MAX_LOG_ENTRY_SIZE - 1);
-    entry->message[MAX_LOG_ENTRY_SIZE - 1] = '\0';
-
-    if (facility) {
-        strncpy(entry->facility, facility, MAX_FACILITY_SIZE - 1);
-        entry->facility[MAX_FACILITY_SIZE - 1] = '\0';
-    } else {
-        entry->facility[0] = '\0';
-    }
-
-    if (priority) {
-        strncpy(entry->priority, priority, MAX_PRIORITY_SIZE - 1);
-        entry->priority[MAX_PRIORITY_SIZE - 1] = '\0';
-    } else {
-        entry->priority[0] = '\0';
-    }
-
-    entry->timestamp = (uint32_t)time(NULL);
+    // Store raw log fields without processing
+    strncpy(entry->msg, log_data->msg, MAX_LOG_ENTRY_SIZE - 1);
+    entry->msg[MAX_LOG_ENTRY_SIZE - 1] = '\0';
+    
+    entry->priority = log_data->priority;
+    entry->source = log_data->source;
+    entry->time = log_data->time;
 
     // Add to queue
     int result = enqueue_entry(&queue, entry);
@@ -573,7 +622,7 @@ int collect_enqueue_log(const char *program, const char *message,
         // Queue is full, drop the entry
         collect_return_entry_to_pool(entry);
         dropped_count++;
-        console_debug(&csl, "Queue full, dropping log from %s", program);
+        console_debug(&csl, "Queue full, dropping log");
         return -ENOSPC;
     }
 
@@ -591,9 +640,7 @@ int collect_get_stats(uint32_t *queue_size, uint32_t *dropped_count_out) {
     return 0;
 }
 
-bool collect_is_running(void) {
-    return system_running;
-}
+bool collect_is_running(void) { return system_running; }
 
 int collect_force_batch_processing(void) {
     if (!system_running) {
@@ -609,6 +656,35 @@ int collect_force_batch_processing(void) {
     return 0;
 }
 
-batch_context_t* collect_get_current_batch(void) {
-    return &current_batch;
+batch_context_t *collect_get_current_batch(void) { return &current_batch; }
+
+/**
+ * Report HTTP request failure for network monitoring
+ */
+void collect_report_http_failure(int error_code) {
+    consecutive_http_failures++;
+    console_warn(&csl, "HTTP failure reported (code: %d), consecutive failures: %d", error_code, consecutive_http_failures);
+    
+    // Report to UBUS module to potentially stop log acceptance
+    ubus_report_network_failure(consecutive_http_failures);
+}
+
+/**
+ * Report successful HTTP request to reset failure counter
+ */
+void collect_report_http_success(void) {
+    if (consecutive_http_failures > 0) {
+        console_info(&csl, "HTTP request successful, resetting failure counter (was: %d)", consecutive_http_failures);
+        consecutive_http_failures = 0;
+        
+        // Report success to UBUS module
+        ubus_report_network_failure(0);
+    }
+}
+
+/**
+ * Get current consecutive HTTP failure count
+ */
+int collect_get_consecutive_failures(void) {
+    return consecutive_http_failures;
 }

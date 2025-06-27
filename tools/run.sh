@@ -30,6 +30,10 @@ case "$APP" in
         # Set up config app dev environment
         echo "Setting up config app in development environment..."
         mkdir -p $APP_DIR/data
+        mkdir -p $APP_DIR/scripts
+
+        cp apps/config/scripts/dev/* $APP_DIR/scripts/
+        chmod +x $APP_DIR/scripts/*
 
         cp VERSION $RUN_DIR/VERSION
 

@@ -6,9 +6,10 @@
 
 #define CONFIG_FILE_OPENWRT "/etc/config/wayru-config"
 #define CONFIG_FILE_DEV "./scripts/wayru-config.config"
-#define CONFIG_FILE_FALLBACK "/tmp/wayru-config.config"
 
+#define CONFIG_FILE_FALLBACK "/tmp/wayru-config.config"
 #define DEFAULT_CONFIG_ENDPOINT "https://devices.wayru.tech/config"
+
 #define DEFAULT_ENABLED true
 #define DEFAULT_CONSOLE_LOG_LEVEL 7
 

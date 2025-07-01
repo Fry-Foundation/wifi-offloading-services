@@ -4,58 +4,66 @@
 #include "config.h"
 #include <string.h>
 #include <stdbool.h>
-#include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 static Console csl = {
     .topic = "config-main",
 };
+
 static ConfigSyncContext *sync_context = NULL;
-
-/**
- * Process command line arguments
- * @param argc Number of arguments
- * @param argv Array of arguments
- * @param dev_env Pointer to store whether dev environment was requested
- * @return true if processing was successful, false if program should exit
- */
-static bool process_command_line_args(int argc, char *argv[], bool *dev_env) {
-    *dev_env = false;
-
-    // Check for --dev flag
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "--dev") == 0) {
-            *dev_env = true;
-            break;
-        }
-    }
-
-    return true;
-}
+static bool dev_env = false;
 
 static void cleanup(void) {
     if (sync_context) {
         clean_config_sync_context(sync_context);
+        sync_context = NULL;
     }
-    scheduler_shutdown();
+}
+
+/**
+ * Process command line arguments
+ */
+static bool process_command_line_args(int argc, char *argv[]) {
+    dev_env = false;
+    
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--dev") == 0) {
+            dev_env = true;
+        }
+    }
+    return true;
 }
 
 int main(int argc, char *argv[]) {
-    bool dev_env = false;
-    if (!process_command_line_args(argc, argv, &dev_env)) {
+    console_set_syslog_facility(CONSOLE_FACILITY_DAEMON);
+    console_set_channels(CONSOLE_CHANNEL_SYSLOG | CONSOLE_CHANNEL_STDIO);
+    console_set_identity("wayru-config");
+
+    int ret;
+
+    if (!process_command_line_args(argc, argv)) {
+        return 0;
+    }
+
+    console_info(&csl, "Starting wayru-config service");
+
+    const remote_config_t *config = config_get_current();
+    if (!config) {
+        console_error(&csl, "Failed to load configuration");
         return 1;
     }
-    
-    const remote_config_t *config = config_get_current();
-    
-    int log_level = config_get_console_log_level();
-    console_set_log_level(log_level);  
-    
-    console_info(&csl, "Starting wayru-config service (log level: %d)", log_level);
-    
-    // Initialize scheduler 
-    scheduler_init();
+
+    if (!config_is_enabled()) {
+        console_info(&csl, "Configuration service is disabled");
+        return 0;
+    }
+
+    if (config->config_loaded) {
+        console_set_level(config->console_log_level);
+        console_info(&csl, "Console log level set to %d", config->console_log_level);
+    }
 
     if (dev_env) {
         console_info(&csl, "wayru-config started in development mode");
@@ -63,16 +71,8 @@ int main(int argc, char *argv[]) {
         console_info(&csl, "wayru-config service started");
     }
 
-    const remote_config_t *cfg = config_get_current();
-    if (!cfg || !cfg->config_loaded) {
-        console_warn(&csl, "No config file loaded, using default configuration");
-    }
-
-    if (!config_is_enabled()) {
-        console_warn(&csl, "Configuration disabled, exiting");
-        cleanup();
-        return 0;
-    }
+    scheduler_init();
+    console_info(&csl, "uloop scheduler initialized");
 
     const char *endpoint = config_get_config_endpoint();
     if (!endpoint) {
@@ -83,10 +83,9 @@ int main(int argc, char *argv[]) {
     
     console_info(&csl, "Using config endpoint: %s", endpoint);
 
-    uint32_t initial_delay = dev_env ? 10000 : 10000;   // Dev: 10s, Prod: 10s
-    uint32_t interval = dev_env ? 60000 : 900000;      // Dev: 60s, Prod: 15 min
+    uint32_t initial_delay = dev_env ? 5000 : 10000;    // Dev: 5s, Prod: 10s
+    uint32_t interval = dev_env ? 30000 : 900000;       // Dev: 30s, Prod: 15 min
 
-    // Start config sync service
     sync_context = start_config_sync_service(endpoint, initial_delay, interval, dev_env);
     if (!sync_context) {
         console_error(&csl, "Failed to start config sync service");
@@ -94,10 +93,16 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    console_info(&csl, "All services started, entering main loop");
+    console_info(&csl, "Config sync service started successfully");
+    console_info(&csl, "Starting event loop");
     
-    scheduler_run();
+    console_info(&csl, "Services scheduled, starting scheduler main loop");
+    int scheduler_result = scheduler_run();
     
+    console_info(&csl, "Shutting down config service...");
+    console_info(&csl, "Scheduler main loop ended with result: %d", scheduler_result);
+
     cleanup();
+    console_info(&csl, "Config service stopped");
     return 0;
 }

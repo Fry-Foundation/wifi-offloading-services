@@ -54,10 +54,8 @@ static void log_script_output(const char *output) {
             } else if (strstr(line, "Warning") || strstr(line, "warning") || strstr(line, "WARN")) {
                 console_warn(&csl, "Script: %s", line);
             } else if (strstr(line, "#") && strlen(line) > 1) {
-                // Comentarios del script
                 console_debug(&csl, "Script: %s", line);
             } else {
-                // Salida normal del script
                 console_info(&csl, "Script: %s", line);
             }
         }

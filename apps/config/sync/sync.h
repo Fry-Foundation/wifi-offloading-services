@@ -5,7 +5,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-// Definición completa de la estructura
 struct ConfigSyncContext {
     task_id_t task_id;
     const char *endpoint;
@@ -14,7 +13,6 @@ struct ConfigSyncContext {
 
 typedef struct ConfigSyncContext ConfigSyncContext;
 
-// API pública
 ConfigSyncContext *start_config_sync_service(const char *endpoint, 
                                             uint32_t initial_delay_ms,
                                             uint32_t interval_ms, 

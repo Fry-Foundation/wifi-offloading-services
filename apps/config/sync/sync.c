@@ -30,7 +30,6 @@ char *fetch_device_config_json(const char *endpoint) {
         return NULL;
     }
 
-    // Debug: mostrar tamaño del JSON recibido
     size_t json_length = strlen(result.response_buffer);
     console_info(&csl, "Received config JSON (%zu bytes): %.200s%s", 
                  json_length, 

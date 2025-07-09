@@ -84,22 +84,6 @@ function readConfig(filename) {
     }
 }
 
-function restartServices() {
-    system("wifi reload");
-    printf("Reloaded wireless configuration\n");
-
-    let wayruServices = [
-        'wayru-collector',
-        'wayru-agent',
-        'wayru-config'
-    ];
-
-    for (let service in wayruServices) {
-        printf("Restarting %s service...\n", service);
-        system(sprintf("/etc/init.d/%s restart", service));
-    }
-}
-
 function main() {
     let configFile = ARGV[0];
     if (!configFile) {
@@ -129,7 +113,7 @@ function main() {
         return 1;
     }
 
-    // Commit both wireless and wayru packages
+    // Commit packages
     let packages = ['wireless', 'wayru-agent', 'wayru-collector', 'wayru-config'];
     for (let pkg in packages) {
         try {
@@ -143,15 +127,8 @@ function main() {
 
     printf("All configuration applied and committed successfully\n");
 
-    // Restart services to apply changes
-    try {
-        restartServices();
-        printf("All services restarted successfully\n");
-    } catch (e) {
-        printf("Error restarting services: %s\n", "" + e);
-        return 1;
-    }
-
+    printf("Services will be restarted by wayru-config main process\n");
+    printf("Configuration applied successfully\n");
     return 0;
 }
 

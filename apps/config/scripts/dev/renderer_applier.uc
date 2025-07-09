@@ -19,7 +19,6 @@ function renderSection(packageName, sectionType, section) {
 
     printf("\n# Configuring %s section: %s in package %s\n", sectionType, name, packageName);
     
-    // Print UCI set commands for each key-value pair
     for (let k in section) {
         if (k == 'meta_section' || k == 'meta_type' || k == 'meta_config') continue;
 
@@ -47,7 +46,7 @@ function renderWirelessConfig(config) {
         }
     }
     printf("uci commit wireless\n");
-    printf("wifi reload\n");
+    printf("# WiFi reload will be handled by wayru-config main process\n");
     return true;
 }
 
@@ -64,7 +63,7 @@ function renderWayruConfig(config) {
         let t = section.meta_type;
         renderSection(pkg, t, section);
         printf("uci commit %s\n", pkg);
-        printf("/etc/init.d/%s restart\n", pkg);
+        printf("# %s restart will be handled by wayru-config main process\n", pkg);
     }
     return true;
 }
@@ -82,7 +81,6 @@ function readConfig(filename) {
 }
 
 function main() {
-    // Hacer obligatorio el argumento del archivo de configuración
     let configFile = ARGV[0];
     if (!configFile) {
         printf("Error: No config file specified\n");
@@ -92,8 +90,6 @@ function main() {
 
     let config = readConfig(configFile);
     if (!config) return 1;
-
-    printf("# === UCI Commands that would be executed in OpenWrt ===\n");
 
     renderWirelessConfig(config);
     renderWayruConfig(config);

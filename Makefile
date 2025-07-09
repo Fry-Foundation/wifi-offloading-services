@@ -50,15 +50,13 @@ define Package/wayru-os-services/install
 	$(INSTALL_DIR) $(1)/etc/wayru-agent/data/did-key
 	$(INSTALL_DIR) $(1)/etc/wayru-config
 	$(INSTALL_DIR) $(1)/etc/wayru-config/scripts
+	$(INSTALL_DIR) $(1)/etc/wayru-config/hashes
 	$(INSTALL_DIR) $(1)/etc/wayru-collector
 
 	# Install the three new binaries
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/wayru-agent $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/wayru-config $(1)/usr/bin/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/wayru-collector $(1)/usr/bin/
-
-	# Install wayru-config scripts
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/apps/config/scripts/openwrt/renderer_applier.uc $(1)/etc/wayru-config/scripts/
 
 	# Install init script and config
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/apps/agent/scripts/openwrt/wayru-agent.init $(1)/etc/init.d/wayru-agent

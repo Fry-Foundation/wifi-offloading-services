@@ -3,8 +3,8 @@
     "wayru": [
       {
         "meta_config": "wayru-collector",
-        "meta_type": "collector",
-        "meta_section": "wayru-collector",
+        "meta_type": "wayru_collector",
+        "meta_section": "wayru_collector",
         "enabled": true,
         "logs_endpoint": "https://devices.wayru.tech/logs",
         "console_log_level": 7,
@@ -18,8 +18,8 @@
       },
       {
         "meta_config": "wayru-agent",
-        "meta_type": "agent",
-        "meta_section": "wayru-agent",
+        "meta_type": "wayru_agent",
+        "meta_section": "wayru_agent",
         "enabled": true,
         "main_api": "https://prod.api.az.wayru.tech",
         "accounting_api": "https://wifi.api.wayru.tech",
@@ -55,8 +55,8 @@
       },
       {
         "meta_config": "wayru-config",
-        "meta_type": "config",
-        "meta_section": "wayru-config",
+        "meta_type": "wayru_config",
+        "meta_section": "wayru_config",
         "enabled": true,
         "config_endpoint": "http://devices.wayru.tech/config"
       }
@@ -67,7 +67,6 @@
         "meta_type": "wifi-device",
         "meta_section": "radio0",
         "channel": "auto",
-        "htmode": "HE40",
         "disabled": "0",
         "cell_density": "0"
       },
@@ -76,7 +75,6 @@
         "meta_type": "wifi-device",
         "meta_section": "radio1",
         "channel": "auto",
-        "htmode": "HE80",
         "disabled": "0",
         "cell_density": "0"
       },
@@ -100,7 +98,7 @@
         "device": "radio1",
         "network": "encrypted",
         "mode": "ap",
-        "ssid": "Wayru Test",
+        "ssid": "Wayru Operator",
         "encryption": "psk2",
         "disabled": false,
         "key": "988Dh283zX",

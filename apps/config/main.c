@@ -22,9 +22,6 @@ static void cleanup(void) {
     }
 }
 
-/**
- * Process command line arguments
- */
 static bool process_command_line_args(int argc, char *argv[]) {
     dev_env = false;
     
@@ -40,8 +37,6 @@ int main(int argc, char *argv[]) {
     console_set_syslog_facility(CONSOLE_FACILITY_DAEMON);
     console_set_channels(CONSOLE_CHANNEL_SYSLOG | CONSOLE_CHANNEL_STDIO);
     console_set_identity("wayru-config");
-
-    int ret;
 
     if (!process_command_line_args(argc, argv)) {
         return 0;
@@ -66,7 +61,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (dev_env) {
-        console_info(&csl, "wayru-config started in development mode");
+        console_info(&csl, "wayru-config started in DEVELOPMENT mode");
     } else {
         console_info(&csl, "wayru-config service started");
     }
@@ -83,8 +78,8 @@ int main(int argc, char *argv[]) {
     
     console_info(&csl, "Using config endpoint: %s", endpoint);
 
-    uint32_t initial_delay = dev_env ? 5000 : 10000;    // Dev: 5s, Prod: 10s
-    uint32_t interval = dev_env ? 30000 : 900000;       // Dev: 30s, Prod: 15 min
+    uint32_t initial_delay = dev_env ? 5000 : 5000;    
+    uint32_t interval = dev_env ? 30000 : 30000;       
 
     sync_context = start_config_sync_service(endpoint, initial_delay, interval, dev_env);
     if (!sync_context) {
@@ -95,12 +90,12 @@ int main(int argc, char *argv[]) {
 
     console_info(&csl, "Config sync service started successfully");
     console_info(&csl, "Starting event loop");
-    
     console_info(&csl, "Services scheduled, starting scheduler main loop");
+    
     int scheduler_result = scheduler_run();
     
-    console_info(&csl, "Shutting down config service...");
     console_info(&csl, "Scheduler main loop ended with result: %d", scheduler_result);
+    console_info(&csl, "Shutting down config service...");
 
     cleanup();
     console_info(&csl, "Config service stopped");

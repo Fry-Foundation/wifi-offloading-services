@@ -78,8 +78,12 @@ int main(int argc, char *argv[]) {
     
     console_info(&csl, "Using config endpoint: %s", endpoint);
 
-    uint32_t initial_delay = dev_env ? 5000 : 5000;    
-    uint32_t interval = dev_env ? 30000 : 30000;       
+    uint32_t config_interval_ms = config_get_config_interval_ms();
+    uint32_t initial_delay = dev_env ? 5000 : 5000;  
+    uint32_t interval = config_interval_ms; 
+
+    console_info(&csl, "Using config interval: %u ms (%u seconds)", 
+                 config_interval_ms, config_interval_ms / 1000);
 
     sync_context = start_config_sync_service(endpoint, initial_delay, interval, dev_env);
     if (!sync_context) {

@@ -10,6 +10,16 @@ function printUciCommand(packageName, sectionName, key, value) {
     printf("uci set %s.%s.%s='%s'\n", packageName, sectionName, key, value);
 }
 
+function printUciListCommands(packageName, sectionName, key, values) {
+    // Clear existing list first
+    printf("uci delete %s.%s.%s 2>/dev/null || true\n", packageName, sectionName, key);
+    
+    // Add each value to the list
+    for (let value in values) {
+        printf("uci add_list %s.%s.%s='%s'\n", packageName, sectionName, key, value);
+    }
+}
+
 function renderSection(packageName, sectionType, section) {
     let name = section.meta_section;
     if (!name) {
@@ -23,8 +33,16 @@ function renderSection(packageName, sectionType, section) {
         if (k == 'meta_section' || k == 'meta_type' || k == 'meta_config') continue;
 
         let v = section[k];
-        let uciValue = boolToUci(v);
-        printUciCommand(packageName, name, k, uciValue);
+        
+        //HANDLE ARRAY VALUES AS UCI LISTS
+        if (type(v) == 'array') {
+            printf("# Setting list %s.%s.%s with %d items\n", packageName, name, k, length(v));
+            printUciListCommands(packageName, name, k, v);
+        } else {
+            // Handle single values
+            let uciValue = boolToUci(v);
+            printUciCommand(packageName, name, k, uciValue);
+        }
     }
 
     return true;
@@ -68,6 +86,24 @@ function renderWayruConfig(config) {
     return true;
 }
 
+function renderOpenNdsConfig(config) {
+    let openndsArray = config.device_config?.opennds;
+    if (!openndsArray || type(openndsArray) != 'array') {
+        printf("# No OpenNDS configuration found\n");
+        return false;
+    }
+
+    printf("\n# === OpenNDS Configuration ===\n");
+    for (let section in openndsArray) {
+        let pkg = "opennds";
+        let t = section.meta_type || "opennds";
+        renderSection(pkg, t, section);
+    }
+    printf("uci commit opennds\n");
+    printf("# OpenNDS restart will be handled by wayru-config main process\n");
+    return true;
+}
+
 function readConfig(filename) {
     try {
         let file = fs.open(filename, 'r');
@@ -93,6 +129,7 @@ function main() {
 
     renderWirelessConfig(config);
     renderWayruConfig(config);
+    renderOpenNdsConfig(config);  
 
     printf("\n# === End of UCI Commands ===\n");
     return 0;

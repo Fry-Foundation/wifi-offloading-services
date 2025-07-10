@@ -47,6 +47,8 @@ bool config_affects_wayru_agent(const char *json_config, bool dev_mode);
  */
 bool config_affects_wayru_collector(const char *json_config, bool dev_mode);
 
+bool config_affects_opennds(const char *json_config, bool dev_mode);
+
 /**
  * Set the development mode for the renderer
  * @param dev_mode True to enable development mode, false to disable

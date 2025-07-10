@@ -19,32 +19,33 @@ typedef struct {
     bool wayru_agent;
     bool wayru_collector;
     bool wayru_config;
+    bool opennds;  
 } ServiceRestartNeeds;
 
 
- //Analyze which services need restart based on configuration changes
- //Uses hash comparison per config section
- 
+// Analyze which services need restart based on configuration changes
+// Uses granular hash comparison per service section
 static ServiceRestartNeeds analyze_restart_needs(const char *json, bool dev_mode) {
-    ServiceRestartNeeds needs = {false, false, false, false};
+    ServiceRestartNeeds needs = {false, false, false, false, false}; 
     
     // Check each service section for changes using hash comparison
     needs.wireless = config_affects_wireless(json, dev_mode);
     needs.wayru_agent = config_affects_wayru_agent(json, dev_mode);
     needs.wayru_collector = config_affects_wayru_collector(json, dev_mode);
     needs.wayru_config = config_affects_wayru_config(json, dev_mode);
+    needs.opennds = config_affects_opennds(json, dev_mode);
     
-    console_debug(&csl, "Restart analysis - wireless: %s, agent: %s, collector: %s, config: %s",
+    console_debug(&csl, "Restart analysis - wireless: %s, agent: %s, collector: %s, config: %s, opennds: %s",
                  needs.wireless ? "YES" : "no",
                  needs.wayru_agent ? "YES" : "no", 
                  needs.wayru_collector ? "YES" : "no",
-                 needs.wayru_config ? "YES" : "no");
+                 needs.wayru_config ? "YES" : "no",
+                 needs.opennds ? "YES" : "no");
     
     return needs;
 }
 
-
- // Development mode: Log what would be restarted without actually doing it
+// Development mode: Log what would be restarted without actually doing it
 static void handle_dev_mode_restart(const ServiceRestartNeeds *needs) {
     console_info(&csl, "Development mode: showing what would be restarted");
     
@@ -60,16 +61,16 @@ static void handle_dev_mode_restart(const ServiceRestartNeeds *needs) {
     if (needs->wayru_config) {
         console_info(&csl, "Would reload: wayru-config configuration (via procd reload)");
     }
+    if (needs->opennds) { 
+        console_info(&csl, "Would restart: opennds service");
+    }
     
-    if (!needs->wireless && !needs->wayru_collector && !needs->wayru_agent && !needs->wayru_config) {
+    if (!needs->wireless && !needs->wayru_collector && !needs->wayru_agent && !needs->wayru_config && !needs->opennds) {
         console_info(&csl, "No services need restart");
     }
 }
 
-/**
- * Production mode: Actually restart services 
- * Order: wireless → collector → agent → config
- */
+// Production mode: Actually restart services 
 static int restart_services_production(const ServiceRestartNeeds *needs) {
     console_info(&csl, "Applying configuration changes to services...");
     int total_errors = 0;
@@ -87,7 +88,20 @@ static int restart_services_production(const ServiceRestartNeeds *needs) {
         sleep(1); // Allow WiFi to stabilize
     }
 
-    // 2. Restart wayru-collector 
+    // 2. Restart OpenNDS 
+    if (needs->opennds) {  
+        console_info(&csl, "Restarting OpenNDS...");
+        int result = system("/etc/init.d/opennds restart");
+        if (WEXITSTATUS(result) == 0) {
+            console_info(&csl, "OpenNDS restarted successfully");
+        } else {
+            console_warn(&csl, "OpenNDS restart failed with code %d", WEXITSTATUS(result));
+            total_errors++;
+        }
+        sleep(2); // Allow OpenNDS to initialize
+    }        
+    
+    // 3. Restart wayru-collector 
     if (needs->wayru_collector) {
         console_info(&csl, "Restarting wayru-collector...");
         int result = system("/etc/init.d/wayru-collector reload");
@@ -106,7 +120,7 @@ static int restart_services_production(const ServiceRestartNeeds *needs) {
         sleep(2); // Allow collector to initialize
     }
 
-    // 3. Restart wayru-agent 
+    // 4. Restart wayru-agent 
     if (needs->wayru_agent) {
         console_info(&csl, "Restarting wayru-agent...");
         int result = system("/etc/init.d/wayru-agent reload");
@@ -125,7 +139,7 @@ static int restart_services_production(const ServiceRestartNeeds *needs) {
         sleep(2); // Allow agent to initialize
     }
 
-    // 4. Reload wayru-config last 
+    // 5. Reload wayru-config last 
     if (needs->wayru_config) {
         console_info(&csl, "wayru-config configuration changed, triggering reload...");
         int result = system("/etc/init.d/wayru-config reload");
@@ -198,7 +212,7 @@ static void config_sync_task(void *ctx) {
     ServiceRestartNeeds needs = analyze_restart_needs(json, context->dev_mode);
     
     // 3. Skip if no changes detected
-    if (!needs.wireless && !needs.wayru_agent && !needs.wayru_collector && !needs.wayru_config) {
+    if (!needs.wireless && !needs.wayru_agent && !needs.wayru_collector && !needs.wayru_config && !needs.opennds) {
         console_info(&csl, "No configuration changes detected, skipping application");
         free(json);
         return;

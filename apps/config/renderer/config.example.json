@@ -104,6 +104,45 @@
         "key": "988Dh283zX",
         "isolate": false
       }
+    ],
+    "opennds": [
+      {
+        "meta_config": "opennds",
+        "meta_type": "opennds",
+        "meta_section": "opennds1",
+        "debuglevel": "1",
+        "enabled": "1",
+        "fas_secure_enabled": "3",
+        "faskey": "qLULCQufhZVHkiPpNkC9RDHjX9A9Fud6",
+        "faspath": "/",
+        "fasport": "443",
+        "fasremotefqdn": "fas.wayru.tech",
+        "fasremoteip": "52.230.158.179",
+        "gatewayinterface": "br-lan.10",
+        "gatewayname": "cfbe115a-45f2-41ad-8bb9-649b438ae6fe",
+        "maxclients": "250",
+        "binauth": "/etc/wayru-agent/scripts/nds-binauth.sh",
+        "enable_serial_number_suffix": "0",
+        "users_to_router": [
+          "allow tcp port 53",
+          "allow udp port 53",
+          "allow udp port 67",
+          "allow tcp port 22",
+          "allow tcp port 80",
+          "allow tcp port 443",
+          "allow tcp port 47850",
+          "allow tcp port 47851",
+          "allow tcp port 48601",
+          "allow tcp port 48602",
+          "allow tcp port 40500"
+        ],
+        "walledgarden_fqdn_list": [
+          "ingest.sentry.io api.mapbox.com portal.wayru.tech portal.wayru.io portal.internal.wayru.tech api.wayru.tech api.internal.wayru.tech wifi.api.wayru.tech wifi.api.internal.wayru.tech"
+        ],
+        "walledgarden_port_list": [
+          "443 22"
+        ]
+      }
     ]
   }
 }

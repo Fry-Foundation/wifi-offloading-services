@@ -20,11 +20,13 @@ static Console csl = {.topic = "renderer"};
 #define AGENT_HASH_FILE "wayru-agent.hash"
 #define COLLECTOR_HASH_FILE "wayru-collector.hash"
 #define CONFIG_HASH_FILE "wayru-config.hash"
+#define OPENNDS_HASH_FILE "opennds.hash"
 
 //VARIABLES FOR GRANULAR HASH IN MEMORY
 static unsigned long last_wireless_hash = 0;
 static unsigned long last_agent_hash = 0;
 static unsigned long last_collector_hash = 0;
+static unsigned long last_opennds_hash = 0;
 static unsigned long last_config_hash = 0;
 
 //FLAGS TO INDICATE IF WE ALREADY LOADED 
@@ -32,6 +34,7 @@ static bool wireless_hash_loaded = false;
 static bool agent_hash_loaded = false;
 static bool collector_hash_loaded = false;
 static bool config_hash_loaded = false;
+static bool opennds_hash_loaded = false;
 
 // GLOBAL DEVELOPMENT MODE FLAG**
 static bool global_dev_mode = false;
@@ -148,6 +151,12 @@ static char* extract_config_section(const char *json_config, const char *section
         if (json_object_object_get_ex(device_config, "wireless", &wireless_array)) {
             section_json = strdup(json_object_to_json_string(wireless_array));
         }
+    } else if (strcmp(section_type, "opennds") == 0) { 
+        // Extract complete opennds section
+        json_object *opennds_array = NULL;
+        if (json_object_object_get_ex(device_config, "opennds", &opennds_array)) {
+            section_json = strdup(json_object_to_json_string(opennds_array));
+        }
     } else if (strcmp(section_type, "wayru") == 0) {
         // Extract specific wayru section by meta_config
         json_object *wayru_array = NULL;
@@ -245,6 +254,12 @@ bool config_affects_wayru_config(const char *json_config, bool dev_mode) {
                                 &last_config_hash, &config_hash_loaded, dev_mode);
 }
 
+// Check if OpenNDS configuration changed
+bool config_affects_opennds(const char *json_config, bool dev_mode) {
+    return check_section_changed(json_config, "opennds", NULL, OPENNDS_HASH_FILE,
+                                &last_opennds_hash, &opennds_hash_loaded, dev_mode);
+}
+
 // Set development mode for renderer
 void set_renderer_dev_mode(bool dev_mode) {
     global_dev_mode = dev_mode;
@@ -258,15 +273,17 @@ void reset_config_section_hashes(void) {
     last_agent_hash = 0;
     last_collector_hash = 0;
     last_config_hash = 0;
+    last_opennds_hash = 0;  
     
     // Mark as not loaded to force reload from disk
     wireless_hash_loaded = false;
     agent_hash_loaded = false;
     collector_hash_loaded = false;
     config_hash_loaded = false;
+    opennds_hash_loaded = false;
 }
 
-//Clear all section hashes from disk and memory
+// Clear all section hashes from disk and memory
 void clear_all_section_hashes(bool dev_mode) {
     console_info(&csl, "Clearing all section hashes from disk and memory");
     
@@ -274,10 +291,11 @@ void clear_all_section_hashes(bool dev_mode) {
         WIRELESS_HASH_FILE,
         AGENT_HASH_FILE,
         COLLECTOR_HASH_FILE,
-        CONFIG_HASH_FILE
+        CONFIG_HASH_FILE,
+        OPENNDS_HASH_FILE 
     };
     
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 5; i++) { 
         char *hash_file = get_hash_file_path(dev_mode, hash_files[i]);
         if (hash_file) {
             if (unlink(hash_file) == 0) {

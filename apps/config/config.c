@@ -85,6 +85,9 @@ static int parse_config_option(remote_config_t *config, const char *line) {
         if (config->console_log_level < 0) config->console_log_level = 0;
         if (config->console_log_level > 7) config->console_log_level = 7;
         console_debug(&csl, "Parsed console_log_level: %d", config->console_log_level);
+    } else if (strcmp(option_name, "config_interval") == 0) { 
+        config->config_interval_ms = (uint32_t)atoi(option_value);
+        console_debug(&csl, "Parsed config_interval: %u ms", config->config_interval_ms);
     } else {
         console_debug(&csl, "Unknown configuration option: %s", option_name);
     }
@@ -97,7 +100,8 @@ void config_init_defaults(remote_config_t *config) {
     strncpy(config->config_endpoint, DEFAULT_CONFIG_ENDPOINT, sizeof(config->config_endpoint) - 1);
     config->config_endpoint[sizeof(config->config_endpoint) - 1] = '\0';
     config->enabled = DEFAULT_ENABLED;
-    config->console_log_level = DEFAULT_CONSOLE_LOG_LEVEL;  
+    config->console_log_level = DEFAULT_CONSOLE_LOG_LEVEL;
+    config->config_interval_ms = DEFAULT_CONFIG_INTERVAL_MS;
     config->config_loaded = false;
     config->config_file_path[0] = '\0';
     console_debug(&csl, "Configuration initialized with defaults");
@@ -191,6 +195,11 @@ int config_get_console_log_level(void) {
     return config ? config->console_log_level : DEFAULT_CONSOLE_LOG_LEVEL;
 }
 
+uint32_t config_get_config_interval_ms(void) {
+    const remote_config_t *config = config_get_current();
+    return config ? config->config_interval_ms : DEFAULT_CONFIG_INTERVAL_MS;
+}
+
 void config_print_current(void) {
     const remote_config_t *config = config_get_current();
     if (!config) {
@@ -200,7 +209,8 @@ void config_print_current(void) {
 
     console_info(&csl, "Config enabled: %s", config->enabled ? "true" : "false");
     console_info(&csl, "Config endpoint: %s", config->config_endpoint);
-    console_info(&csl, "Console log level: %d", config->console_log_level);  
+    console_info(&csl, "Console log level: %d", config->console_log_level);
+    console_info(&csl, "Config interval: %u ms", config->config_interval_ms);
     if (config->config_loaded) {
         console_info(&csl, "Config file: %s", config->config_file_path);
     } else {

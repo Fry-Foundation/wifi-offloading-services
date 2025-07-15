@@ -11,7 +11,7 @@ These instructions are for an Arch Linux system, but they can be adapted for oth
 ```bash
 git clone https://git.openwrt.org/project/libubox.git
 
-cd ubox
+cd libubox
 
 mkdir build
 cd build
@@ -21,7 +21,7 @@ make
 sudo make install
 
 # add `/usr/local/lib` to ld.so.conf.d if not already present
-echo "/usr/local/lib" > /etc/ld.so.conf.d/ubox.conf
+echo "/usr/local/lib" | sudo tee -a /etc/ld.so.conf.d/ubox.conf
 sudo ldconfig
 ```
 

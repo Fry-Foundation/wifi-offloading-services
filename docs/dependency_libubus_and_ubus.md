@@ -23,7 +23,7 @@ make
 sudo make install
 
 # add `/usr/local/lib` to ld.so.conf.d
-echo "/usr/local/lib" > /etc/ld.so.conf.d/ubus.conf
+echo "/usr/local/lib" | sudo tee -a /etc/ld.so.conf.d/ubus.conf
 sudo ldconfig
 ```
 
@@ -50,11 +50,25 @@ Description=ubusd daemon
 After=network.target
 
 [Service]
-ExecStart=/usr/local/sbin/ubusd --listen /run/ubus/ubus.sock
+Type=simple
 User=ubus
 Group=ubus
-AmbientCapabilities=
+RuntimeDirectory=ubus
+RuntimeDirectoryMode=0755
+ExecStart=/usr/local/sbin/ubusd -s /run/ubus/ubus.sock
 
 [Install]
 WantedBy=multi-user.target
+```
+
+### Enable and start
+```
+sudo systemctl enable ubus
+sudo systemctl start ubus
+```
+
+### Make sure your user has permissions
+```
+sudo usermod -aG ubus $USER
+newgrp ubus
 ```

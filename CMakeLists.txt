@@ -117,8 +117,10 @@ target_link_libraries(wayru-agent
 add_executable(wayru-config
     apps/config/main.c
     apps/config/sync/sync.c
+    apps/config/sync/token_manager.c 
     apps/config/renderer/renderer.c
     apps/config/config.c
+    apps/config/ubus.c
 )
 target_include_directories(wayru-config PRIVATE
     apps/config
@@ -130,7 +132,10 @@ target_link_libraries(wayru-config
     PRIVATE
     wayru-core
     wayru-http
-    ${json_c_library}   
+    ${json_c_library}
+    ${ubus_library}
+    ${ubox_library}
+    ${blobmsg_json_library}
 )
 
 # Collector app - Log collection and forwarding

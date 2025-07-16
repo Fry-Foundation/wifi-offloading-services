@@ -1,6 +1,6 @@
 #include "sync.h"
 #include "core/console.h"
-#include "http/http-requests.h"
+#include "http/http-requests.h"  
 #include "config.h"
 #include <json-c/json.h>
 #include <stdlib.h>
@@ -10,6 +10,7 @@
 #include <signal.h>
 #include "renderer/renderer.h"
 #include <sys/stat.h>
+#include <time.h>        
 
 static Console csl = {.topic = "config-sync"};
 
@@ -165,42 +166,110 @@ static int restart_services_production(const ServiceRestartNeeds *needs) {
  * Fetch device configuration from remote endpoint
  * Returns allocated JSON string or NULL on failure
  */
-char *fetch_device_config_json(const char *endpoint) {
+char *fetch_device_config_json(const char *endpoint, ConfigSyncContext *context) {
     if (!endpoint || strlen(endpoint) == 0) {
         console_error(&csl, "Missing config endpoint");
         return NULL;
     }
 
+    // Check should requests be accepted
+    if (!sync_should_accept_requests(context)) {
+        console_debug(&csl, "Rejecting config request - request acceptance disabled");
+        return NULL;
+    }
+
+    // Get cached access token
+    const char *access_token = sync_get_current_token(context);
+    if (!access_token) {
+        console_warn(&csl, "No valid access token available, aborting config request");
+        sync_report_http_failure(context, -1);
+        return NULL;
+    }
+
+    console_debug(&csl, "Making config request with Bearer token");
+    
+    struct timespec start_time;
+    clock_gettime(CLOCK_MONOTONIC, &start_time);
+
     HttpGetOptions options = {
         .url = endpoint,
+        .bearer_token = access_token,  
     };
 
     HttpResult result = http_get(&options);
 
+    // Calculate request duration
+    struct timespec end_time;
+    clock_gettime(CLOCK_MONOTONIC, &end_time);
+    double duration_ms = (end_time.tv_sec - start_time.tv_sec) * 1000.0 + 
+                        (end_time.tv_nsec - start_time.tv_nsec) / 1000000.0;
+
     if (result.is_error || !result.response_buffer) {
-        console_error(&csl, "Config fetch failed: %s", result.error);
-        if (result.response_buffer) free(result.response_buffer);
+        console_warn(&csl, "Config fetch failed: %s - took %.2f ms", 
+                    result.error, duration_ms);
+        sync_report_http_failure(context, result.http_status_code);
+        
+        if (result.response_buffer) {
+            free(result.response_buffer);
+        }
         return NULL;
     }
 
-    size_t json_length = strlen(result.response_buffer);
-    console_info(&csl, "Received config JSON (%zu bytes): %.200s%s", 
-                 json_length, 
-                 result.response_buffer,
-                 json_length > 200 ? "..." : "");
+    // Check HTTP status codes
+    if (result.http_status_code >= 200 && result.http_status_code < 300) {
+        console_info(&csl, "Config request successful (code: %ld) - took %.2f ms", 
+                    result.http_status_code, duration_ms);
+        sync_report_http_success(context);
+        
+        size_t json_length = strlen(result.response_buffer);
+        console_info(&csl, "Received config JSON (%zu bytes): %.200s%s", 
+                     json_length, 
+                     result.response_buffer,
+                     json_length > 200 ? "..." : "");
 
-    return result.response_buffer;  // Caller must free()
+        return result.response_buffer;  
+        
+    } else if (result.http_status_code == 401) {
+        console_warn(&csl, "Config request failed with 401 Unauthorized, will refresh token - took %.2f ms", 
+                    duration_ms);
+        sync_report_http_failure(context, result.http_status_code);
+    } else {
+        console_warn(&csl, "Config request failed with code: %ld - took %.2f ms", 
+                    result.http_status_code, duration_ms);
+        sync_report_http_failure(context, result.http_status_code);
+    }
+
+    // Cleanup on error
+    if (result.response_buffer) {
+        free(result.response_buffer);
+    }
+    return NULL;
 }
 
- // Main periodic task: fetch config, detect changes, apply updates
+// Main periodic task: fetch config, detect changes, apply updates
 
 static void config_sync_task(void *ctx) {
     ConfigSyncContext *context = (ConfigSyncContext *)ctx;
     
     console_debug(&csl, "Executing config sync task");
+
+    // Check should requests be accepted
+    if (!sync_should_accept_requests(context)) {
+        console_debug(&csl, "Skipping config sync - requests disabled");
+        return;
+    }
+
+    if (!sync_is_token_valid(context)) {
+        console_info(&csl, "Access token expired, attempting refresh...");
+        int ret = sync_refresh_access_token(context);
+        if (ret < 0) {
+            console_warn(&csl, "Failed to refresh token, skipping this cycle");
+            return;
+        }
+    }
     
-    // 1. Fetch configuration from server
-    char *json = fetch_device_config_json(context->endpoint);
+    // 1. Fetch configuration JSON from endpoint
+    char *json = fetch_device_config_json(context->endpoint, context);
     if (!json) {
         console_warn(&csl, "No configuration received, skipping this cycle");
         return;
@@ -238,8 +307,8 @@ static void config_sync_task(void *ctx) {
     free(json);
 }
 
- //Initialize and start the configuration sync service
- // Sets up periodic task and renderer configuration
+//Initialize and start the configuration sync service
+// Sets up periodic task and renderer configuration
  
 ConfigSyncContext *start_config_sync_service(const char *endpoint, 
                                             uint32_t initial_delay_ms,
@@ -255,6 +324,14 @@ ConfigSyncContext *start_config_sync_service(const char *endpoint,
     // Initialize context
     context->endpoint = endpoint;
     context->dev_mode = dev_mode;
+    context->current_interval_ms = interval_ms;  
+    
+    // Initialize token management
+    memset(context->access_token, 0, sizeof(context->access_token));
+    context->token_expiry = 0;
+    context->token_initialized = false;
+    context->accept_requests = false;  // Start disabled until token is acquired
+    context->consecutive_http_failures = 0;
     
     // Configure renderer for appropriate mode
     set_renderer_dev_mode(dev_mode);
@@ -264,6 +341,15 @@ ConfigSyncContext *start_config_sync_service(const char *endpoint,
     
     console_info(&csl, "Starting config sync service with initial delay %u ms, interval %u ms", 
                  initial_delay_ms, interval_ms);
+    
+    // Try to get initial token
+    console_info(&csl, "Attempting to acquire initial access token...");
+    int token_ret = sync_refresh_access_token(context);
+    if (token_ret == 0) {
+        console_info(&csl, "Initial access token acquired successfully");
+    } else {
+        console_warn(&csl, "Failed to acquire initial token, will retry during operation");
+    }
     
     // Schedule the periodic task
     context->task_id = schedule_repeating(initial_delay_ms, interval_ms, config_sync_task, context);
@@ -281,14 +367,38 @@ ConfigSyncContext *start_config_sync_service(const char *endpoint,
 //Clean up configuration sync context and cancel scheduled task
 
 void clean_config_sync_context(ConfigSyncContext *context) {
-    if (context) {
-        if (context->task_id != 0) {
-            console_debug(&csl, "Cancelling config sync task %u", context->task_id);
-            cancel_task(context->task_id);
-        }
-        free(context);
+    if (!context) {
+        return;
     }
+    
+    console_info(&csl, "Cleaning config sync context...");
+    
+    // Cancel scheduled task
+    if (context->task_id != 0) {
+        console_debug(&csl, "Cancelling sync task ID: %u", context->task_id);
+        cancel_task(context->task_id);
+        context->task_id = 0;
+    }
+    
+    // Limpiar token en memoria
+    if (context->token_initialized) {
+        console_debug(&csl, "Clearing access token from memory");
+        memset(context->access_token, 0, sizeof(context->access_token));
+        context->token_initialized = false;
+        context->token_expiry = 0;
+    }
+    
+    // Reset flags
+    context->accept_requests = false;
+    context->consecutive_http_failures = 0;
+    
+    // Free context memory
+    console_debug(&csl, "Freeing sync context memory");
+    free(context);
+    
+    console_info(&csl, "Config sync context cleaned successfully");
 }
+
 
 
 

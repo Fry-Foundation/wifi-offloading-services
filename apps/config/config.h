@@ -27,7 +27,6 @@ void config_init_defaults(remote_config_t *config);
 int config_load(remote_config_t *config);
 int config_load_from_file(remote_config_t *config, const char *file_path);
 const remote_config_t* config_get_current(void);
-int config_reload(void);  
 const char* config_get_config_endpoint(void);
 bool config_is_enabled(void);
 int config_get_console_log_level(void);

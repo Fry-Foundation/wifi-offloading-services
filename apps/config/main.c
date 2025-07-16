@@ -1,6 +1,7 @@
 #include "core/console.h"
 #include "core/uloop_scheduler.h"
 #include "sync/sync.h"
+#include "sync/token_manager.h"
 #include "config.h"
 #include <string.h>
 #include <stdbool.h>
@@ -14,6 +15,46 @@ static Console csl = {
 
 static ConfigSyncContext *sync_context = NULL;
 static bool dev_env = false;
+
+static void token_refresh_task_cb(void *ctx) {
+    ConfigSyncContext *context = (ConfigSyncContext *)ctx;
+    
+    if (!context) {
+        console_error(&csl, "Token refresh called with null context");
+        return;
+    }
+    
+    console_debug(&csl, "Checking token validity...");
+
+    // Verify if UBUS is available
+    if (!ubus_is_available_for_tokens()) {
+        console_debug(&csl, "UBUS not connected, skipping token refresh");
+        return;
+    }
+
+    // Check if token is valid
+    bool token_valid = sync_is_token_valid(context);
+    bool currently_accepting = sync_should_accept_requests(context);
+
+    if (!token_valid) {
+        console_info(&csl, "Access token expired or invalid, refreshing...");
+        
+        int ret = sync_refresh_access_token(context);
+        if (ret < 0) {
+            console_warn(&csl, "Failed to refresh access token: %d", ret);
+
+            // Disable requests if token refresh fails
+            if (currently_accepting) {
+                console_warn(&csl, "Disabling request acceptance due to token refresh failure");
+                sync_set_request_acceptance(context, false);
+            }
+        } else {
+            console_info(&csl, "Access token refreshed successfully");
+        }
+    } else {
+        console_debug(&csl, "Access token still valid");
+    }
+}
 
 static void cleanup(void) {
     if (sync_context) {
@@ -90,6 +131,15 @@ int main(int argc, char *argv[]) {
         console_error(&csl, "Failed to start config sync service");
         cleanup();
         return 1;
+    }
+
+    // Refresh token timer
+    console_info(&csl, "Scheduling token refresh timer");
+    task_id_t token_task = schedule_repeating(1000, 10000, token_refresh_task_cb, sync_context);
+    if (token_task == 0) {
+        console_warn(&csl, "Failed to schedule token refresh timer");
+    } else {
+        console_info(&csl, "Token refresh timer scheduled - initial check in 1 second, then every 10 seconds");
     }
 
     console_info(&csl, "Config sync service started successfully");

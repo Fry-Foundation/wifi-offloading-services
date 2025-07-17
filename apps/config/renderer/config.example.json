@@ -3,8 +3,8 @@
     "wayru": [
       {
         "meta_config": "wayru-collector",
-        "meta_type": "collector",
-        "meta_section": "wayru-collector",
+        "meta_type": "wayru_collector",
+        "meta_section": "wayru_collector",
         "enabled": true,
         "logs_endpoint": "https://devices.wayru.tech/logs",
         "console_log_level": 7,
@@ -18,8 +18,8 @@
       },
       {
         "meta_config": "wayru-agent",
-        "meta_type": "agent",
-        "meta_section": "wayru-agent",
+        "meta_type": "wayru_agent",
+        "meta_section": "wayru_agent",
         "enabled": true,
         "main_api": "https://prod.api.az.wayru.tech",
         "accounting_api": "https://wifi.api.wayru.tech",
@@ -55,8 +55,8 @@
       },
       {
         "meta_config": "wayru-config",
-        "meta_type": "config",
-        "meta_section": "wayru-config",
+        "meta_type": "wayru_config",
+        "meta_section": "wayru_config",
         "enabled": true,
         "config_endpoint": "http://devices.wayru.tech/config"
       }
@@ -66,11 +66,7 @@
         "meta_config": "wireless",
         "meta_type": "wifi-device",
         "meta_section": "radio0",
-        "type": "mac80211",
-        "path": "pci0000:00/0000:00:00.0",
         "channel": "auto",
-        "band": "5g",
-        "htmode": "VHT80",
         "disabled": "0",
         "cell_density": "0"
       },
@@ -78,11 +74,7 @@
         "meta_config": "wireless",
         "meta_type": "wifi-device",
         "meta_section": "radio1",
-        "type": "mac80211",
-        "path": "platform/ahb/1810000.wmac",
         "channel": "auto",
-        "band": "2g",
-        "htmode": "HT40",
         "disabled": "0",
         "cell_density": "0"
       },
@@ -111,6 +103,45 @@
         "disabled": false,
         "key": "988Dh283zX",
         "isolate": false
+      }
+    ],
+    "opennds": [
+      {
+        "meta_config": "opennds",
+        "meta_type": "opennds",
+        "meta_section": "opennds1",
+        "debuglevel": "1",
+        "enabled": "1",
+        "fas_secure_enabled": "3",
+        "faskey": "qLULCQufhZVHkiPpNkC9RDHjX9A9Fud6",
+        "faspath": "/",
+        "fasport": "443",
+        "fasremotefqdn": "fas.wayru.tech",
+        "fasremoteip": "52.230.158.179",
+        "gatewayinterface": "br-lan.10",
+        "gatewayname": "cfbe115a-45f2-41ad-8bb9-649b438ae6fe",
+        "maxclients": "250",
+        "binauth": "/etc/wayru-agent/scripts/nds-binauth.sh",
+        "enable_serial_number_suffix": "0",
+        "users_to_router": [
+          "allow tcp port 53",
+          "allow udp port 53",
+          "allow udp port 67",
+          "allow tcp port 22",
+          "allow tcp port 80",
+          "allow tcp port 443",
+          "allow tcp port 47850",
+          "allow tcp port 47851",
+          "allow tcp port 48601",
+          "allow tcp port 48602",
+          "allow tcp port 40500"
+        ],
+        "walledgarden_fqdn_list": [
+          "ingest.sentry.io api.mapbox.com portal.wayru.tech portal.wayru.io portal.internal.wayru.tech api.wayru.tech api.internal.wayru.tech wifi.api.wayru.tech wifi.api.internal.wayru.tech"
+        ],
+        "walledgarden_port_list": [
+          "443 22"
+        ]
       }
     ]
   }

@@ -28,8 +28,17 @@ case "$APP" in
 
     "config")
         # Set up config app dev environment
-        echo "Setting up config app in development environment..."
-        mkdir -p $APP_DIR/data
+        echo "Setting up config app in development environment..."        
+        mkdir -p $APP_DIR/scripts/dev
+        mkdir -p $APP_DIR/scripts/dev/hashes
+
+        # ✅ ARREGLADO: Copiar manteniendo la estructura de subdirectorios
+        echo "Copying config scripts maintaining directory structure..."
+        cp -r apps/config/scripts/dev/* $APP_DIR/scripts/dev/ 2>/dev/null || echo "No dev files to copy"
+        chmod +x $APP_DIR/scripts/dev/* 2>/dev/null || echo "No scripts to make executable"
+
+        # Crear directorio de hashes
+        echo "Created hashes directory: $APP_DIR/scripts/dev/hashes"
 
         cp VERSION $RUN_DIR/VERSION
 
@@ -62,7 +71,7 @@ case "$APP" in
 
     *)
         echo "Error: Unknown app '$APP'"
-        echo "Supported apps: agent, health, collector"
+        echo "Supported apps: agent, config, collector"
         exit 1
         ;;
 esac

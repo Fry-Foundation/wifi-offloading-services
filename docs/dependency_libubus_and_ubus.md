@@ -30,10 +30,6 @@ sudo ldconfig
 ### Create a ubus user and group
 ```bash
 sudo useradd --system --no-create-home --shell /usr/bin/nologin ubus
-
-sudo mkdir -p /run/ubus
-sudo chown ubus:ubus /run/ubus
-sudo chmod 0750 /run/ubus
 ```
 
 ### Register ubusd with systemd
@@ -54,7 +50,8 @@ Type=simple
 User=ubus
 Group=ubus
 RuntimeDirectory=ubus
-RuntimeDirectoryMode=0755
+RuntimeDirectoryMode=0775
+UMask=0002
 ExecStart=/usr/local/sbin/ubusd -s /run/ubus/ubus.sock
 
 [Install]
@@ -72,3 +69,31 @@ sudo systemctl start ubus
 sudo usermod -aG ubus $USER
 newgrp ubus
 ```
+
+### Make sure your user is part of the ubus ACL
+```
+sudo mkdir -p /usr/share/acl.d
+sudo tee /usr/share/acl.d/$USER.json << 'EOF'
+{
+    "user": "$USER",
+    "access": {
+        "*": {
+            "methods": ["*"]
+        }
+    },
+    "send": ["*"],
+    "subscribe": ["*"],
+    "publish": ["*"]
+}
+EOF
+
+sudo systemctl restart ubus
+```
+
+This ACL configuration allows the user `$USER` to:
+- Access all objects (`"*"`) and call all methods (`"methods": ["*"]`)
+- Send events to all objects (`"send": ["*"]`)
+- Subscribe to events from all objects (`"subscribe": ["*"]`)
+- Publish events to all objects (`"publish": ["*"]`)
+
+For more restrictive access, you can specify individual object names and methods instead of using wildcards.

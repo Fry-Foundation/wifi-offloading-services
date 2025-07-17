@@ -28,17 +28,17 @@ case "$APP" in
 
     "config")
         # Set up config app dev environment
-        echo "Setting up config app in development environment..."        
+        echo "Setting up config app in development environment..."
         mkdir -p $APP_DIR/scripts/dev
         mkdir -p $APP_DIR/scripts/dev/hashes
 
         # ✅ ARREGLADO: Copiar manteniendo la estructura de subdirectorios
         echo "Copying config scripts maintaining directory structure..."
-        cp -r apps/config/scripts/dev/* $APP_DIR/scripts/dev/ 2>/dev/null || echo "No dev files to copy"
+        cp -r apps/config/scripts/dev/* $APP_DIR/scripts/ 2>/dev/null || echo "No dev files to copy"
         chmod +x $APP_DIR/scripts/dev/* 2>/dev/null || echo "No scripts to make executable"
 
         # Crear directorio de hashes
-        echo "Created hashes directory: $APP_DIR/scripts/dev/hashes"
+        echo "Created hashes directory: $APP_DIR/scripts/hashes"
 
         cp VERSION $RUN_DIR/VERSION
 

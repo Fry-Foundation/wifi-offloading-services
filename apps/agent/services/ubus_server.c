@@ -1,5 +1,6 @@
 #include "ubus_server.h"
 #include "core/console.h"
+#include <asm-generic/errno.h>
 #include <json-c/json.h>
 #include <libubox/blobmsg.h>
 #include <libubox/uloop.h>
@@ -290,7 +291,7 @@ int ubus_server_init(AccessToken *access_token, DeviceInfo *device_info, Registr
         ubus_ctx = NULL;
         free(server_context);
         server_context = NULL;
-        return ret;
+        return -EBADFD;
     }
 
     server_running = true;

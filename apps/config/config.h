@@ -8,11 +8,11 @@
 #define CONFIG_FILE_DEV "./scripts/wayru-config.config"
 
 #define CONFIG_FILE_FALLBACK "/tmp/wayru-config.config"
-#define DEFAULT_CONFIG_ENDPOINT "https://devices.wayru.tech/config"
+#define DEFAULT_CONFIG_ENDPOINT "https://devices.wayru.tech/device_config/sync"
 
 #define DEFAULT_ENABLED true
 #define DEFAULT_CONSOLE_LOG_LEVEL 7
-#define DEFAULT_CONFIG_INTERVAL_MS 30000  
+#define DEFAULT_CONFIG_INTERVAL_MS 30000
 
 typedef struct remote_config {
     char config_endpoint[256];
@@ -20,7 +20,7 @@ typedef struct remote_config {
     bool config_loaded;
     char config_file_path[256];
     int console_log_level;
-    uint32_t config_interval_ms;  
+    uint32_t config_interval_ms;
 } remote_config_t;
 
 void config_init_defaults(remote_config_t *config);
@@ -30,7 +30,7 @@ const remote_config_t* config_get_current(void);
 const char* config_get_config_endpoint(void);
 bool config_is_enabled(void);
 int config_get_console_log_level(void);
-uint32_t config_get_config_interval_ms(void);  
+uint32_t config_get_config_interval_ms(void);
 void config_print_current(void);
 void config_cleanup(void);
 

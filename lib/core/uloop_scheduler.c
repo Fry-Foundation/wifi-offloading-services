@@ -44,8 +44,6 @@ void scheduler_init(void) {
 static void internal_task_cb(struct uloop_timeout *timeout) {
     Task *t = container_of(timeout, Task, to);
 
-    console_debug(&csl, "Executing task ID %u", t->id);
-
     // Store callback info before potential cleanup
     TaskCallback fn = t->fn;
     void *ctx = t->ctx;
@@ -55,11 +53,9 @@ static void internal_task_cb(struct uloop_timeout *timeout) {
 
     if (repeating) {
         // For repeating tasks, reschedule first
-        console_debug(&csl, "Rescheduling repeating task ID %u for %u ms", task_id, interval);
         uloop_timeout_set(&t->to, interval);
     } else {
         // For one-off tasks, remove from registry but don't free yet
-        console_debug(&csl, "Removing one-off task ID %u from registry", task_id);
         remove_task_from_registry(t);
     }
 
@@ -70,7 +66,6 @@ static void internal_task_cb(struct uloop_timeout *timeout) {
 
     // Free one-off tasks after callback execution
     if (!repeating) {
-        console_debug(&csl, "Freeing one-off task ID %u", task_id);
         free(t);
     }
 }
@@ -89,13 +84,11 @@ static Task *find_task_by_id(task_id_t id) {
 static void add_task_to_registry(Task *task) {
     task->next = task_registry;
     task_registry = task;
-    console_debug(&csl, "Added task ID %u to registry", task->id);
 }
 
 static void remove_task_from_registry(Task *task) {
     if (task_registry == task) {
         task_registry = task->next;
-        console_debug(&csl, "Removed task ID %u from registry (head)", task->id);
         return;
     }
 
@@ -106,13 +99,10 @@ static void remove_task_from_registry(Task *task) {
 
     if (current != NULL) {
         current->next = task->next;
-        console_debug(&csl, "Removed task ID %u from registry", task->id);
     }
 }
 
 task_id_t schedule_once(uint32_t delay_ms, TaskCallback fn, void *ctx) {
-    console_debug(&csl, "schedule_once called with delay %u ms, fn %p, ctx %p", delay_ms, (void *)fn, ctx);
-
     if (!scheduler_initialized) {
         console_error(&csl, "Scheduler not initialized");
         return 0;
@@ -123,13 +113,11 @@ task_id_t schedule_once(uint32_t delay_ms, TaskCallback fn, void *ctx) {
         return 0;
     }
 
-    console_debug(&csl, "About to allocate task memory");
     Task *t = malloc(sizeof(Task));
     if (!t) {
         console_error(&csl, "Failed to allocate memory for task");
         return 0; // allocation failure
     }
-    console_debug(&csl, "Allocated task at %p", t);
 
     // Handle task ID overflow
     if (next_task_id == 0) {
@@ -146,13 +134,9 @@ task_id_t schedule_once(uint32_t delay_ms, TaskCallback fn, void *ctx) {
     t->next = NULL;
     t->to.cb = internal_task_cb;
 
-    console_debug(&csl, "Task initialized with ID %u, about to add to registry", t->id);
     add_task_to_registry(t);
-    console_debug(&csl, "Task added to registry, about to set uloop timeout");
     uloop_timeout_set(&t->to, delay_ms);
-    console_debug(&csl, "uloop_timeout_set completed");
 
-    console_debug(&csl, "Scheduled one-off task ID %u with delay %u ms", t->id, delay_ms);
     return t->id;
 }
 
@@ -196,8 +180,6 @@ task_id_t schedule_repeating(uint32_t delay_ms, uint32_t interval_ms, TaskCallba
     add_task_to_registry(t);
     uloop_timeout_set(&t->to, delay_ms);
 
-    console_debug(&csl, "Scheduled repeating task ID %u with delay %u ms, interval %u ms", t->id, delay_ms,
-                  interval_ms);
     return t->id;
 }
 
@@ -209,11 +191,10 @@ bool cancel_task(task_id_t id) {
 
     Task *t = find_task_by_id(id);
     if (!t) {
-        console_debug(&csl, "Task ID %u not found for cancellation", id);
+        console_warn(&csl, "Task ID %u not found for cancellation", id);
         return false;
     }
 
-    console_debug(&csl, "Cancelling task ID %u", id);
     uloop_timeout_cancel(&t->to);
     remove_task_from_registry(t);
     free(t);
@@ -246,7 +227,6 @@ void scheduler_shutdown(void) {
     int task_count = 0;
     while (current != NULL) {
         Task *next = current->next;
-        console_debug(&csl, "Cancelling task ID %u during shutdown", current->id);
         uloop_timeout_cancel(&current->to);
         free(current);
         current = next;

@@ -18,8 +18,6 @@ struct ConfigSyncContext {
     char access_token[256];
     time_t token_expiry;
     bool token_initialized;
-    bool accept_requests;
-    int consecutive_http_failures;
 };
 
 typedef struct ConfigSyncContext ConfigSyncContext;

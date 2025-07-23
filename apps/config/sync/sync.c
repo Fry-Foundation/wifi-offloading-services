@@ -6,11 +6,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/wait.h>
-#include <signal.h>
 #include "renderer/renderer.h"
 #include <sys/stat.h>
 #include <time.h>
+#include <stdint.h> 
 #include "token_manager.h"
 
 static Console csl = {.topic = "config-sync"};
@@ -25,7 +24,7 @@ typedef struct {
     char affected_services[256];      
     char error_message[512];          // Detailed error messages
     char service_errors[1024];        // Detailed service restart errors
-    char config_hash[32];             // Global configuration hash
+    char config_hash[16];             
 } ConfigApplicationResult;
 
 // Structure to track which services need restart
@@ -37,15 +36,14 @@ typedef struct {
     bool opennds;
 } ServiceRestartNeeds;
 
-// Calculate DJB2 hash for string content
-static unsigned long calculate_djb2_hash(const char *str) {
+static uint32_t calculate_djb2_hash(const char *str, size_t length) {
     if (!str) return 0;
     
-    unsigned long hash = 5381;
-    int c;
+    uint32_t hash = 5381;
+    const unsigned char *ustr = (const unsigned char *)str;
     
-    while ((c = *str++)) {
-        hash = ((hash << 5) + hash) + c; // hash * 33 + c
+    for (size_t i = 0; i < length; i++) {
+        hash = ((hash << 5) + hash) + ustr[i];  
     }
     
     return hash;
@@ -63,10 +61,10 @@ static char *load_global_config_hash(bool dev_mode) {
     FILE *fp = fopen(hash_file, "r");
     if (!fp) {
         console_debug(&csl, "No previous global hash file found at %s", hash_file);
-        return strdup(""); // Return empty string if no hash file
+        return strdup("0"); // Return "0" instead of empty string
     }
     
-    char hash_str[65] = ""; 
+    char hash_str[32] = ""; 
     if (fgets(hash_str, sizeof(hash_str), fp)) {
         // Remove newline if present
         char *newline = strchr(hash_str, '\n');
@@ -75,7 +73,7 @@ static char *load_global_config_hash(bool dev_mode) {
         console_debug(&csl, "Loaded global hash: %s", hash_str);
     } else {
         console_warn(&csl, "Failed to read global hash from %s", hash_file);
-        strcpy(hash_str, "");
+        strcpy(hash_str, "0");
     }
     
     fclose(fp);
@@ -86,16 +84,17 @@ static char *load_global_config_hash(bool dev_mode) {
 static void save_global_config_hash(bool dev_mode, const char *json_config) {
     if (!json_config) return;
     
-    // Calculate hash of entire configuration
-    unsigned long config_hash = calculate_djb2_hash(json_config);
-    
+    // Calculate hash of RAW configuration 
+    size_t json_length = strlen(json_config);
+    uint32_t config_hash = calculate_djb2_hash(json_config, json_length);
+
     const char *hash_file = get_global_hash_file_path(dev_mode);
     FILE *fp = fopen(hash_file, "w");
     if (fp) {
-        fprintf(fp, "%lu\n", config_hash);
+        fprintf(fp, "%u\n", config_hash);
         fclose(fp);
         
-        console_debug(&csl, "Saved global config hash %lu to %s", config_hash, hash_file);
+        console_debug(&csl, "Saved global config hash %u to %s", config_hash, hash_file);
     } else {
         console_warn(&csl, "Failed to save global hash to %s", hash_file);
     }
@@ -110,7 +109,7 @@ static ConfigApplicationResult init_application_result(void) {
     memset(result.affected_services, 0, sizeof(result.affected_services));
     memset(result.error_message, 0, sizeof(result.error_message));
     memset(result.service_errors, 0, sizeof(result.service_errors));
-    memset(result.config_hash, 0, sizeof(result.config_hash));  // ✅ NEW: Initialize hash
+    memset(result.config_hash, 0, sizeof(result.config_hash));  
     return result;
 }
 
@@ -195,24 +194,14 @@ static char* generate_result_report(const ConfigApplicationResult *result) {
 static void send_result_report_to_backend(const char *result_json, ConfigSyncContext *context) {
     console_info(&csl, "Config application result: %s", result_json);
     
-    /*
     const char *access_token = sync_get_current_token(context);
     if (!access_token) {
         console_warn(&csl, "No access token available for result report");
         return;
     }
     
-    // Derive reports endpoint from config endpoint
     char result_endpoint[512];
-    const char *base_url = context->endpoint;
-    char *config_pos = strstr(base_url, "/device_config");
-    if (config_pos) {
-        size_t base_len = config_pos - base_url;
-        snprintf(result_endpoint, sizeof(result_endpoint), "%.*s/device_config/reports", (int)base_len, base_url);
-    } else {
-        // Fallback: append /reports to endpoint
-        snprintf(result_endpoint, sizeof(result_endpoint), "%s/reports", base_url);
-    }
+    snprintf(result_endpoint, sizeof(result_endpoint), "%s/sync_result", context->endpoint);
     
     HttpPostOptions options = {
         .url = result_endpoint,
@@ -245,8 +234,7 @@ static void send_result_report_to_backend(const char *result_json, ConfigSyncCon
     
     if (result.response_buffer) {
         free(result.response_buffer);
-    }
-    */
+    }    
 }
 
 // Analyze which services need restart based on configuration changes
@@ -462,40 +450,25 @@ char *fetch_device_config_json(const char *endpoint, ConfigSyncContext *context)
         return NULL;
     }
 
-    // Check should requests be accepted
-    if (!sync_should_accept_requests(context)) {
-        console_debug(&csl, "Rejecting config request - request acceptance disabled");
-        return NULL;
-    }
-
-    // Get cached access token
     const char *access_token = sync_get_current_token(context);
     if (!access_token) {
         console_warn(&csl, "No valid access token available, aborting config request");
-        sync_report_http_failure(context, -1);
         return NULL;
     }
 
-    // STEP 1-2: Load current global config hash and send to backend
+    // Load current global config hash and send to backend
     char *current_hash = load_global_config_hash(context->dev_mode);
     console_debug(&csl, "Current global config hash: '%s'", current_hash ? current_hash : "null");
 
     char sync_endpoint[512];
-    const char *base_url = context->endpoint;
-    char *last_slash = strrchr(base_url, '/');
-    if (last_slash) {
-        size_t base_len = last_slash - base_url;
-        snprintf(sync_endpoint, sizeof(sync_endpoint), "%.*s/sync", (int)base_len, base_url);
-    } else {
-        snprintf(sync_endpoint, sizeof(sync_endpoint), "%s/sync", base_url);
-    }
+    snprintf(sync_endpoint, sizeof(sync_endpoint), "%s/sync", endpoint);
 
     console_debug(&csl, "Making config sync request to: %s", sync_endpoint);
 
     struct timespec start_time;
     clock_gettime(CLOCK_MONOTONIC, &start_time);
 
-    // STEP 2: Create JSON body with current config hash
+    // Create JSON body with current config hash
     json_object *sync_body = json_object_new_object();
     json_object *hash_obj = json_object_new_string(current_hash ? current_hash : "");
     json_object_object_add(sync_body, "current_config_hash", hash_obj);
@@ -520,67 +493,59 @@ char *fetch_device_config_json(const char *endpoint, ConfigSyncContext *context)
     json_object_put(sync_body);
     if (current_hash) free(current_hash);
 
-    if (result.is_error || !result.response_buffer) {
-        console_warn(&csl, "Config sync request failed: %s - took %.2f ms",
-                    result.error, duration_ms);
-        sync_report_http_failure(context, result.http_status_code);
+    if (result.http_status_code == 200) {
+        // HTTP 200 - Configuration update available
+        if (result.response_buffer) {
+            console_info(&csl, "Configuration update available (HTTP 200) - took %.2f ms", duration_ms);
+            
+            size_t json_length = strlen(result.response_buffer);
+            console_info(&csl, "Received updated config JSON (%zu bytes): %.200s%s",
+                         json_length,
+                         result.response_buffer,
+                         json_length > 200 ? "..." : "");
 
+            return result.response_buffer;
+        } else {
+            console_warn(&csl, "HTTP 200 but no response body - took %.2f ms", duration_ms);
+            return NULL;
+        }
+
+    } else if (result.http_status_code == 304) {
+        // HTTP 304
+        console_info(&csl, "Configuration unchanged (HTTP 304 Not Modified) - took %.2f ms", duration_ms);
+        console_debug(&csl, "Server confirmed no configuration changes since last sync");
+    
+        if (result.response_buffer) {
+            free(result.response_buffer);
+        }
+        return NULL;  // No config to process
+    
+    } else if (result.is_error || !result.response_buffer) {
+        // General error handling AFTER specific status checks
+        console_warn(&csl, "Config sync request failed: %s - took %.2f ms",
+                    result.error ? result.error : "unknown error", duration_ms);
+        
+        if (result.response_buffer) {
+            free(result.response_buffer);
+        }
+        return NULL;
+        
+    } else {
+        // Other HTTP status 
+        console_warn(&csl, "Config sync request failed with code: %ld - took %.2f ms",
+                    result.http_status_code, duration_ms);
+        
         if (result.response_buffer) {
             free(result.response_buffer);
         }
         return NULL;
     }
-
-    // STEP 3: Check HTTP status codes 
-    if (result.http_status_code == 200) {
-        console_info(&csl, "Configuration in sync (HTTP 200) - no changes needed - took %.2f ms", duration_ms);
-        sync_report_http_success(context);
-        
-        if (result.response_buffer) {
-            free(result.response_buffer);
-        }
-        return NULL; // No config update needed
-        
-    } else if (result.http_status_code == 201) {
-        console_info(&csl, "Configuration update available (HTTP 201) - took %.2f ms", duration_ms);
-        sync_report_http_success(context);
-        
-        size_t json_length = strlen(result.response_buffer);
-        console_info(&csl, "Received updated config JSON (%zu bytes): %.200s%s",
-                     json_length,
-                     result.response_buffer,
-                     json_length > 200 ? "..." : "");
-
-        return result.response_buffer;
-        
-    } else if (result.http_status_code == 401) {
-        console_warn(&csl, "Config sync request failed with 401 Unauthorized, will refresh token - took %.2f ms",
-                    duration_ms);
-        sync_report_http_failure(context, result.http_status_code);
-    } else {
-        console_warn(&csl, "Config sync request failed with code: %ld - took %.2f ms",
-                    result.http_status_code, duration_ms);
-        sync_report_http_failure(context, result.http_status_code);
-    }
-
-    // Cleanup on error
-    if (result.response_buffer) {
-        free(result.response_buffer);
-    }
-    return NULL;
 }
 
-// Main periodic task with feedback and global hash management
 static void config_sync_task(void *ctx) {
     ConfigSyncContext *context = (ConfigSyncContext *)ctx;
 
     console_debug(&csl, "Executing config sync task");
-
-    // Check should requests be accepted
-    if (!sync_should_accept_requests(context)) {
-        console_debug(&csl, "Skipping config sync - requests disabled");
-        return;
-    }
 
     if (!sync_is_token_valid(context)) {
         console_info(&csl, "Access token expired, attempting refresh...");
@@ -591,7 +556,6 @@ static void config_sync_task(void *ctx) {
         }
     }
 
-    // STEP 1-3: Fetch configuration JSON from sync endpoint
     char *json = fetch_device_config_json(context->endpoint, context);
     if (!json) {
         console_debug(&csl, "No configuration update needed or failed to fetch, skipping this cycle");
@@ -600,17 +564,18 @@ static void config_sync_task(void *ctx) {
 
     console_info(&csl, "Configuration update received, analyzing changes...");
 
-    // Calculate global hash for feedback
-    unsigned long global_hash = calculate_djb2_hash(json);
+    // Calculate global hash for feedback 
+    size_t json_length = strlen(json);
+    uint32_t global_hash = calculate_djb2_hash(json, json_length);
 
-    // STEP 4: Analyze what services need restart using granular hash comparison
+    // Analyze what services need restart using granular hash comparison
     ServiceRestartNeeds needs = analyze_restart_needs(json, context->dev_mode);
 
     // Skip if no changes detected at granular level
     if (!needs.wireless && !needs.wayru_agent && !needs.wayru_collector && !needs.wayru_config && !needs.opennds) {
         console_info(&csl, "No granular configuration changes detected, skipping application");
 
-        // STEP 6: Save global hash even if no granular changes
+        // Save global hash 
         save_global_config_hash(context->dev_mode, json);
         free(json);
         return;
@@ -623,17 +588,17 @@ static void config_sync_task(void *ctx) {
     build_affected_services_list(&needs, app_result.affected_services, sizeof(app_result.affected_services));
 
     // Store global hash in result for feedback
-    snprintf(app_result.config_hash, sizeof(app_result.config_hash), "%lu", global_hash);
-
-    // STEP 5: Apply configuration to UCI with result tracking
+    snprintf(app_result.config_hash, sizeof(app_result.config_hash), "%u", global_hash);
+    
+    // Apply configuration to UCI with result tracking
     if (apply_config_without_restarts(json, context->dev_mode) == 0) {
         console_info(&csl, "Configuration applied successfully");
         app_result.script_success = true;
 
-        // STEP 6: Save global configuration hash after successful application
+        // Save global configuration hash after successful application
         save_global_config_hash(context->dev_mode, json);
 
-        // STEP 7: Save granular hashes (handled automatically by config_affects_* functions)
+        // Save granular hashes (handled automatically by config_affects_* functions)
         console_debug(&csl, "Granular service hashes updated during analysis phase");
 
         // CRITICAL: ONLY RESTART SERVICES IF SCRIPT WAS SUCCESSFUL
@@ -650,7 +615,7 @@ static void config_sync_task(void *ctx) {
         // Hash is still included even if script failed (for debugging)
     }
 
-    // STEP 8: Generate and send result report to backend
+    // Generate and send result report to backend
     char *result_report = generate_result_report(&app_result);
     if (result_report) {
         send_result_report_to_backend(result_report, context);
@@ -682,8 +647,6 @@ ConfigSyncContext *start_config_sync_service(const char *endpoint,
     memset(context->access_token, 0, sizeof(context->access_token));
     context->token_expiry = 0;
     context->token_initialized = false;
-    context->accept_requests = false;  // Start disabled until token is acquired
-    context->consecutive_http_failures = 0;
 
     // Configure renderer for appropriate mode
     set_renderer_dev_mode(dev_mode);
@@ -740,10 +703,6 @@ void clean_config_sync_context(ConfigSyncContext *context) {
         context->token_initialized = false;
         context->token_expiry = 0;
     }
-
-    // Reset flags
-    context->accept_requests = false;
-    context->consecutive_http_failures = 0;
 
     // Free context memory
     console_debug(&csl, "Freeing sync context memory");

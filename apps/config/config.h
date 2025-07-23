@@ -8,14 +8,14 @@
 #define CONFIG_FILE_DEV "./scripts/wayru-config.config"
 
 #define CONFIG_FILE_FALLBACK "/tmp/wayru-config.config"
-#define DEFAULT_CONFIG_ENDPOINT "https://devices.wayru.tech/device_config/sync"
+#define DEFAULT_CONFIG_ENDPOINT "https://devices.wayru.tech/device_config"
 
 #define DEFAULT_ENABLED true
 #define DEFAULT_CONSOLE_LOG_LEVEL 7
 #define DEFAULT_CONFIG_INTERVAL_MS 30000
 
 typedef struct remote_config {
-    char config_endpoint[256];
+    char config_endpoint[256]; 
     bool enabled;
     bool config_loaded;
     char config_file_path[256];

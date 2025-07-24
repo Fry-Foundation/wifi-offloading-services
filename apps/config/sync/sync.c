@@ -22,6 +22,8 @@ typedef struct {
     bool script_success;
     bool services_restarted_successfully;
     char affected_services[256];      
+    char successful_services[256];    // Services that restarted successfully
+    char failed_services[256];       // Services that failed to restart
     char error_message[512];          // Detailed error messages
     char service_errors[1024];        // Detailed service restart errors
     char config_hash[16];             
@@ -47,6 +49,13 @@ static uint32_t calculate_djb2_hash(const char *str, size_t length) {
     }
     
     return hash;
+}
+
+// Helper function for adding services to lists
+static void add_service_to_list(char *list, const char *service, bool *first) {
+    if (!*first) strcat(list, ", ");
+    strcat(list, service);
+    *first = false;
 }
 
 // Get global hash file path based on mode
@@ -107,6 +116,8 @@ static ConfigApplicationResult init_application_result(void) {
         .services_restarted_successfully = false,
     };
     memset(result.affected_services, 0, sizeof(result.affected_services));
+    memset(result.successful_services, 0, sizeof(result.successful_services));
+    memset(result.failed_services, 0, sizeof(result.failed_services));
     memset(result.error_message, 0, sizeof(result.error_message));
     memset(result.service_errors, 0, sizeof(result.service_errors));
     memset(result.config_hash, 0, sizeof(result.config_hash));  
@@ -161,6 +172,8 @@ static char* generate_result_report(const ConfigApplicationResult *result) {
     
     json_object *result_obj = json_object_new_string(result_status);
     json_object *affected_obj = json_object_new_string(result->affected_services);
+    json_object *successful_obj = json_object_new_string(result->successful_services);
+    json_object *failed_obj = json_object_new_string(result->failed_services);
 
     // Combine script and service errors
     char combined_error[1536] = "";
@@ -175,11 +188,12 @@ static char* generate_result_report(const ConfigApplicationResult *result) {
     }
     
     json_object *error_obj = json_object_new_string(combined_error);
-    
     json_object *config_hash_obj = json_object_new_string(result->config_hash);
     
     json_object_object_add(root, "result", result_obj);
     json_object_object_add(root, "affected", affected_obj);
+    json_object_object_add(root, "successful", successful_obj);
+    json_object_object_add(root, "failed", failed_obj);
     json_object_object_add(root, "error", error_obj);
     json_object_object_add(root, "config_hash", config_hash_obj);
     
@@ -263,27 +277,39 @@ static ServiceRestartNeeds analyze_restart_needs(const char *json, bool dev_mode
 static void handle_dev_mode_restart(const ServiceRestartNeeds *needs, ConfigApplicationResult *result) {
     console_info(&csl, "Development mode: simulating service restarts");
 
+    char successful_services[256] = "";
+    bool first = true;
+
     if (needs->wireless) {
         console_info(&csl, "Would reload: wifi configuration");
+        add_service_to_list(successful_services, "wireless", &first);
     }
     if (needs->wayru_collector) {
         console_info(&csl, "Would restart: wayru-collector service");
+        add_service_to_list(successful_services, "wayru-collector", &first);
     }
     if (needs->wayru_agent) {
         console_info(&csl, "Would restart: wayru-agent service");
+        add_service_to_list(successful_services, "wayru-agent", &first);
     }
     if (needs->wayru_config) {
         console_info(&csl, "Would reload: wayru-config configuration");
+        add_service_to_list(successful_services, "wayru-config", &first);
     }
     if (needs->opennds) {
         console_info(&csl, "Would restart: opennds service");
+        add_service_to_list(successful_services, "opennds", &first);
     }
 
     if (!needs->wireless && !needs->wayru_collector && !needs->wayru_agent && !needs->wayru_config && !needs->opennds) {
         console_info(&csl, "No services need restart");
     }
     
-    // SIMULATE SUCCESS in dev mode
+    // Store successful services (all succeed in dev mode)
+    strncpy(result->successful_services, successful_services, sizeof(result->successful_services) - 1);
+    result->successful_services[sizeof(result->successful_services) - 1] = '\0';
+    
+    result->failed_services[0] = '\0'; // No failures in dev mode
     result->services_restarted_successfully = true;
 }
 
@@ -332,8 +358,13 @@ static int restart_services_production(const ServiceRestartNeeds *needs, ConfigA
     console_info(&csl, "Applying configuration changes to services...");
     int total_errors = 0;
     char service_error[256];
-
     char detailed_errors[1024] = "";
+    
+    // Arrays to track service results
+    char successful_services[256] = "";
+    char failed_services[256] = "";
+    bool first_success = true;
+    bool first_failure = true;
 
     // 1. Reload WiFi first
     if (needs->wireless) {
@@ -341,14 +372,16 @@ static int restart_services_production(const ServiceRestartNeeds *needs, ConfigA
         
         if (execute_service_command("wifi reload", "WiFi", service_error, sizeof(service_error)) == 0) {
             console_info(&csl, "WiFi configuration reloaded successfully");
+            add_service_to_list(successful_services, "wireless", &first_success);
         } else {
             console_warn(&csl, "WiFi reload failed: %s", service_error);
             total_errors++;
+            add_service_to_list(failed_services, "wireless", &first_failure);
             
             if (strlen(detailed_errors) > 0) strcat(detailed_errors, "; ");
             strcat(detailed_errors, service_error);
         }
-        sleep(1); // Allow WiFi to stabilize
+        sleep(1);
     }
 
     // 2. Restart OpenNDS
@@ -357,14 +390,16 @@ static int restart_services_production(const ServiceRestartNeeds *needs, ConfigA
         
         if (execute_service_command("/etc/init.d/opennds restart", "OpenNDS", service_error, sizeof(service_error)) == 0) {
             console_info(&csl, "OpenNDS restarted successfully");
+            add_service_to_list(successful_services, "opennds", &first_success);
         } else {
             console_warn(&csl, "OpenNDS restart failed: %s", service_error);
             total_errors++;
+            add_service_to_list(failed_services, "opennds", &first_failure);
             
             if (strlen(detailed_errors) > 0) strcat(detailed_errors, "; ");
             strcat(detailed_errors, service_error);
         }
-        sleep(2); // Allow OpenNDS to initialize
+        sleep(2);
     }
 
     // 3. Restart wayru-collector
@@ -373,20 +408,23 @@ static int restart_services_production(const ServiceRestartNeeds *needs, ConfigA
         
         if (execute_service_command("/etc/init.d/wayru-collector reload", "wayru-collector", service_error, sizeof(service_error)) == 0) {
             console_info(&csl, "wayru-collector reloaded successfully");
+            add_service_to_list(successful_services, "wayru-collector", &first_success);
         } else {
             console_warn(&csl, "wayru-collector reload failed, trying restart...");
             
             if (execute_service_command("/etc/init.d/wayru-collector restart", "wayru-collector", service_error, sizeof(service_error)) == 0) {
                 console_info(&csl, "wayru-collector restarted successfully");
+                add_service_to_list(successful_services, "wayru-collector", &first_success);
             } else {
                 console_error(&csl, "wayru-collector restart failed: %s", service_error);
                 total_errors++;
+                add_service_to_list(failed_services, "wayru-collector", &first_failure);
                 
                 if (strlen(detailed_errors) > 0) strcat(detailed_errors, "; ");
                 strcat(detailed_errors, service_error);
             }
         }
-        sleep(2); // Allow collector to initialize
+        sleep(2);
     }
 
     // 4. Restart wayru-agent
@@ -395,20 +433,23 @@ static int restart_services_production(const ServiceRestartNeeds *needs, ConfigA
         
         if (execute_service_command("/etc/init.d/wayru-agent reload", "wayru-agent", service_error, sizeof(service_error)) == 0) {
             console_info(&csl, "wayru-agent reloaded successfully");
+            add_service_to_list(successful_services, "wayru-agent", &first_success);
         } else {
             console_warn(&csl, "wayru-agent reload failed, trying restart...");
             
             if (execute_service_command("/etc/init.d/wayru-agent restart", "wayru-agent", service_error, sizeof(service_error)) == 0) {
                 console_info(&csl, "wayru-agent restarted successfully");
+                add_service_to_list(successful_services, "wayru-agent", &first_success);
             } else {
                 console_error(&csl, "wayru-agent restart failed: %s", service_error);
                 total_errors++;
+                add_service_to_list(failed_services, "wayru-agent", &first_failure);
                 
                 if (strlen(detailed_errors) > 0) strcat(detailed_errors, "; ");
                 strcat(detailed_errors, service_error);
             }
         }
-        sleep(2); // Allow agent to initialize
+        sleep(2);
     }
 
     // 5. Reload wayru-config last
@@ -417,14 +458,23 @@ static int restart_services_production(const ServiceRestartNeeds *needs, ConfigA
         
         if (execute_service_command("/etc/init.d/wayru-config reload", "wayru-config", service_error, sizeof(service_error)) == 0) {
             console_info(&csl, "wayru-config reload triggered successfully");
+            add_service_to_list(successful_services, "wayru-config", &first_success);
         } else {
             console_warn(&csl, "wayru-config reload failed: %s", service_error);
             total_errors++;
+            add_service_to_list(failed_services, "wayru-config", &first_failure);
             
             if (strlen(detailed_errors) > 0) strcat(detailed_errors, "; ");
             strcat(detailed_errors, service_error);
         }
     }
+
+    // Store successful and failed services separately
+    strncpy(result->successful_services, successful_services, sizeof(result->successful_services) - 1);
+    result->successful_services[sizeof(result->successful_services) - 1] = '\0';
+    
+    strncpy(result->failed_services, failed_services, sizeof(result->failed_services) - 1);
+    result->failed_services[sizeof(result->failed_services) - 1] = '\0';
 
     // Set detailed results
     if (total_errors == 0) {

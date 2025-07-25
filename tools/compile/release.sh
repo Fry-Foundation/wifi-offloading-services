@@ -53,7 +53,7 @@ if [ $# -ne 1 ]; then
 fi
 
 package_arch="$1"
-full_path="$PROJECT_ROOT/build/$package_arch"
+full_path="$PROJECT_ROOT/output/$package_arch"
 
 if [ ! -d "$full_path" ]; then
   echo "Error: Directory '$full_path' does not exist."

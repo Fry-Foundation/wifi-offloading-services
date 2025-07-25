@@ -40,8 +40,8 @@ static bool opennds_hash_loaded = false;
 static bool global_dev_mode = false;
 
 // **UNIFIED SCRIPT PATHS - SINGLE renderer_applier.uc**
-#define DEV_CONFIG_FILE "./scripts/dev/wayru_config.json"
-#define DEV_RENDERER_SCRIPT "./scripts/dev/renderer_applier.uc" 
+#define DEV_CONFIG_FILE "./scripts/wayru_config.json"
+#define DEV_RENDERER_SCRIPT "./scripts/renderer_applier.uc" 
 #define DEV_UCODE_PATH "/usr/local/bin/ucode"
 
 #define OPENWRT_CONFIG_FILE "/tmp/wayru_config.json"

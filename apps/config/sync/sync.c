@@ -11,6 +11,7 @@
 #include <time.h>
 #include <stdint.h> 
 #include "token_manager.h"
+#include "openwisp_manager.h"
 
 static Console csl = {.topic = "config-sync"};
 
@@ -701,6 +702,12 @@ ConfigSyncContext *start_config_sync_service(const char *endpoint,
     // Configure renderer for appropriate mode
     set_renderer_dev_mode(dev_mode);
 
+    // Configure Openwisp to ignore wayru-managed sections
+    console_info(&csl, "Configuring Openwisp exclusions...");
+    if (configure_openwisp_exclusions(dev_mode) != 0) {
+        console_warn(&csl, "Openwisp configuration failed, continuing anyway...");
+    }
+    
     console_info(&csl, "Section hashes will be stored in: %s",
                  dev_mode ? "./scripts/dev/hashes" : "/etc/wayru-config/hashes");
     

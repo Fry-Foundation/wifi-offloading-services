@@ -117,7 +117,8 @@ target_link_libraries(wayru-agent
 add_executable(wayru-config
     apps/config/main.c
     apps/config/sync/sync.c
-    apps/config/sync/token_manager.c 
+    apps/config/sync/token_manager.c
+    apps/config/sync/openwisp_manager.c 
     apps/config/renderer/renderer.c
     apps/config/config.c
     apps/config/ubus.c

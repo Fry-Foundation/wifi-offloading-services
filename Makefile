@@ -75,7 +75,7 @@ define Package/wayru-os-services/install
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/apps/agent/scripts/openwrt/*.lua $(1)/etc/wayru-agent/scripts/
 
 	# Install wayru-config scripts
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/apps/config/scripts/openwrt/renderer_applier.uc $(1)/etc/wayru-config/scripts/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/apps/config/scripts/openwrt/*.uc $(1)/etc/wayru-config/scripts/
 
 	# Install VERSION file
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/VERSION $(1)/etc/wayru-os-services/VERSION

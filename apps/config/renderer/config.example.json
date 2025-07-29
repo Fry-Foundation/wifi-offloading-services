@@ -58,7 +58,9 @@
         "meta_type": "wayru_config",
         "meta_section": "wayru_config",
         "enabled": true,
-        "config_endpoint": "http://devices.wayru.tech/config"
+        "console_log_level": "7",
+        "config_endpoint": "https://devices.wayru.tech/device_config",
+        "config_interval_ms": 40000
       }
     ],
     "wireless": [
@@ -102,6 +104,30 @@
         "encryption": "psk2",
         "disabled": false,
         "key": "988Dh283zX",
+        "isolate": false
+      },
+      {
+        "meta_config": "wireless",
+        "meta_type": "wifi-iface",
+        "meta_section": "captive_wifi_2ghz",
+        "device": "radio0",
+        "network": "captive",
+        "mode": "ap",
+        "ssid": ".Wayru WiFi",
+        "encryption": "none",
+        "disabled": false,
+        "isolate": false
+      },
+      {
+        "meta_config": "wireless",
+        "meta_type": "wifi-iface",
+        "meta_section": "captive_wifi_5ghz",
+        "device": "radio1",
+        "network": "captive",
+        "mode": "ap",
+        "ssid": ".Wayru WiFi Test",
+        "encryption": "none",
+        "disabled": false,
         "isolate": false
       }
     ],

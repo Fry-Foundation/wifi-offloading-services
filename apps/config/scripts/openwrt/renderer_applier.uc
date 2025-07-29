@@ -7,6 +7,54 @@ function boolToUci(value) {
     return type(value) == 'bool' ? (value ? '1' : '0') : "" + value;
 }
 
+// Clear all options in a section
+function clearAllSectionOptions(ctx, packageName, sectionName) {
+    printf("Clearing all options in %s.%s\n", packageName, sectionName);
+    
+    try {
+        // Get all the options of the section
+        let sectionData = ctx.get_all(packageName, sectionName);
+        if (!sectionData) {
+            printf("Section %s.%s does not exist (will be created)\n", packageName, sectionName);
+            return true;
+        }
+        
+        let cleanedCount = 0;
+        for (let option in sectionData) {
+            // Do not delete UCI meta-information (section type, etc.)
+            if (option == '.type' || option == '.name' || option == '.anonymous') {
+                continue;
+            }
+            
+            try {
+                printf("Deleting option %s.%s.%s\n", packageName, sectionName, option);
+                ctx.delete(packageName, sectionName, option);
+                cleanedCount++;
+            } catch (e) {
+                printf("Warning: Could not delete option %s.%s.%s: %s\n", packageName, sectionName, option, "" + e);
+            }
+        }
+        
+        printf("Cleared %d options in %s.%s\n", cleanedCount, packageName, sectionName);
+        return true;
+    } catch (e) {
+        printf("Warning: Could not clear options in %s.%s: %s\n", packageName, sectionName, "" + e);
+        return true; // Continue anyway
+    }
+}
+
+// Clean all options in the wayru section
+function cleanWayruSection(ctx, packageName, sectionName) {
+    printf("Cleaning existing %s section: %s\n", packageName, sectionName);
+    return clearAllSectionOptions(ctx, packageName, sectionName);
+}
+
+// Clean all options in the OpenNDS section
+function cleanOpenNdsSection(ctx, sectionName) {
+    printf("Cleaning existing OpenNDS section: %s\n", sectionName);
+    return clearAllSectionOptions(ctx, 'opennds', sectionName);
+}
+
 function applySection(ctx, packageName, sectionType, section) {
     let name = section.meta_section;
     if (!name) {
@@ -26,37 +74,32 @@ function applySection(ctx, packageName, sectionType, section) {
             printf("Setting list %s.%s.%s with %d items\n", packageName, name, k, length(v));
             
             try {
-                // Clear existing list first by setting to empty array
-                ctx.set(packageName, name, k, []);
+                // Set the entire array at once
+                ctx.set(packageName, name, k, v);
+                printf("Successfully set list %s.%s.%s with %d items\n", packageName, name, k, length(v));
             } catch (e) {
                 // If section doesn't exist, create it first
                 try {
                     ctx.add(packageName, sectionType, name);
-                    ctx.set(packageName, name, k, []);
+                    ctx.set(packageName, name, k, v);
+                    printf("Successfully set list %s.%s.%s with %d items\n", packageName, name, k, length(v));
                 } catch (e2) {
-                    printf("Error creating section %s.%s: %s\n", packageName, name, "" + e2);
+                    printf("Error setting list %s.%s.%s: %s\n", packageName, name, k, "" + e2);
                     return false;
                 }
-            }
-            
-            // Set the entire array at once
-            try {
-                ctx.set(packageName, name, k, v);
-                printf("Successfully set list %s.%s.%s with %d items\n", packageName, name, k, length(v));
-            } catch (e) {
-                printf("Error setting list %s.%s.%s: %s\n", packageName, name, k, "" + e);
-                return false;
             }
         } else {
             // Handle single values
             let uciValue = boolToUci(v);
             try {
                 ctx.set(packageName, name, k, uciValue);
+                printf("Set %s.%s.%s = %s\n", packageName, name, k, uciValue);
             } catch (e) {
                 // If section doesn't exist, create it first
                 try {
                     ctx.add(packageName, sectionType, name);
                     ctx.set(packageName, name, k, uciValue);
+                    printf("Set %s.%s.%s = %s\n", packageName, name, k, uciValue);
                 } catch (e2) {
                     printf("Error setting %s.%s.%s=%s: %s\n", packageName, name, k, uciValue, "" + e2);
                     return false;
@@ -73,10 +116,11 @@ function applyWirelessConfig(ctx, config) {
     let wirelessArray = config.device_config?.wireless;
     if (!wirelessArray || type(wirelessArray) != 'array') {
         printf("No wireless configuration found\n");
-        return true; // ✅ RETURN TRUE - NOT AN ERROR IF NO CONFIG
+        return true;
     }
 
-    printf("Applying wireless configuration...\n");
+    printf("Applying wireless configuration...\n");  
+      
     for (let section in wirelessArray) {
         let pkg = "wireless";
         let t = section.meta_type;
@@ -87,9 +131,11 @@ function applyWirelessConfig(ctx, config) {
         }
     }
 
+    printf("Wireless configuration applied successfully\n");
     return true;
 }
 
+// Clean all options before applying
 function applyWayruConfig(ctx, config) {
     let wayruArray = config.device_config?.wayru;
     if (!wayruArray || type(wayruArray) != 'array') {
@@ -101,6 +147,13 @@ function applyWayruConfig(ctx, config) {
     for (let section in wayruArray) {
         let pkg = section.meta_config;
         let t = section.meta_type;
+        let sectionName = section.meta_section;
+
+        // Clean all options in the section
+        if (sectionName && !cleanWayruSection(ctx, pkg, sectionName)) {
+            return false;
+        }
+        
         if (!applySection(ctx, pkg, t, section)) {
             return false;
         }
@@ -109,6 +162,7 @@ function applyWayruConfig(ctx, config) {
     return true;
 }
 
+// Clean section by section 
 function applyOpenNdsConfig(ctx, config) {
     let openndsArray = config.device_config?.opennds;
     if (!openndsArray || type(openndsArray) != 'array') {
@@ -117,9 +171,17 @@ function applyOpenNdsConfig(ctx, config) {
     }
 
     printf("Applying OpenNDS configuration...\n");
+
     for (let section in openndsArray) {
         let pkg = "opennds";
         let t = section.meta_type || "opennds";
+        let sectionName = section.meta_section;
+
+        // Clean all options in this specific section
+        if (sectionName && !cleanOpenNdsSection(ctx, sectionName)) {
+            return false;
+        }
+        
         if (!applySection(ctx, pkg, t, section)) {
             return false;
         }
@@ -159,7 +221,7 @@ function main() {
         return 1;
     }
 
-    printf("Starting configuration application...\n");
+    printf("Starting configuration application with selective cleanup...\n");
 
     if (!applyWirelessConfig(ctx, config)) {
         printf("Error: Failed to apply wireless configuration\n");

@@ -51,6 +51,7 @@ define Package/wayru-os-services/install
 	$(INSTALL_DIR) $(1)/etc/wayru-config
 	$(INSTALL_DIR) $(1)/etc/wayru-config/scripts
 	$(INSTALL_DIR) $(1)/etc/wayru-config/hashes
+	$(INSTALL_DIR) $(1)/etc/wayru-config/rollback
 	$(INSTALL_DIR) $(1)/etc/wayru-collector
 
 	# Install the three new binaries

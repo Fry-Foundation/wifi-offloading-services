@@ -12,32 +12,15 @@
 #include <stdint.h> 
 #include "token_manager.h"
 #include "openwisp_manager.h"
+#include "rollback.h"
 
 static Console csl = {.topic = "config-sync"};
 
 #define DEV_GLOBAL_HASH_FILE "./scripts/dev/hashes/global_config.hash"
 #define PROD_GLOBAL_HASH_FILE "/etc/wayru-config/hashes/global_config.hash"
 
-// Structure to track application results with error capture
-typedef struct {
-    bool script_success;
-    bool services_restarted_successfully;
-    char affected_services[256];      
-    char successful_services[256];    // Services that restarted successfully
-    char failed_services[256];       // Services that failed to restart
-    char error_message[512];          // Detailed error messages
-    char service_errors[1024];        // Detailed service restart errors
-    char config_hash[16];             
-} ConfigApplicationResult;
-
-// Structure to track which services need restart
-typedef struct {
-    bool wireless;
-    bool wayru_agent;
-    bool wayru_collector;
-    bool wayru_config;
-    bool opennds;
-} ServiceRestartNeeds;
+// Production mode with detailed error capture
+static ServiceRestartNeeds last_successful_services = {false, false, false, false, false};
 
 static uint32_t calculate_djb2_hash(const char *str, size_t length) {
     if (!str) return 0;
@@ -57,6 +40,47 @@ static void add_service_to_list(char *list, const char *service, bool *first) {
     if (!*first) strcat(list, ", ");
     strcat(list, service);
     *first = false;
+}
+
+// Get last successful services for rollback
+static ServiceRestartNeeds get_last_successful_services(void) {
+    return last_successful_services;
+}
+
+// Save successful configuration sections individually (JSON for rollback)
+static void save_successful_sections(const char *json_config, const ServiceRestartNeeds *successful_needs, bool dev_mode) {
+    console_debug(&csl, "Saving successful configuration sections for rollback...");
+    
+    // Save JSON sections (NOT hashes) for rollback purposes
+    if (successful_needs->wireless) {
+        if (save_successful_config_section(json_config, "wireless", NULL, "current", dev_mode) == 0) {
+            console_debug(&csl, "Saved successful wireless configuration JSON");
+        }
+    }
+    
+    if (successful_needs->opennds) {
+        if (save_successful_config_section(json_config, "opennds", NULL, "current", dev_mode) == 0) {
+            console_debug(&csl, "Saved successful OpenNDS configuration JSON");
+        }
+    }
+    
+    if (successful_needs->wayru_collector) {
+        if (save_successful_config_section(json_config, "wayru", "wayru-collector", "current", dev_mode) == 0) {
+            console_debug(&csl, "Saved successful wayru-collector configuration JSON");
+        }
+    }
+    
+    if (successful_needs->wayru_agent) {
+        if (save_successful_config_section(json_config, "wayru", "wayru-agent", "current", dev_mode) == 0) {
+            console_debug(&csl, "Saved successful wayru-agent configuration JSON");
+        }
+    }
+    
+    if (successful_needs->wayru_config) {
+        if (save_successful_config_section(json_config, "wayru", "wayru-config", "current", dev_mode) == 0) {
+            console_debug(&csl, "Saved successful wayru-config configuration JSON");
+        }
+    }
 }
 
 // Get global hash file path based on mode
@@ -354,7 +378,6 @@ static int execute_service_command(const char *command, const char *service_name
     return script_exit_code;
 }
 
-// Production mode with detailed error capture
 static int restart_services_production(const ServiceRestartNeeds *needs, ConfigApplicationResult *result) {
     console_info(&csl, "Applying configuration changes to services...");
     int total_errors = 0;
@@ -366,6 +389,9 @@ static int restart_services_production(const ServiceRestartNeeds *needs, ConfigA
     char failed_services[256] = "";
     bool first_success = true;
     bool first_failure = true;
+    
+    // Track which services were successful
+    ServiceRestartNeeds successful_needs = {false, false, false, false, false};
 
     // 1. Reload WiFi first
     if (needs->wireless) {
@@ -374,6 +400,7 @@ static int restart_services_production(const ServiceRestartNeeds *needs, ConfigA
         if (execute_service_command("wifi reload", "WiFi", service_error, sizeof(service_error)) == 0) {
             console_info(&csl, "WiFi configuration reloaded successfully");
             add_service_to_list(successful_services, "wireless", &first_success);
+            successful_needs.wireless = true;
         } else {
             console_warn(&csl, "WiFi reload failed: %s", service_error);
             total_errors++;
@@ -392,6 +419,7 @@ static int restart_services_production(const ServiceRestartNeeds *needs, ConfigA
         if (execute_service_command("/etc/init.d/opennds restart", "OpenNDS", service_error, sizeof(service_error)) == 0) {
             console_info(&csl, "OpenNDS restarted successfully");
             add_service_to_list(successful_services, "opennds", &first_success);
+            successful_needs.opennds = true;
         } else {
             console_warn(&csl, "OpenNDS restart failed: %s", service_error);
             total_errors++;
@@ -410,12 +438,14 @@ static int restart_services_production(const ServiceRestartNeeds *needs, ConfigA
         if (execute_service_command("/etc/init.d/wayru-collector reload", "wayru-collector", service_error, sizeof(service_error)) == 0) {
             console_info(&csl, "wayru-collector reloaded successfully");
             add_service_to_list(successful_services, "wayru-collector", &first_success);
+            successful_needs.wayru_collector = true;
         } else {
             console_warn(&csl, "wayru-collector reload failed, trying restart...");
             
             if (execute_service_command("/etc/init.d/wayru-collector restart", "wayru-collector", service_error, sizeof(service_error)) == 0) {
                 console_info(&csl, "wayru-collector restarted successfully");
                 add_service_to_list(successful_services, "wayru-collector", &first_success);
+                successful_needs.wayru_collector = true;
             } else {
                 console_error(&csl, "wayru-collector restart failed: %s", service_error);
                 total_errors++;
@@ -435,12 +465,14 @@ static int restart_services_production(const ServiceRestartNeeds *needs, ConfigA
         if (execute_service_command("/etc/init.d/wayru-agent reload", "wayru-agent", service_error, sizeof(service_error)) == 0) {
             console_info(&csl, "wayru-agent reloaded successfully");
             add_service_to_list(successful_services, "wayru-agent", &first_success);
+            successful_needs.wayru_agent = true;
         } else {
             console_warn(&csl, "wayru-agent reload failed, trying restart...");
             
             if (execute_service_command("/etc/init.d/wayru-agent restart", "wayru-agent", service_error, sizeof(service_error)) == 0) {
                 console_info(&csl, "wayru-agent restarted successfully");
                 add_service_to_list(successful_services, "wayru-agent", &first_success);
+                successful_needs.wayru_agent = true;
             } else {
                 console_error(&csl, "wayru-agent restart failed: %s", service_error);
                 total_errors++;
@@ -460,6 +492,7 @@ static int restart_services_production(const ServiceRestartNeeds *needs, ConfigA
         if (execute_service_command("/etc/init.d/wayru-config reload", "wayru-config", service_error, sizeof(service_error)) == 0) {
             console_info(&csl, "wayru-config reload triggered successfully");
             add_service_to_list(successful_services, "wayru-config", &first_success);
+            successful_needs.wayru_config = true;
         } else {
             console_warn(&csl, "wayru-config reload failed: %s", service_error);
             total_errors++;
@@ -490,7 +523,34 @@ static int restart_services_production(const ServiceRestartNeeds *needs, ConfigA
         result->service_errors[sizeof(result->service_errors) - 1] = '\0';
     }
 
+    // Store successful services for rollback use
+    last_successful_services = successful_needs;
+    
     return total_errors;
+}
+
+static void save_all_successful_section_hashes(const char *json_config, const ServiceRestartNeeds *successful_needs, bool dev_mode) {
+    console_debug(&csl, "Saving successful section hashes to disk...");
+    
+    if (successful_needs->wireless) {
+        save_wireless_hash_after_success(json_config, dev_mode);
+    }
+    
+    if (successful_needs->wayru_agent) {
+        save_wayru_agent_hash_after_success(json_config, dev_mode);
+    }
+    
+    if (successful_needs->wayru_collector) {
+        save_wayru_collector_hash_after_success(json_config, dev_mode);
+    }
+    
+    if (successful_needs->wayru_config) {
+        save_wayru_config_hash_after_success(json_config, dev_mode);
+    }
+    
+    if (successful_needs->opennds) {
+        save_opennds_hash_after_success(json_config, dev_mode);
+    }
 }
 
 //Fetch device configuration from remote endpoint with global hash sync
@@ -615,64 +675,116 @@ static void config_sync_task(void *ctx) {
 
     console_info(&csl, "Configuration update received, analyzing changes...");
 
+    ConfigApplicationResult app_result = init_application_result();
+    
     // Calculate global hash for feedback 
     size_t json_length = strlen(json);
     uint32_t global_hash = calculate_djb2_hash(json, json_length);
-
-    // Analyze what services need restart using granular hash comparison
-    ServiceRestartNeeds needs = analyze_restart_needs(json, context->dev_mode);
-
-    // Skip if no changes detected at granular level
-    if (!needs.wireless && !needs.wayru_agent && !needs.wayru_collector && !needs.wayru_config && !needs.opennds) {
-        console_info(&csl, "No granular configuration changes detected, skipping application");
-
-        // Save global hash 
-        save_global_config_hash(context->dev_mode, json);
-        free(json);
-        return;
-    }
-
-    console_info(&csl, "Granular configuration changes detected, applying updates...");
-
-    // Initialize result tracking with affected services and hash
-    ConfigApplicationResult app_result = init_application_result();
-    build_affected_services_list(&needs, app_result.affected_services, sizeof(app_result.affected_services));
-
-    // Store global hash in result for feedback
-    snprintf(app_result.config_hash, sizeof(app_result.config_hash), "%u", global_hash);
     
-    // Apply configuration to UCI with result tracking
+    // Store hash in result for reporting
+    snprintf(app_result.config_hash, sizeof(app_result.config_hash), "%u", global_hash);
+
+    // STEP 1: ANALYZE
+    ServiceRestartNeeds needs = analyze_restart_needs(json, context->dev_mode);
+    
+    // Store affected services
+    build_affected_services_list(&needs, app_result.affected_services, sizeof(app_result.affected_services));
+    
+    // STEP 2: APPLY SCRIPT
     if (apply_config_without_restarts(json, context->dev_mode) == 0) {
-        console_info(&csl, "Configuration applied successfully");
+        console_info(&csl, "Configuration script applied successfully");
         app_result.script_success = true;
-
-        // Save global configuration hash after successful application
-        save_global_config_hash(context->dev_mode, json);
-
-        // Save granular hashes (handled automatically by config_affects_* functions)
-        console_debug(&csl, "Granular service hashes updated during analysis phase");
-
-        // CRITICAL: ONLY RESTART SERVICES IF SCRIPT WAS SUCCESSFUL
+        
+        // STEP 3: RESTART SERVICES
         if (context->dev_mode) {
             handle_dev_mode_restart(&needs, &app_result);
+            
+            console_info(&csl, "Configuration applied successfully (dev mode)");
+            char global_hash_str[16];
+            snprintf(global_hash_str, sizeof(global_hash_str), "%u", global_hash);
+            
+            save_all_successful_section_hashes(json, &needs, context->dev_mode);
+            save_global_config_hash(context->dev_mode, json);
+            save_successful_sections(json, &needs, context->dev_mode);
+            save_successful_config(json, global_hash_str, context->dev_mode);
+            
+            // Send report
+            char *success_report = generate_result_report(&app_result);
+            if (success_report) {
+                send_result_report_to_backend(success_report, context);
+                free(success_report);
+            }
+            
         } else {
-            restart_services_production(&needs, &app_result);
-        }
+            // PRODUCTION: Restart and verify success
+            int service_result = restart_services_production(&needs, &app_result);
+            
+            if (service_result == 0 && app_result.services_restarted_successfully) {
+                // ALL SUCCESSFUL - Save full hashes
+                console_info(&csl, "Configuration applied and services restarted successfully");
+                char global_hash_str[16];
+                snprintf(global_hash_str, sizeof(global_hash_str), "%u", global_hash);
+                
+                save_all_successful_section_hashes(json, &needs, context->dev_mode);
+                save_global_config_hash(context->dev_mode, json);
+                save_successful_sections(json, &needs, context->dev_mode);
+                save_successful_config(json, global_hash_str, context->dev_mode);
+                
+                // Send report
+                char *success_report = generate_result_report(&app_result);
+                if (success_report) {
+                    send_result_report_to_backend(success_report, context);
+                    free(success_report);
+                }
+                
+            } else {
+                // Some services failed
+                console_info(&csl, "Some services failed - saving only successful ones before rollback");
+                
+                ServiceRestartNeeds successful_needs = get_last_successful_services();
 
+                // Save only successful sections
+                save_all_successful_section_hashes(json, &successful_needs, context->dev_mode);
+                save_successful_sections(json, &successful_needs, context->dev_mode);
+
+                // Granular ROLLBACK
+                console_info(&csl, "Initiating granular rollback for failed services...");
+                if (execute_services_rollback(&app_result, context->dev_mode) == 0) {
+                    console_info(&csl, "Services rollback completed successfully");                    
+                } else {
+                    console_error(&csl, "Services rollback failed");
+                }
+
+                // Send rollback report
+                char *rollback_report = generate_rollback_report(&app_result, false, context->dev_mode);
+                if (rollback_report) {
+                    send_result_report_to_backend(rollback_report, context);
+                    free(rollback_report);
+                }
+            }
+        }
+        
     } else {
-        console_error(&csl, "Failed to apply configuration - skipping service restarts");
+        // SCRIPT FAILED - NO hashes will be updated
+        console_error(&csl, "Configuration script failed - no hashes will be updated");
         app_result.script_success = false;
         strncpy(app_result.error_message, "Configuration script failed", sizeof(app_result.error_message) - 1);
-        // Hash is still included even if script failed (for debugging)
-    }
 
-    // Generate and send result report to backend
-    char *result_report = generate_result_report(&app_result);
-    if (result_report) {
-        send_result_report_to_backend(result_report, context);
-        free(result_report);
-    }
+        // ROLLBACK completo (sin guardar hashes)
+        if (execute_script_rollback(&app_result, context->dev_mode) == 0) {
+            console_info(&csl, "Script rollback completed successfully");
+        } else {
+            console_error(&csl, "Script rollback failed");
+        }
 
+        // Send rollback report
+        char *rollback_report = generate_rollback_report(&app_result, true, context->dev_mode);
+        if (rollback_report) {
+            send_result_report_to_backend(rollback_report, context);
+            free(rollback_report);
+        }
+    }
+    
     free(json);
 }
 

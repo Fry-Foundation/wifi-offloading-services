@@ -66,4 +66,10 @@ void reset_config_section_hashes(void);
  */
 void clear_all_section_hashes(bool dev_mode);
 
+void save_wireless_hash_after_success(const char *json_config, bool dev_mode);
+void save_wayru_agent_hash_after_success(const char *json_config, bool dev_mode);
+void save_wayru_collector_hash_after_success(const char *json_config, bool dev_mode);
+void save_wayru_config_hash_after_success(const char *json_config, bool dev_mode);
+void save_opennds_hash_after_success(const char *json_config, bool dev_mode);
+
 #endif /* RENDERER_H */

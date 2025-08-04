@@ -1,6 +1,5 @@
 #include "renderer.h"
 #include "core/console.h"
-#include "core/script_runner.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -182,16 +181,14 @@ static char* extract_config_section(const char *json_config, const char *section
     return section_json;
 }
 
-// Check section changes with persistence
 static bool check_section_changed(const char *json_config, const char *section_type,
-                                 const char *meta_config_name, const char *hash_filename,
-                                 unsigned long *last_hash, bool *hash_loaded, bool dev_mode) {
+                                                 const char *meta_config_name, const char *hash_filename,
+                                                 unsigned long *last_hash, bool *hash_loaded, bool dev_mode) {
     // Load hash from disk if first time
     if (!*hash_loaded) {
         *last_hash = load_hash_from_disk(dev_mode, hash_filename);
         *hash_loaded = true;
         
-        // If first execution (hash = 0), show initialization
         if (*last_hash == 0) {
             console_debug(&csl, "Initializing %s hash tracking", 
                          meta_config_name ? meta_config_name : section_type);
@@ -209,17 +206,12 @@ static bool check_section_changed(const char *json_config, const char *section_t
     unsigned long current_hash = calculate_djb2_hash(section_json);
     free(section_json);
     
-    // Compare with previous hash
     bool changed = (current_hash != *last_hash);
     
     if (changed) {
-        console_debug(&csl, "%s config changed: hash %lu -> %lu", 
+        console_debug(&csl, "%s config changed: hash %lu -> %lu (not saved yet)", 
                      meta_config_name ? meta_config_name : section_type, 
                      *last_hash, current_hash);
-        
-        // Save new hash to memory and disk
-        *last_hash = current_hash;
-        save_hash_to_disk(dev_mode, hash_filename, current_hash);
     } else {
         console_debug(&csl, "%s config unchanged: hash %lu", 
                      meta_config_name ? meta_config_name : section_type, 
@@ -229,6 +221,21 @@ static bool check_section_changed(const char *json_config, const char *section_t
     return changed;
 }
 
+static void save_section_hash_after_success(const char *json_config, const char *section_type,
+                                           const char *meta_config_name, const char *hash_filename,
+                                           unsigned long *last_hash, bool dev_mode) {
+    char *section_json = extract_config_section(json_config, section_type, meta_config_name);
+    if (!section_json) return;
+    
+    unsigned long current_hash = calculate_djb2_hash(section_json);
+    free(section_json);
+    
+    *last_hash = current_hash;
+    save_hash_to_disk(dev_mode, hash_filename, current_hash);
+    
+    console_debug(&csl, "%s hash saved after successful config: %lu", 
+                 meta_config_name ? meta_config_name : section_type, current_hash);
+}
 
 // Check if wireless configuration changed
 bool config_affects_wireless(const char *json_config, bool dev_mode) {
@@ -442,4 +449,29 @@ int apply_config_without_restarts(const char *json_config, bool dev_mode) {
     }
     
     return result;
+}
+
+void save_wireless_hash_after_success(const char *json_config, bool dev_mode) {
+    save_section_hash_after_success(json_config, "wireless", NULL, WIRELESS_HASH_FILE,
+                                   &last_wireless_hash, dev_mode);
+}
+
+void save_wayru_agent_hash_after_success(const char *json_config, bool dev_mode) {
+    save_section_hash_after_success(json_config, "wayru", "wayru-agent", AGENT_HASH_FILE,
+                                   &last_agent_hash, dev_mode);
+}
+
+void save_wayru_collector_hash_after_success(const char *json_config, bool dev_mode) {
+    save_section_hash_after_success(json_config, "wayru", "wayru-collector", COLLECTOR_HASH_FILE,
+                                   &last_collector_hash, dev_mode);
+}
+
+void save_wayru_config_hash_after_success(const char *json_config, bool dev_mode) {
+    save_section_hash_after_success(json_config, "wayru", "wayru-config", CONFIG_HASH_FILE,
+                                   &last_config_hash, dev_mode);
+}
+
+void save_opennds_hash_after_success(const char *json_config, bool dev_mode) {
+    save_section_hash_after_success(json_config, "opennds", NULL, OPENNDS_HASH_FILE,
+                                   &last_opennds_hash, dev_mode);
 }

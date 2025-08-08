@@ -11,7 +11,18 @@ fi
 cat > /tmp/do_upgrade.sh << EOF
 #!/bin/sh
 sleep 5  # Give the parent process time to exit
+
+# Remove old package
 opkg remove wayru-os-services
+
+# Clean up old configuration files
+rm -f /etc/config/wayru-os-services
+rm -f /etc/config/wayru-os-services-opkg
+rm -f /etc/config/wayru-agent
+rm -f /etc/config/wayru-config
+rm -f /etc/config/wayru-collector
+
+# Install new package
 opkg install "$package_path"
 EOF
 

@@ -12,7 +12,7 @@
 
 #define DEFAULT_ENABLED true
 #define DEFAULT_CONSOLE_LOG_LEVEL 7
-#define DEFAULT_CONFIG_INTERVAL_MS 30000
+#define DEFAULT_CONFIG_INTERVAL_MS 900000
 
 typedef struct remote_config {
     char config_endpoint[256]; 

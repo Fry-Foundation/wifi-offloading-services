@@ -7,7 +7,7 @@ PKG_VERSION:=$(shell cat VERSION)
 PKG_RELEASE:=1
 
 # This is a custom variable, used below
-SOURCE_DIR:=source
+AGENT_DIR:=apps/agent
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/cmake.mk
@@ -16,7 +16,8 @@ include $(INCLUDE_DIR)/cmake.mk
 define Build/Prepare
 	mkdir -p $(PKG_BUILD_DIR)
 	$(CP) ./CMakeLists.txt $(PKG_BUILD_DIR)/
-	$(CP) ./source $(PKG_BUILD_DIR)/
+	$(CP) ./apps $(PKG_BUILD_DIR)/
+	$(CP) ./lib $(PKG_BUILD_DIR)/
 	$(CP) ./VERSION $(PKG_BUILD_DIR)/
 endef
 
@@ -25,7 +26,7 @@ define Package/wayru-os-services
   SECTION:=admin
   CATEGORY:=Administration
   TITLE:=Wayru config daemon and scripts
-  DEPENDS:=+libcurl +libjson-c +libopenssl +libmosquitto-ssl
+  DEPENDS:=+libcurl +libjson-c +libopenssl +libmosquitto-ssl +libubus +libubox +libblobmsg-json +lua
 endef
 
 # Package description; a more verbose description on what our package does
@@ -43,22 +44,48 @@ define Package/wayru-os-services/install
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_DIR) $(1)/etc/wayru-os-services
-	$(INSTALL_DIR) $(1)/etc/wayru-os-services/scripts
-	$(INSTALL_DIR) $(1)/etc/wayru-os-services/data
-	$(INSTALL_DIR) $(1)/etc/wayru-os-services/data/did-key
+	$(INSTALL_DIR) $(1)/etc/wayru-agent
+	$(INSTALL_DIR) $(1)/etc/wayru-agent/scripts
+	$(INSTALL_DIR) $(1)/etc/wayru-agent/data
+	$(INSTALL_DIR) $(1)/etc/wayru-agent/data/did-key
+	$(INSTALL_DIR) $(1)/etc/wayru-config
+	$(INSTALL_DIR) $(1)/etc/wayru-config/scripts
+	$(INSTALL_DIR) $(1)/etc/wayru-config/hashes
+	$(INSTALL_DIR) $(1)/etc/wayru-config/rollback
+	$(INSTALL_DIR) $(1)/etc/wayru-collector
 
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/wayru-os-services $(1)/usr/bin/
-	$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/wayru-os-services.init $(1)/etc/init.d/wayru-os-services
-	$(INSTALL_CONF) $(SOURCE_DIR)/scripts/openwrt/wayru-os-services.config $(1)/etc/config/wayru-os-services
-	$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/wayru-os-services.config $(1)/etc/wayru-os-services/config.uci
+	# Install the three new binaries
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/wayru-agent $(1)/usr/bin/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/wayru-config $(1)/usr/bin/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/wayru-collector $(1)/usr/bin/
 
-	$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/*.sh $(1)/etc/wayru-os-services/scripts/
-	$(INSTALL_BIN) $(SOURCE_DIR)/scripts/openwrt/*.lua $(1)/etc/wayru-os-services/scripts/
-	$(INSTALL_DATA) VERSION $(1)/etc/wayru-os-services/VERSION
+	# Install init script and config
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/apps/agent/scripts/openwrt/wayru-agent.init $(1)/etc/init.d/wayru-agent
+	$(INSTALL_CONF) $(PKG_BUILD_DIR)/apps/agent/scripts/openwrt/wayru-agent.config $(1)/etc/config/wayru-agent
+
+	# Install wayru-config init script and config
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/apps/config/scripts/openwrt/wayru-config.init $(1)/etc/init.d/wayru-config
+	$(INSTALL_CONF) $(PKG_BUILD_DIR)/apps/config/scripts/openwrt/wayru-config.config $(1)/etc/config/wayru-config
+
+	# Install collector init script and config
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/apps/collector/scripts/openwrt/wayru-collector.init $(1)/etc/init.d/wayru-collector
+	$(INSTALL_CONF) $(PKG_BUILD_DIR)/apps/collector/scripts/openwrt/wayru-collector.config $(1)/etc/config/wayru-collector
+
+	# Install all scripts from the openwrt directory
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/apps/agent/scripts/openwrt/*.sh $(1)/etc/wayru-agent/scripts/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/apps/agent/scripts/openwrt/*.lua $(1)/etc/wayru-agent/scripts/
+
+	# Install wayru-config scripts
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/apps/config/scripts/openwrt/*.uc $(1)/etc/wayru-config/scripts/
+
+	# Install VERSION file
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/VERSION $(1)/etc/wayru-os-services/VERSION
 endef
 
 define Package/wayru-os-services/conffiles
-/etc/config/wayru-os-services
+/etc/config/wayru-agent
+/etc/config/wayru-config
+/etc/config/wayru-collector
 endef
 
 # This command is always the last, it uses the definitions and variables we give above in order to get the job done

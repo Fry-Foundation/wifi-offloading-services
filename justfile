@@ -1,11 +1,20 @@
-# Default recipe
+# Default recipe - shows available commands
 default:
     @just --list
 
-# Development environment setup
-dev:
-    just cmake
-    bash tools/dev.sh
+# Build with CMake
+build:
+    mkdir -p build
+    cd build && cmake .. && make
+
+# Development environment setup for specific app
+# Available apps: agent, config, collector
+run app="agent":
+    just build
+    @if [ ! -f "build/wayru-{{app}}" ]; then echo "Error: App 'wayru-{{app}}' not found in build directory."; exit 1; fi
+    mkdir -p run/wayru-{{app}}
+    cp build/wayru-{{app}} run/wayru-{{app}}/wayru-{{app}}
+    bash tools/run.sh {{app}}
 
 # Generate compilation database (compile_commands.json)
 compdb:
@@ -15,15 +24,28 @@ compdb:
 format:
     cd tools/format && ./format.sh
 
-# Compile for specific architecture
-compile arch:
-    cd tools/compile && go run compile.go {{arch}} 
+# Compile for specific architecture (optional: add 'debug' as second parameter)
+compile arch debug="":
+    #!/usr/bin/env bash
+    cd tools/compile
+    if [ "{{debug}}" = "debug" ]; then
+        echo "Running in debug mode with -j1 V=s"
+        go run compile.go {{arch}} --debug
+    else
+        go run compile.go {{arch}}
+    fi
 
 # Upload IPK release package
 release arch:
     bash tools/compile/release.sh {{arch}}
 
-# Build with CMake
-cmake:
-    mkdir -p output
-    cd output && cmake .. && make
+# Delete the ./build and ./run folder
+clean:
+    rm -rf ./build
+    rm -rf ./run
+
+# Delete the ./build, ./run, ./output folders
+clean-full:
+    rm -rf ./build
+    rm -rf ./run
+    rm -rf ./output

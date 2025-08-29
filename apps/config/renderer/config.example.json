@@ -1,0 +1,174 @@
+{
+  "device_config": {
+    "wayru": [
+      {
+        "meta_config": "wayru-collector",
+        "meta_type": "wayru_collector",
+        "meta_section": "wayru_collector",
+        "enabled": true,
+        "logs_endpoint": "https://devices.wayru.tech/logs",
+        "console_log_level": 7,
+        "batch_size": 50,
+        "batch_timeout_ms": 10000,
+        "queue_size": 500,
+        "http_timeout": 30,
+        "http_retries": 2,
+        "reconnect_delay_ms": 5000,
+        "dev_mode": false
+      },
+      {
+        "meta_config": "wayru-agent",
+        "meta_type": "wayru_agent",
+        "meta_section": "wayru_agent",
+        "enabled": true,
+        "main_api": "https://prod.api.az.wayru.tech",
+        "accounting_api": "https://wifi.api.wayru.tech",
+        "devices_api": "https://devices.wayru.tech",
+        "access_interval": 10800,
+        "device_status_interval": 120,
+        "console_log_level": 7,
+        "monitoring_enabled": true,
+        "monitoring_interval": 900,
+        "monitoring_minimum_interval": 300,
+        "monitoring_maximum_interval": 900,
+        "speed_test_enabled": true,
+        "speed_test_interval": 10800,
+        "speed_test_minimum_interval": 10800,
+        "speed_test_maximum_interval": 21600,
+        "speed_test_latency_attempts": 4,
+        "device_context_interval": 900,
+        "mqtt_broker_url": "mqtt.wayru.tech",
+        "mqtt_keepalive": 30,
+        "mqtt_task_interval": 15,
+        "reboot_enabled": true,
+        "reboot_interval": 88200,
+        "firmware_update_enabled": true,
+        "firmware_update_interval": 86400,
+        "use_n_sysupgrade": false,
+        "diagnostic_interval": 120,
+        "external_connectivity_host": "google.com",
+        "nds_interval": 60,
+        "time_sync_server": "ptbtime1.ptb.de",
+        "time_sync_interval": 3600,
+        "package_update_enabled": true,
+        "package_update_interval": 20000
+      },
+      {
+        "meta_config": "wayru-config",
+        "meta_type": "wayru_config",
+        "meta_section": "wayru_config",
+        "enabled": true,
+        "console_log_level": "7",
+        "config_endpoint": "https://devices.wayru.tech/device_config",
+        "config_interval_ms": 40000
+      }
+    ],
+    "wireless": [
+      {
+        "meta_config": "wireless",
+        "meta_type": "wifi-device",
+        "meta_section": "radio0",
+        "channel": "auto",
+        "disabled": "0",
+        "cell_density": "0"
+      },
+      {
+        "meta_config": "wireless",
+        "meta_type": "wifi-device",
+        "meta_section": "radio1",
+        "channel": "auto",
+        "disabled": "0",
+        "cell_density": "0"
+      },
+      {
+        "meta_config": "wireless",
+        "meta_type": "wifi-iface",
+        "meta_section": "default_wifi_interface_0",
+        "device": "radio0",
+        "network": "encrypted",
+        "mode": "ap",
+        "ssid": "Wayru Operator",
+        "encryption": "psk2",
+        "disabled": false,
+        "key": "988Dh283zX",
+        "isolate": false
+      },
+      {
+        "meta_config": "wireless",
+        "meta_type": "wifi-iface",
+        "meta_section": "default_wifi_interface_1",
+        "device": "radio1",
+        "network": "encrypted",
+        "mode": "ap",
+        "ssid": "Wayru Operator",
+        "encryption": "psk2",
+        "disabled": false,
+        "key": "988Dh283zX",
+        "isolate": false
+      },
+      {
+        "meta_config": "wireless",
+        "meta_type": "wifi-iface",
+        "meta_section": "captive_wifi_2ghz",
+        "device": "radio0",
+        "network": "captive",
+        "mode": "ap",
+        "ssid": ".Wayru WiFi",
+        "encryption": "none",
+        "disabled": false,
+        "isolate": false
+      },
+      {
+        "meta_config": "wireless",
+        "meta_type": "wifi-iface",
+        "meta_section": "captive_wifi_5ghz",
+        "device": "radio1",
+        "network": "captive",
+        "mode": "ap",
+        "ssid": ".Wayru WiFi Test",
+        "encryption": "none",
+        "disabled": false,
+        "isolate": false
+      }
+    ],
+    "opennds": [
+      {
+        "meta_config": "opennds",
+        "meta_type": "opennds",
+        "meta_section": "opennds1",
+        "debuglevel": "1",
+        "enabled": "1",
+        "fas_secure_enabled": "3",
+        "faskey": "qLULCQufhZVHkiPpNkC9RDHjX9A9Fud6",
+        "faspath": "/",
+        "fasport": "443",
+        "fasremotefqdn": "fas.wayru.tech",
+        "fasremoteip": "52.230.158.179",
+        "gatewayinterface": "br-lan.10",
+        "gatewayname": "cfbe115a-45f2-41ad-8bb9-649b438ae6fe",
+        "maxclients": "250",
+        "binauth": "/etc/wayru-agent/scripts/nds-binauth.sh",
+        "enable_serial_number_suffix": "0",
+        "users_to_router": [
+          "allow tcp port 53",
+          "allow udp port 53",
+          "allow udp port 67",
+          "allow tcp port 22",
+          "allow tcp port 80",
+          "allow tcp port 443",
+          "allow tcp port 47850",
+          "allow tcp port 47851",
+          "allow tcp port 48601",
+          "allow tcp port 48602",
+          "allow tcp port 40500"
+        ],
+        "walledgarden_fqdn_list": [
+          "ingest.sentry.io api.mapbox.com portal.wayru.tech portal.wayru.io portal.internal.wayru.tech api.wayru.tech api.internal.wayru.tech wifi.api.wayru.tech wifi.api.internal.wayru.tech"
+        ],
+        "walledgarden_port_list": [
+          "443 22"
+        ]
+      }
+    ]
+  }
+}

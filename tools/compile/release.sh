@@ -22,10 +22,16 @@ if [[ -z "$API_URL" || -z "$BEARER_TOKEN" ]]; then
   exit 1
 fi
 
+# Set default release track if not specified
+if [[ -z "$RELEASE_TRACK" ]]; then
+  RELEASE_TRACK="stable"
+fi
+
 # --- CONFIGURATION ---
 package_name="wayru-os-services"
 api_url="$API_URL"
 bearer_token="$BEARER_TOKEN"
+release_track="$RELEASE_TRACK"
 
 # --- VALID ARCHITECTURES ---
 valid_architectures=(
@@ -47,7 +53,7 @@ if [ $# -ne 1 ]; then
 fi
 
 package_arch="$1"
-full_path="$PROJECT_ROOT/build/$package_arch"
+full_path="$PROJECT_ROOT/output/$package_arch"
 
 if [ ! -d "$full_path" ]; then
   echo "Error: Directory '$full_path' does not exist."
@@ -89,6 +95,7 @@ fi
 echo "Package name: $package_name"
 echo "Architecture: $package_arch"
 echo "Version: $version"
+echo "Release track: $release_track"
 
 # --- EXTRACT ARCH AND SUBTARGET FROM package_arch ---
 subtarget=$(echo "$package_arch" | awk -F'_' '{print $NF}')
@@ -118,6 +125,7 @@ metadata=$(jq -n \
   --arg version "$version" \
   --arg path "$file_path" \
   --arg checksum "$checksum" \
+  --arg release_track "$release_track" \
   --argjson size "$size_bytes" \
   '{
     package_name: $name,
@@ -125,7 +133,8 @@ metadata=$(jq -n \
     version: $version,
     storage_path: $path,
     checksum: $checksum,
-    size_bytes: $size
+    size_bytes: $size,
+    release_track: $release_track
   }')
 
 echo "Prepared JSON metadata:"

@@ -1,124 +1,79 @@
 # wayru-os-services
-Services for wayru-os:
-- Access key
-- Accounting
+Set of services for OpenWrt-based firmware.
+![Services diagram](./docs/firmware_services_diagram.png)
+
+**wayru-agent**
+- registration
+- access token
+- mqtt
+- metrics
+- updates
+- misc
+
+**wayru-collector**
+- log collection
+
+**wayru-config**
+- config sync
 
 ## Dependencies
-Install `cmake`. Also install the dependencies below (check your distro packages).
+### Build
+Install the OpenWrt build system dependencies needed for your system: [Build system setup](https://openwrt.org/docs/guide-developer/toolchain/install-buildsystem)
 
-> Check `CMakeLists.txt` for updated dependencies. @todo document that dependency here too.
+Also:
+- cmake
+- just
+- go
+- docker
 
+### Libraries
 - libcurl
-- json-c
-- mosquitto
+- libjson-c
+- libmosquitto
+- libssl
+- liblua
+- libubox, see [docs/dependency_libubox](./docs/dependency_libubox.md)
+- libubus, see [docs/dependency_libubus_and_ubus](./docs/dependency_libubus_and_ubus.md)
 
-**Debian-based linux**
+## Development
+This project is written in C with supporting shell and Lua scripts.
 
-Install with `apt-get`:
+It is split between apps and libraries. Check the `./apps` and `./libs` directories.
 
+## Workflows
+Build the project; will build all apps:
 ```bash
-sudo apt-get update
-sudo apt-get install libcurl4-gnutls-dev
-sudo apt-get install libjson-c-dev
-sudo apt-get install libmosquitto-dev
+just build
 ```
 
-## Clone the repository
-
+Clean the project:
 ```bash
-git clone https://github.com/Wayru-Network/wayru-os-services.git
-
+just clean
 ```
 
-## Developing
+Run any of the apps in the `./apps` directory:
 ```bash
-just dev
+just run <app>
 ```
 
-## Compiling for OpenWrt
-
-Compilations are done using the OpenWrt SDK inside a Debian Docker container.
-
+Compile the project:
 ```bash
 just compile arch=<value>
 ```
+> Compilations are done using the OpenWrt SDK inside a Debian Docker container. The operation is orchestrated by a small program built with Go.
 
-We map the architectures to known OpenWrt targets and subtargets for the devices we support.
-
-Mapped architectures are:
-- mips_24kc
-- mipsel_24kc
-- aarch64_cortex-a53
-- arm_cortex-a7_neon-vfpv4
-
-The compiled package will be available in a new folder called `./build/<arch>`
+The compiled package will be available in a new folder called `./output/<arch>/<package>.ipk`
 
 You can then transfer the compiled package to a router for testing.
 
-## Debugging in OpenWrt
-
-### Building with debug symbols
-Use the commented out `Build/Compile` step in the main Makefile that includes the `-g -O0` flags to build with debug information and remove compiler optimizations.
-
-### Configuring the build system
-Configure the build system to include debug information in the `wayru-os` repo with `make menuconfig`:
-
-Open the **Global build settings** menu, and make sure these are checked:
-- Collect kernel debug information
-- Compile packages with debugging info
-
-Make sure that **Binary stripping method** is set to `none`
-
-Make sure these are not checked:
-- Make debug information reproducible
-- Strip unnecessary exports from the kernel image
-- Strip unnecessary functions from libraries
-
-Also, within the **Kernel built options** submenu, make sure that these are checked:
-- Compile the kernel with debug filesystem enabled
-- Compile the kernel with symbol table information
-- Compile the kernel with debug information
-
-### Installing the debugger
-On your OpenWrt device, install `gdb`:
-```bash
-opkg update
-opkg install gdb
-```
-
-### Running the debugger
-On OpenWrt:
-- Run `gdb` with the binary from its install location `/usr/bin`
-- Set the arguments needed by the binary for proper operation
-- Set breakpoints at certain line numbers or function names
-- Run the binary
-
-```bash
-gdb /usr/bin/wayru-os-services
-
-# Within the gdb process
-(gdb) set args --config-enabled "1" --config-main-api "https://api.internal.wayru.tech" --config-accounting-enabled "1" --config-accounting-api "https://wifi.api.internal.wayru.tech" --config-access-interval "120" --config-device-status-interval "120" --config-console-log-level "4"
-
-(gdb) break main.c:20
-
-(gdb) run
-```
-
-## Tooling
-
-### Formatting
-Install the clang-format util:
-```bash
-sudo apt install clang-format
-```
-
-Run the `format` script from the `wayru-os-services` repo:
-
+Format the C files in the project:
 ```bash
 just format
 ```
+> Requires `clang-format` to be installed.
 
-### LSP
-The langauge server protocol (LSP) for C should work out of the box with VSCode.
-
-On other editors you can use clangd. But make sure to run `just compdb` so that clangd correctly recognizes the include paths.
+Build compilation symbols:
+```bash
+just compdb
+```
+This can help if your IDE is not recognizing the include paths correctly and is reporting a lot of linting errors.

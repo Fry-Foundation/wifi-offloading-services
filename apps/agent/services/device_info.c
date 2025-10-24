@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <unistd.h>
 
 #define OS_VERSION_FILE "/etc/openwrt_release"
 #define PACKAGE_VERSION_FILE "/etc/wayru-os-services/VERSION"
@@ -108,15 +109,26 @@ char *get_os_services_version() {
     return os_services_version;
 }
 
-char *get_mac() {
+char *get_mac_for_model(const char *device_name) {
     char script_file[256];
+    
     snprintf(script_file, sizeof(script_file), "%s%s", config.scripts_path, "/get-mac.sh");
+    
+    // Set environment variable for the script (using device name)
+    if (device_name) {
+        setenv("WAYRU_MODEL", device_name, 1);
+    } else {
+        setenv("WAYRU_MODEL", "unknown", 1);
+    }
+    
+    console_info(&csl, "Getting MAC address for device: %s", device_name ? device_name : "unknown");
+    
     char *mac = run_script(script_file);
-    if (strchr(mac, '\n') != NULL) {
+    if (mac && strchr(mac, '\n') != NULL) {
         mac[strcspn(mac, "\n")] = 0;
     }
 
-    console_debug(&csl, "mac address is: %s", mac);
+    console_debug(&csl, "mac address is: %s", mac ? mac : "NULL");
 
     return mac;
 }
@@ -308,12 +320,15 @@ DeviceInfo *init_device_info() {
     DeviceInfo *device_info = malloc(sizeof(DeviceInfo));
     device_info->os_version = get_os_version();
     device_info->os_services_version = get_os_services_version();
-    device_info->mac = get_mac();
-
+    
+    // Get device profile first to determine MAC interface
     DeviceProfile device_profile = get_device_profile();
     device_info->name = device_profile.name;
     device_info->model = device_profile.model;
     device_info->brand = device_profile.brand;
+    
+    // Now get MAC with device name information
+    device_info->mac = get_mac_for_model(device_profile.name);
 
     device_info->arch = get_arch();
 

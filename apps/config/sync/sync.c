@@ -13,6 +13,7 @@
 #include "token_manager.h"
 #include "openwisp_manager.h"
 #include "rollback.h"
+#include "../ubus.h"
 
 static Console csl = {.topic = "config-sync"};
 
@@ -571,6 +572,19 @@ char *fetch_device_config_json(const char *endpoint, ConfigSyncContext *context)
     char *current_hash = load_global_config_hash(context->dev_mode);
     console_debug(&csl, "Current global config hash: '%s'", current_hash ? current_hash : "null");
 
+    // Get device codename via UBUS
+    char device_name[64] = "";
+    char device_model[64] = "";
+    if (ubus_get_device_info_sync(device_name, sizeof(device_name), 
+                                  device_model, sizeof(device_model)) == 0) {
+        console_debug(&csl, "Retrieved device info: name=%s, model=%s", device_name, device_model);
+    } else {
+        console_warn(&csl, "Failed to get device info via UBUS, using empty codename");
+    }
+
+    console_info(&csl, "Device name for sync request: '%s' (length: %zu)", 
+                 device_name, strlen(device_name));
+
     char sync_endpoint[512];
     snprintf(sync_endpoint, sizeof(sync_endpoint), "%s/sync", endpoint);
 
@@ -579,10 +593,13 @@ char *fetch_device_config_json(const char *endpoint, ConfigSyncContext *context)
     struct timespec start_time;
     clock_gettime(CLOCK_MONOTONIC, &start_time);
 
-    // Create JSON body with current config hash
+    // Create JSON body with current config hash and codename
     json_object *sync_body = json_object_new_object();
     json_object *hash_obj = json_object_new_string(current_hash ? current_hash : "");
+    json_object *codename_obj = json_object_new_string(device_name);
+
     json_object_object_add(sync_body, "current_config_hash", hash_obj);
+    json_object_object_add(sync_body, "codename", codename_obj);
     
     const char *sync_json = json_object_to_json_string(sync_body);
 

@@ -25,4 +25,14 @@ int ubus_get_access_token_sync(char *token_buf, size_t token_size, time_t *expir
  */
 bool ubus_is_available_for_tokens(void);
 
+/**
+ * Get device information from wayru-agent via UBUS (synchronous)
+ * @param name_buf Buffer to store device name (codename)
+ * @param name_size Size of name buffer
+ * @param model_buf Buffer to store device model
+ * @param model_size Size of model buffer
+ * @return 0 on success, negative on error
+ */
+int ubus_get_device_info_sync(char *name_buf, size_t name_size, char *model_buf, size_t model_size);
+
 #endif // UBUS_H

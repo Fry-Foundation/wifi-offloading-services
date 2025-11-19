@@ -190,3 +190,77 @@ int ubus_get_access_token_sync(char *token_buf, size_t token_size, time_t *expir
 
     return 0;
 }
+
+// Get device information from wayru-agent via UBUS
+int ubus_get_device_info_sync(char *name_buf, size_t name_size, char *model_buf, size_t model_size) {
+    struct ubus_context *ctx = ubus_connect(NULL);
+    if (!ctx) {
+        console_error(&csl, "Failed to connect to UBUS for device info");
+        return -1;
+    }
+
+    uint32_t id;
+    int ret = ubus_lookup_id(ctx, "wayru-agent", &id);
+    if (ret != 0) {
+        console_error(&csl, "wayru-agent object not found for device info");
+        ubus_free(ctx);
+        return -1;
+    }
+
+    struct token_response_data response_data = {0};
+    
+    ret = ubus_invoke(ctx, id, "get_device_info", NULL,
+                      ubus_sync_response_cb, &response_data, 5000);
+    
+    if (ret != 0 || !response_data.received) {
+        console_error(&csl, "Failed to get device info from wayru-agent: %d", ret);
+        ubus_free(ctx);
+        return -1;
+    }
+
+    // Define policy for device info response parsing
+    enum {
+        DEVICE_NAME_FIELD,
+        DEVICE_MODEL_FIELD,
+        __DEVICE_MAX
+    };
+
+    static const struct blobmsg_policy device_policy[__DEVICE_MAX] = {
+        [DEVICE_NAME_FIELD] = { .name = "name", .type = BLOBMSG_TYPE_STRING },
+        [DEVICE_MODEL_FIELD] = { .name = "model", .type = BLOBMSG_TYPE_STRING },
+    };
+
+    struct blob_attr *tb[__DEVICE_MAX];
+
+    if (blobmsg_parse(device_policy, __DEVICE_MAX, tb, blobmsg_data(response_data.buf.head),
+                      blobmsg_len(response_data.buf.head)) != 0) {
+        console_error(&csl, "Failed to parse device info response");
+        blob_buf_free(&response_data.buf);
+        ubus_free(ctx);
+        return -1;
+    }
+    
+    // Extract name (codename) if provided
+    if (tb[DEVICE_NAME_FIELD] && name_buf && name_size > 0) {
+        const char *name_str = blobmsg_get_string(tb[DEVICE_NAME_FIELD]);
+        strncpy(name_buf, name_str, name_size - 1);
+        name_buf[name_size - 1] = '\0';
+        console_debug(&csl, "Retrieved device name: %s", name_buf);
+    }
+    
+    // Extract model if provided
+    if (tb[DEVICE_MODEL_FIELD] && model_buf && model_size > 0) {
+        const char *model_str = blobmsg_get_string(tb[DEVICE_MODEL_FIELD]);
+        strncpy(model_buf, model_str, model_size - 1);
+        model_buf[model_size - 1] = '\0';
+        console_debug(&csl, "Retrieved device model: %s", model_buf);
+    }
+
+    console_info(&csl, "Successfully retrieved device info from wayru-agent");
+
+    // Cleanup
+    blob_buf_free(&response_data.buf);
+    ubus_free(ctx);
+
+    return 0;
+}

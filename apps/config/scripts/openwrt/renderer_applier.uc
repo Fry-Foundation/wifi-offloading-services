@@ -55,6 +55,31 @@ function cleanOpenNdsSection(ctx, sectionName) {
     return clearAllSectionOptions(ctx, 'opennds', sectionName);
 }
 
+// Ensure section exists before configuring
+function ensureSectionExists(ctx, packageName, sectionType, sectionName) {
+    try {
+        let sectionData = ctx.get_all(packageName, sectionName);
+        if (sectionData) {
+            printf("Section %s.%s already exists\n", packageName, sectionName);
+            return true;
+        }
+    } catch (e) {
+        // Section doesn't exist, will create it
+    }
+    
+    // Create the named section using ctx.set() with the section type
+    try {
+        printf("Creating new section %s.%s (type: %s)\n", packageName, sectionName, sectionType);
+        // In UCI, to create a named section you must set its type using ctx.set()
+        ctx.set(packageName, sectionName, sectionType);
+        printf("Successfully created section %s.%s\n", packageName, sectionName);
+        return true;
+    } catch (e) {
+        printf("Error creating section %s.%s: %s\n", packageName, sectionName, "" + e);
+        return false;
+    }
+}
+
 function applySection(ctx, packageName, sectionType, section) {
     let name = section.meta_section;
     if (!name) {
@@ -63,6 +88,12 @@ function applySection(ctx, packageName, sectionType, section) {
     }
 
     printf("Configuring %s section: %s in package %s\n", sectionType, name, packageName);
+
+    // ENSURE SECTION EXISTS FIRST
+    if (!ensureSectionExists(ctx, packageName, sectionType, name)) {
+        printf("Error: Failed to ensure section %s.%s exists\n", packageName, name);
+        return false;
+    }
 
     for (let k in section) {
         if (k == 'meta_section' || k == 'meta_type' || k == 'meta_config') continue;
@@ -74,19 +105,11 @@ function applySection(ctx, packageName, sectionType, section) {
             printf("Setting list %s.%s.%s with %d items\n", packageName, name, k, length(v));
             
             try {
-                // Set the entire array at once
                 ctx.set(packageName, name, k, v);
                 printf("Successfully set list %s.%s.%s with %d items\n", packageName, name, k, length(v));
             } catch (e) {
-                // If section doesn't exist, create it first
-                try {
-                    ctx.add(packageName, sectionType, name);
-                    ctx.set(packageName, name, k, v);
-                    printf("Successfully set list %s.%s.%s with %d items\n", packageName, name, k, length(v));
-                } catch (e2) {
-                    printf("Error setting list %s.%s.%s: %s\n", packageName, name, k, "" + e2);
-                    return false;
-                }
+                printf("Error setting list %s.%s.%s: %s\n", packageName, name, k, "" + e);
+                return false;
             }
         } else {
             // Handle single values
@@ -95,15 +118,8 @@ function applySection(ctx, packageName, sectionType, section) {
                 ctx.set(packageName, name, k, uciValue);
                 printf("Set %s.%s.%s = %s\n", packageName, name, k, uciValue);
             } catch (e) {
-                // If section doesn't exist, create it first
-                try {
-                    ctx.add(packageName, sectionType, name);
-                    ctx.set(packageName, name, k, uciValue);
-                    printf("Set %s.%s.%s = %s\n", packageName, name, k, uciValue);
-                } catch (e2) {
-                    printf("Error setting %s.%s.%s=%s: %s\n", packageName, name, k, uciValue, "" + e2);
-                    return false;
-                }
+                printf("Error setting %s.%s.%s=%s: %s\n", packageName, name, k, uciValue, "" + e);
+                return false;
             }
         }
     }

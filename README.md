@@ -77,3 +77,32 @@ Build compilation symbols:
 just compdb
 ```
 This can help if your IDE is not recognizing the include paths correctly and is reporting a lot of linting errors.
+
+## Contributing
+
+This project is now open source. Contributions are welcome! Please follow these guidelines:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License.
+
+## Support
+
+**Important**: This project is now open source and maintained by the community. WAYRU no longer exists and will not provide support for this repository. For issues, questions, or contributions, please use the GitHub Issues section.
+
+💙 **Farewell Message**
+With gratitude and love, we say goodbye.
+WAYRU is closing its doors, but we are leaving these repositories open and free for the community.
+May they continue to inspire builders, dreamers, and innovators.
+
+With love, WAYRU
+
+---
+
+**Note**: This project is open source. WAYRU no longer exists and will not provide support. The community is welcome to use, modify, and improve this codebase.

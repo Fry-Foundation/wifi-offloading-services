@@ -105,4 +105,4 @@ With love, WAYRU
 
 ---
 
-**Note**: This project is open source. WAYRU no longer exists and will not provide support. The community is welcome to use, modify, and improve this codebase.
+**Note**: This project is **open source**. Wayru, Inc and The Wayru Foundation are no longer operating entities, and will not provide any kind of support. The community is welcome to use, modify, and improve this codebase.
